@@ -1,0 +1,11 @@
+Gestion des items de téléportation et Santa (attention temporaire)
+Implémemtation de HPRecoveryUseSimulator, ajout le simulation d'aller à la bank (faire un cooking ou prendre plat déjà fait)
+Voir pour gestion des potions (pour l'instant celle de la bank sont ignorées si on en a sur le perso)
+Simulateur ajouter gestion XP même si pas tous les éléments
+Voir pour la restauration des PV (cooking anticipé?)
+Faire strategy avec un arbre de décision
+Gestion des consumables en bank. Faire du cooking?
+Traiter le restore
+Voir comment tuner les buts en fonction de Stratégie.
+Gestion effect inventory_space (positif ou négatif)
+Pouvoir simuler un goal

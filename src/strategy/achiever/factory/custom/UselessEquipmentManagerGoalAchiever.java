@@ -1,0 +1,262 @@
+package strategy.achiever.factory.custom;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import hydra.GameConstants;
+import hydra.dao.BankDAO;
+import hydra.dao.CharacterDAO;
+import hydra.dao.GrandExchangeDAO;
+import hydra.dao.ItemDAO;
+import hydra.model.BotCharacter;
+import hydra.model.BotCraftSkill;
+import hydra.model.BotEffect;
+import hydra.model.BotInventoryItem;
+import hydra.model.BotItem;
+import hydra.model.BotItemDetails;
+import hydra.model.BotItemType;
+import hydra.model.BotMonster;
+import strategy.achiever.factory.util.GameService;
+import strategy.util.BotItemInfo;
+import strategy.util.CharacterService;
+import strategy.util.MoveService;
+import strategy.util.OptimizeResult;
+import strategy.util.fight.FightService;
+
+public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoalAchiever {
+	private long oldCall;
+	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
+	private static final int SELL_MIN_CHARACTER_GOLD = 1000;
+	private final FightService fightService;
+	private final CharacterDAO characterDAO;
+	private final List<BotMonster> monsters;
+	private final ItemDAO itemDAO;
+	private final BankDAO bankDAO;
+	private final MoveService moveService;
+	private final GrandExchangeDAO grandExchangeDAO;
+	private final GameService gameService;
+
+	public UselessEquipmentManagerGoalAchiever(CharacterDAO characterDAO, ItemDAO itemDAO, BankDAO bankDAO,
+			GrandExchangeDAO grandExchangeDAO, FightService fightService, List<BotMonster> botMonsters,
+			MoveService moveService, GameService gameService, CharacterService characterService) {
+		super(characterService);
+		this.characterDAO = characterDAO;
+		this.itemDAO = itemDAO;
+		this.bankDAO = bankDAO;
+		this.grandExchangeDAO = grandExchangeDAO;
+		this.fightService = fightService;
+		this.monsters = botMonsters;
+		this.moveService = moveService;
+		this.gameService = gameService;
+		oldCall = 0;
+	}
+
+	// Gère les équipements inutiles, ignore les tools et les items utilisés en
+	// craft
+	@Override
+	public boolean isRealisable(BotCharacter character) {
+		return System.currentTimeMillis() - oldCall > ONE_DAY;
+	}
+
+	@Override
+	public boolean execute() {
+		// Recherche tous les équipements utiles en combat
+		Set<String> useEquipments = searchUsefulItems();
+
+		// Parcourt des items et rechercher les inutiles
+		Map<BotCraftSkill, List<BotItem>> uselessItemsToRecycle = new EnumMap<>(BotCraftSkill.class);
+		List<BotItem> deleteItems = new ArrayList<>();
+		List<BotItem> sellItems = new ArrayList<>();
+		BotCharacter character = characterDAO.getCharacter();
+		List<BotItem> inventoryItemList = characterService.getInventoryIgnoreEmpty().stream()
+				.<BotItem>map(this::botInventoryItemToBotItem).toList();
+		searchUselessItem(useEquipments, uselessItemsToRecycle, deleteItems, sellItems, inventoryItemList,
+				character.getGold(), GameConstants.MAX_INVENTORY_SLOT);
+
+		// Suppression des items
+		if (!deleteItems(deleteItems)) {
+			return false;
+		}
+
+		// On recycle les items
+		if (!recycleItems(uselessItemsToRecycle)) {
+			return false;
+		}
+
+		// Vente des items
+		if (!sellItems(sellItems)) {
+			return false;
+		}
+
+		// se déplacer à la banque pour mettre les autres items
+		uselessItemsToRecycle = new EnumMap<>(BotCraftSkill.class);
+		deleteItems = new ArrayList<>();
+		sellItems = new ArrayList<>();
+		searchUselessItem(useEquipments, uselessItemsToRecycle, deleteItems, sellItems, bankDAO.viewItems(),
+				character.getGold(), characterService.getInventoryFreeSlotNumber()/2);
+		if (!uselessItemsToRecycle.isEmpty() || !deleteItems.isEmpty() || !sellItems.isEmpty()) {
+			if (!moveService.moveToBank()) {
+				return false;
+			}
+			if (characterService.isInventorySlotFull() || !withdrawItems(deleteItems)) {
+				return false;
+			}
+			for (List<BotItem> botItems : uselessItemsToRecycle.values()) {
+				if (characterService.isInventorySlotFull() || !withdrawItems(botItems)) {
+					return false;
+				}
+			}
+			if (characterService.isInventorySlotFull() || !withdrawItems(sellItems)) {
+				return false;
+			}
+
+			// Suppression des items
+			if (!deleteItems(deleteItems)) {
+				return false;
+			}
+
+			// On recycle les items
+			if (!recycleItems(uselessItemsToRecycle)) {
+				return false;
+			}
+
+			if (!sellItems(sellItems)) {
+				return false;
+			}
+		}
+		// On met à jour que si le résultat est ok
+		oldCall = System.currentTimeMillis();
+		return true;
+	}
+
+	private boolean sellItems(List<BotItem> sellItems) {
+		if (!sellItems.isEmpty()) {
+			if (!moveService.moveToGrandEchange()) {
+				return false;
+			}
+			for (BotItem botItem : sellItems) {
+				if (!grandExchangeDAO.sell(botItem,
+						grandExchangeDAO.estimateItemPrice(botItem.getCode(), characterDAO.getCharacter().getGold()))) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private Set<String> searchUsefulItems() {
+		Set<String> useEquipments = new HashSet<>();
+		// add tools and item with effect INVENTORY_SPACE
+		useEquipments
+				.addAll(characterService.getInventoryIgnoreEmpty().stream().map(bii -> itemDAO.getItem(bii.getCode()))
+						.filter(bid -> gameService.isTools(bid.getCode()) || addInventorySpace(bid))
+						.map(bid -> bid.getCode()).toList());
+		useEquipments.addAll(bankDAO.viewItems().stream().map(bii -> itemDAO.getItem(bii.getCode()))
+				.filter(bid -> gameService.isTools(bid.getCode()) || addInventorySpace(bid)).map(bid -> bid.getCode())
+				.toList());
+
+		Map<String, OptimizeResult> optimizeEquipementsPossesed = fightService.optimizeEquipementsPossesed(monsters,
+				useEquipments.stream().collect(Collectors.toMap(Function.identity(), t -> 1)));
+		for (OptimizeResult optimizeResult : optimizeEquipementsPossesed.values()) {
+			BotItemInfo[] bestEqt = optimizeResult.bestEqt();
+			for (int i = 0; i < bestEqt.length; i++) {
+				if (bestEqt[i] != null) {
+					useEquipments.add(bestEqt[i].botItemDetails().getCode());
+				}
+			}
+		}
+
+		return useEquipments;
+	}
+
+	private boolean addInventorySpace(BotItemDetails item) {
+		return item.getEffects().stream()
+				.anyMatch(bie -> BotEffect.INVENTORY_SPACE.equals(bie.getName()) && bie.getValue() > 0);
+	}
+
+	private boolean recycleItems(Map<BotCraftSkill, List<BotItem>> uselessItemsToRecycle) {
+		for (Entry<BotCraftSkill, List<BotItem>> entry : uselessItemsToRecycle.entrySet()) {
+			List<BotItem> botItems = entry.getValue();
+			if (!moveService.moveTo(entry.getKey())) {
+				return false;
+			}
+			for (BotItem botItem : botItems) {
+				if (!characterDAO.recycle(botItem).ok()) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private boolean deleteItems(List<BotItem> deleteItems) {
+		for (BotItem botItem : deleteItems) {
+			if (!characterDAO.deleteItem(botItem).ok()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private boolean withdrawItems(List<BotItem> deleteItems) {
+		for (BotItem botItem : deleteItems) {
+			if (!bankDAO.withdraw(botItem)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private void searchUselessItem(Set<String> useEquipments, Map<BotCraftSkill, List<BotItem>> uselessItemsToRecycle,
+			List<BotItem> deleteItems, List<BotItem> sellItems, List<BotItem> itemList, int characterGold, long maxItems) {
+		boolean sellPossible = grandExchangeDAO.isSellPossible() && characterGold > SELL_MIN_CHARACTER_GOLD;
+		int itemCounter = 0;
+		for (BotItem botItem : itemList) {
+			if(itemCounter == maxItems) {
+				break;
+			}
+			BotItemDetails botItemDetail = itemDAO.getItem(botItem.getCode());
+			if (!BotItemType.UTILITY.equals(botItemDetail.getType())
+					&& !BotItemType.CURRENCY.equals(botItemDetail.getType())
+					&& !BotItemType.RESOURCE.equals(botItemDetail.getType())
+					&& !BotItemType.CONSUMABLE.equals(botItemDetail.getType())
+					&& !useEquipments.contains(botItem.getCode())
+					&& !itemDAO.useInCraft(botItem.getCode()).isUseInCraft()) {
+				if (botItemDetail.getCraft() == null) {
+					if (botItemDetail.isTradeable() && sellPossible) {
+						sellItems.add(botItem);
+					} else {
+						deleteItems.add(botItem);
+					}
+				} else {
+					List<BotItem> botItems = uselessItemsToRecycle.computeIfAbsent(botItemDetail.getCraft().getSkill(),
+							k -> new ArrayList<>());
+					botItems.add(botItem);
+				}
+				itemCounter++;
+			}
+		}
+	}
+
+	private BotItem botInventoryItemToBotItem(BotInventoryItem botInventoryItem) {
+		BotItem botItem = new BotItem();
+		botItem.setCode(botInventoryItem.getCode());
+		botItem.setQuantity(botInventoryItem.getQuantity());
+		return botItem;
+	}
+
+	@Override
+	public String toString() {
+		ToStringBuilder builder = new ToStringBuilder(this);
+		return builder.toString();
+	}
+}

@@ -1,0 +1,5 @@
+package hydra.model;
+
+public enum BotCraftSkill {
+	WEAPONCRAFTING, GEARCRAFTING, JEWELRYCRAFTING, ALCHEMY, COOKING, WOODCUTTING, MINING;
+}

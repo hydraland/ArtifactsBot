@@ -1,0 +1,2 @@
+java -jar lib\openapi-generator-cli-7.9.0.jar generate -g java --package-name actions.model -o generate -i https://api.artifactsmmo.com/openapi.json
+REM java -jar lib\openapi-generator-cli-7.9.0.jar generate -g java --package-name actions.model -o generate -i https://api-test.artifactsmmo.com/openapi.json

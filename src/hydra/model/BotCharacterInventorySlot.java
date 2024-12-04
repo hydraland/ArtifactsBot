@@ -1,0 +1,6 @@
+package hydra.model;
+
+public enum BotCharacterInventorySlot {
+	WEAPON, SHIELD, HELMET, BODY_ARMOR, LEG_ARMOR, BOOTS, RING1, RING2, AMULET, ARTIFACT1, ARTIFACT2, ARTIFACT3,
+	UTILITY1, UTILITY2;
+}

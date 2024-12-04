@@ -1,0 +1,82 @@
+package strategy.achiever.factory;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import hydra.model.BotCraftSkill;
+import hydra.model.BotItemType;
+import hydra.model.BotResourceSkill;
+import strategy.util.Bornes;
+
+public class SimpleGoalAchieverInfo implements GoalAchieverInfo {
+
+	protected final String code;
+	protected final BotItemType type;
+
+	public SimpleGoalAchieverInfo(String code, BotItemType type) {
+		this.code = code;
+		this.type = type;
+	}
+
+	@Override
+	public boolean isNeedTaskMasterResource() {
+		return false;
+	}
+
+	@Override
+	public final String getItemCode() {
+		return code;
+	}
+
+	@Override
+	public final BotItemType getItemType() {
+		return type;
+	}
+
+	@Override
+	public boolean isCraft() {
+		return false;
+	}
+
+	@Override
+	public boolean isGathering() {
+		return false;
+	}
+
+	@Override
+	public BotCraftSkill getBotCraftSkill() {
+		return null;
+	}
+
+	@Override
+	public BotResourceSkill getBotResourceSkill() {
+		return null;
+	}
+
+	@Override
+	public boolean isLevelInBorne(Bornes borne, INFO_TYPE infoType) {
+		return false;
+	}
+
+	@Override
+	public boolean isLevel(int skillLevel, INFO_TYPE infoType) {
+		return false;
+	}
+
+	@Override
+	public int getLevel() {
+		return 0;
+	}
+
+	@Override
+	public boolean isNeedRareResource() {
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		ToStringBuilder builder = new ToStringBuilder(this);
+		builder.append("code", code);
+		builder.append("type", type);
+		return builder.toString();
+	}
+}

@@ -1,0 +1,35 @@
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# exclude jar for gradle wrapper
+!gradle/wrapper/*.jar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# build files
+**/target
+target
+.gradle
+build
+/README.md
+/api/
+/build.gradle
+/build.sbt
+/docs/
+/git_push.sh
+/gradle.properties
+/gradle/
+/gradlew
+/gradlew.bat
+/pom.xml
+/settings.gradle
+/.travis.yml
+/.openapi-generator-ignore
