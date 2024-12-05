@@ -2,20 +2,25 @@ package strategy.achiever;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import strategy.achiever.factory.ItemTaskFactory;
+import strategy.achiever.factory.MonsterTaskFactory;
+import strategy.util.fight.factory.HPRecoveryFactory;
+
 public class GoalParameter {
 
 	private int minFreeSlot;
 	private int rareItemSeuil;
 	private int coinReserve;
 	private int minFreeInventorySpace;
-	private boolean optimizeItemTask;
+	private MonsterTaskFactory monsterTaskFactory;
+	private ItemTaskFactory itemTaskFactory;
+	private HPRecoveryFactory hPRecoveryFactory;
 
-	public GoalParameter(int minFreeSlot, int rareItemSeuil, int coinReserve, int minFreeInventorySpace, boolean optimizeItemTask) {
+	public GoalParameter(int minFreeSlot, int rareItemSeuil, int coinReserve, int minFreeInventorySpace) {
 		this.minFreeSlot = minFreeSlot;
 		this.rareItemSeuil = rareItemSeuil;
 		this.coinReserve = coinReserve;
 		this.minFreeInventorySpace = minFreeInventorySpace;
-		this.optimizeItemTask = optimizeItemTask;
 	}
 
 	public void setMinFreeSlot(int minFreeSlot) {
@@ -49,13 +54,29 @@ public class GoalParameter {
 	public void setMinFreeInventorySpace(int minFreeInventorySpace) {
 		this.minFreeInventorySpace = minFreeInventorySpace;
 	}
-
-	public final boolean isOptimizeItemTask() {
-		return optimizeItemTask;
+	
+	public final MonsterTaskFactory getMonsterTaskFactory() {
+		return monsterTaskFactory;
 	}
 
-	public final void setOptimizeItemTask(boolean optimizeItemTask) {
-		this.optimizeItemTask = optimizeItemTask;
+	public final void setMonsterTaskFactory(MonsterTaskFactory monsterTaskFactory) {
+		this.monsterTaskFactory = monsterTaskFactory;
+	}
+	
+	public final ItemTaskFactory getItemTaskFactory() {
+		return itemTaskFactory;
+	}
+
+	public final void setItemTaskFactory(ItemTaskFactory itemTaskFactory) {
+		this.itemTaskFactory = itemTaskFactory;
+	}
+	
+	public final HPRecoveryFactory getHPRecoveryFactory() {
+		return hPRecoveryFactory;
+	}
+
+	public final void setHPRecoveryFactory(HPRecoveryFactory hPRecoveryFactory) {
+		this.hPRecoveryFactory = hPRecoveryFactory;
 	}
 
 	@Override
@@ -65,7 +86,6 @@ public class GoalParameter {
 		builder.append("rareItemSeuil", rareItemSeuil);
 		builder.append("coinReserve", coinReserve);
 		builder.append("minFreeInventorySpace", minFreeInventorySpace);
-		builder.append("optimizeItemTask", optimizeItemTask);
 		return builder.toString();
 	}
 }

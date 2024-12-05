@@ -2,7 +2,7 @@ package strategy.achiever.factory.util;
 
 import hydra.dao.CharacterDAO;
 import hydra.model.BotCharacter;
-import strategy.achiever.factory.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 
 public class GoalAverageOptimizerImpl implements GoalAverageOptimizer {
 	
@@ -17,7 +17,7 @@ public class GoalAverageOptimizerImpl implements GoalAverageOptimizer {
 		BotCharacter character = characterDAO.getCharacter();
 		int index = 2;
 		while (index <= max && goalAchiever.acceptAndSetMultiplierCoefficient(index, new Cumulator(0),
-				Math.round(character.getInventoryMaxItems()*0.9f))) {
+				Math.round(character.getInventoryMaxItems()*inventoryPercentMaxUse))) {
 			index++;
 		}
 		if (index == 2) {

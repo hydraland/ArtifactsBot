@@ -14,11 +14,11 @@ import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalAchieverConditional;
 import strategy.achiever.GoalAchieverConditional.Condition;
-import strategy.achiever.factory.ArtifactGoalAchiever;
-import strategy.achiever.factory.GoalAchieverChoose.ChooseBehaviorSelector;
-import strategy.achiever.factory.GoalAchieverInfo.INFO_TYPE;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 import strategy.util.Bornes;
 import strategy.util.CharacterService;
 import strategy.util.OneExecutionCondition;
@@ -52,7 +52,7 @@ public final class BalanceRateStrategy implements Strategy {
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
 		monsterGoals = goalFactory.createMonstersGoals(resp -> resp.fight().getXp() == 0);
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false);
-		taskGoals = goalFactory.createTaskGoals(resp -> !resp.fight().isWin());
+		taskGoals = goalFactory.createTaskGoals();
 		dropItemGoal = goalFactory.getDropItemGoal();
 	}
 

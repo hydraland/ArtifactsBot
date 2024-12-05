@@ -401,12 +401,12 @@ public final class CharacterServiceImpl implements CharacterService {
 		BotCharacter character = characterDao.getCharacter();
 		return character.getInventory().stream().filter(item -> item.getQuantity() > 0).toList();
 	}
-
+	
 	@Override
-	public boolean inventoryConstaints(BotItemDetails itemDetails, int number) {
+	public boolean inventoryConstaints(String code, int number) {
 		BotCharacter character = characterDao.getCharacter();
 		Optional<BotInventoryItem> item = character.getInventory().stream()
-				.filter(inventItem -> inventItem.getCode().equals(itemDetails.getCode())).findFirst();
+				.filter(inventItem -> inventItem.getCode().equals(code)).findFirst();
 		return item.isPresent() && item.get().getQuantity() >= number;
 	}
 

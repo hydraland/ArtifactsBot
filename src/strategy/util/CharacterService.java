@@ -85,11 +85,15 @@ public interface CharacterService {
 
 	Optional<BotInventoryItem> getFirstEquipementInInventory(List<String> equipementNames);
 
-	boolean inventoryConstaints(BotItemDetails itemDetails, int number);
+	default boolean inventoryConstaints(BotItemDetails itemDetails, int number) {
+		return inventoryConstaints(itemDetails.getCode(), number);
+	}
 
 	List<BotInventoryItem> getInventoryIgnoreEmpty();
 
 	boolean isPossessAny(List<String> codes, BankDAO bankDAO);
+
+	boolean inventoryConstaints(String code, int number);
 
 
 }

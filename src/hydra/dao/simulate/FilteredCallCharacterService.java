@@ -8,7 +8,6 @@ import hydra.dao.BankDAO;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItemDetails;
 import hydra.model.BotResourceSkill;
 import strategy.util.BotItemInfo;
 import strategy.util.CharacterService;
@@ -208,10 +207,10 @@ public final class FilteredCallCharacterService implements CharacterService {
 	}
 
 	@Override
-	public boolean inventoryConstaints(BotItemDetails itemDetails, int number) {
+	public boolean inventoryConstaints(String code, int number) {
 		simulatorListener.startInnerCall();
 		try {
-			return characterService.inventoryConstaints(itemDetails, number);
+			return characterService.inventoryConstaints(code, number);
 		} finally {
 			simulatorListener.stopInnerCall();
 		}

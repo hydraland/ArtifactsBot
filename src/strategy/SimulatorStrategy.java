@@ -19,14 +19,14 @@ import hydra.model.BotItem;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
-import strategy.achiever.GoalParameter;
-import strategy.achiever.factory.ArtifactGoalAchiever;
-import strategy.achiever.factory.GoalAchieverChoose.ChooseBehaviorSelector;
-import strategy.achiever.factory.GoalAchieverInfo;
-import strategy.achiever.factory.GoalAchieverLoop;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.goals.GoalAchieverLoop;
+import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.GameService;
+import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.util.Bornes;
 import strategy.util.CharacterService;
 import strategy.util.StrategySkillUtils;
@@ -50,10 +50,11 @@ public class SimulatorStrategy implements Strategy {
 	private final StrategySimulatorListener simulatorListener;
 	private final GameService gameService;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
+	private final GoalAverageOptimizer goalAverageOptimizer;
 
 	public SimulatorStrategy(SimulatorManager simulatorManager, StrategySimulatorListener simulatorListener,
 			CharacterDAO characterDAO, BankDAO bankDAO, GoalFactory goalFactory, CharacterService characterService,
-			GameService gameService, GoalParameter parameter) {
+			GameService gameService, GoalFactory simulatedGoalFactory, GoalAverageOptimizer goalAverageOptimizer) {
 		this.simulatorManager = simulatorManager;
 		this.simulatorListener = simulatorListener;
 		this.characterDAO = characterDAO;
@@ -61,12 +62,14 @@ public class SimulatorStrategy implements Strategy {
 		this.goalFactory = goalFactory;
 		this.characterService = characterService;
 		this.gameService = gameService;
+		this.goalAverageOptimizer = goalAverageOptimizer;
+		this.simulatedGoalFactory = simulatedGoalFactory;
+		
 		itemGoals = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING);
-		simulatedGoalFactory = simulatorManager.createFactory(parameter);
 		itemSimulatedGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING);
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false);
-		taskGoals = goalFactory.createTaskGoals(resp -> !resp.fight().isWin());
+		taskGoals = goalFactory.createTaskGoals();
 		dropItemGoal = goalFactory.getDropItemGoal();
 	}
 
@@ -335,9 +338,9 @@ public class SimulatorStrategy implements Strategy {
 	private void optimize(ArtifactGoalAchiever goalAchiever, GoalFactory goalFactory) {
 		if (goalFactory.getInfos(goalAchiever) == null || !goalFactory.getInfos(goalAchiever).isNeedTaskMasterResource()
 				&& !goalFactory.getInfos(goalAchiever).isNeedRareResource()) {
-			goalFactory.getGoalAverageOptimizer().optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT, 0.9f);
+			goalAverageOptimizer.optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT, 0.9f);
 		} else {
-			goalFactory.getGoalAverageOptimizer().optimize(goalAchiever, 1, 1f);
+			goalAverageOptimizer.optimize(goalAchiever, 1, 1f);
 		}
 	}
 }

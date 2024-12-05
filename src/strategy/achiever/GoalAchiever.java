@@ -1,12 +1,8 @@
 package strategy.achiever;
 
-import java.util.Map;
-
 import hydra.model.BotCharacter;
 
-public interface GoalAchiever {
-	boolean isRealisable(BotCharacter character);
-	boolean execute(Map<String, Integer> reservedItems);
+public interface GoalAchiever extends CheckRealisableGoalAchiever, ExecutableGoalAchiever {
 	boolean isFinish();
 	void clear();
 	void setRoot();

@@ -11,10 +11,10 @@ import hydra.model.BotCharacter;
 import hydra.model.BotItemType;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalAchieverConditional;
-import strategy.achiever.factory.ArtifactGoalAchiever;
-import strategy.achiever.factory.GoalAchieverInfo;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.util.CharacterService;
 
 public interface Strategy {

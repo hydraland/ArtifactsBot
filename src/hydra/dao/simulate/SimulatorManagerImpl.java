@@ -20,11 +20,11 @@ import hydra.model.BotItem;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.ArtifactGoalFactory;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.MonsterEquipementService;
-import strategy.achiever.factory.MonsterEquipementServiceImpl;
 import strategy.achiever.factory.util.GameService;
 import strategy.achiever.factory.util.GameServiceImpl;
 import strategy.util.CharacterService;
+import strategy.util.MonsterEquipementService;
+import strategy.util.MonsterEquipementServiceImpl;
 import strategy.util.MoveService;
 import strategy.util.MoveServiceImpl;
 import strategy.util.fight.FightService;
@@ -179,14 +179,17 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 		return characterDAOSimulator.getCharacterService();
 	}
 
+	@Override
 	public final FightService getFightService() {
 		return fightService;
 	}
 
+	@Override
 	public final MoveService getMoveService() {
 		return moveService;
 	}
 
+	@Override
 	public final GameService getGameService() {
 		return gameService;
 	}

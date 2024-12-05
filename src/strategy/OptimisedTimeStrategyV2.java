@@ -17,11 +17,12 @@ import hydra.model.BotEffect;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.TimeGoalAchiever;
 import strategy.achiever.TimeGoalAchiever.XpGetter;
-import strategy.achiever.factory.ArtifactGoalAchiever;
-import strategy.achiever.factory.GoalAchieverChoose.ChooseBehaviorSelector;
-import strategy.achiever.factory.GoalAchieverInfo.INFO_TYPE;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
+import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.util.AverageTimeXpCalculator;
 import strategy.util.Bornes;
 import strategy.util.CharacterService;
@@ -46,18 +47,20 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 	private GoalAchiever eventGoal;
 	private final BankDAO bankDAO;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
+	private final GoalAverageOptimizer goalAverageOptimizer;
 
 	public OptimisedTimeStrategyV2(CharacterDAO characterDAO, ItemDAO itemDao, GoalFactory goalFactory,
-			CharacterService characterService, BankDAO bankDAO) {
+			CharacterService characterService, BankDAO bankDAO,GoalAverageOptimizer goalAverageOptimizer) {
 		this.characterDAO = characterDAO;
 		this.goalFactory = goalFactory;
 		this.characterService = characterService;
 		this.bankDAO = bankDAO;
+		this.goalAverageOptimizer = goalAverageOptimizer;
 		itemGoals = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING);
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
 		monsterGoals = goalFactory.createMonstersGoals(resp -> resp.fight().getXp() == 0);
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false);
-		taskGoals = goalFactory.createTaskGoals(resp -> !resp.fight().isWin());
+		taskGoals = goalFactory.createTaskGoals();
 		timeGoalAchieverMap = new HashMap<>();
 		dropItemGoal = goalFactory.getDropItemGoal();
 		List<String> itemWithHasteEffectListCode = itemDao.getItems().stream()
@@ -172,9 +175,9 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 				.getAverage() < ITEM_INITIAL_AVERAGE_TIME_VALUE
 				&& !goalFactory.getInfos(goalAchiever).isNeedTaskMasterResource()
 				&& !goalFactory.getInfos(goalAchiever).isNeedRareResource()) {
-			goalFactory.getGoalAverageOptimizer().optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT, 0.9f);
+			goalAverageOptimizer.optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT, 0.9f);
 		} else {
-			goalFactory.getGoalAverageOptimizer().optimize(goalAchiever, 1, 1f);
+			goalAverageOptimizer.optimize(goalAchiever, 1, 1f);
 		}
 	}
 

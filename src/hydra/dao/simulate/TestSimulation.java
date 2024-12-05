@@ -7,28 +7,33 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItem;
-import strategy.HPRecoveryUseSimulator;
 import strategy.Strategy;
 import strategy.StrategySimulatorListener;
 import strategy.SumAccumulator;
+import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalParameter;
-import strategy.achiever.factory.ArtifactGoalAchiever;
-import strategy.achiever.factory.GoalAchieverChoose.ChooseBehaviorSelector;
-import strategy.achiever.factory.GoalAchieverList;
-import strategy.achiever.factory.GoalAchieverLoop;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.MonsterGoalAchiever;
+import strategy.achiever.factory.MonsterTaskUseSimulatorFactory;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.goals.GoalAchieverLoop;
+import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.util.GoalAverageOptimizer;
+import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.Bornes;
 import strategy.util.StrategySkillUtils;
+import strategy.util.fight.factory.DefaultHPRecoveryFactory;
 import util.JsonToStringStyle;
 
 public class TestSimulation {
@@ -44,67 +49,81 @@ public class TestSimulation {
 
 		BotCharacter character = simulatorManager.getCharacterDAOSimulator().getCharacter();
 		System.setOut(new PrintStream(new File("test.txt")));
-		GoalFactory simulatedGoalFactory = simulatorManager.createFactory(new GoalParameter(6, 100, 14, 15, false));
-		simulateCrafting(simulatorListener, simulatorManager, character,
-		simulatedGoalFactory);
-		simulateFight(simulatorListener, simulatorManager, character,
-		simulatedGoalFactory);
-		simulateCookingAndFight(simulatorListener, simulatorManager, character, simulatedGoalFactory);
+		GoalParameter goalParameter = new GoalParameter(6, 100, 14, 15);
+		GoalFactory simulatedGoalFactory = simulatorManager.createFactory(goalParameter);
+		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
+				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
+		/*
+		 * simulateCrafting(simulatorListener, simulatorManager, character,
+		 * simulatedGoalFactory); simulateFight(simulatorListener, simulatorManager,
+		 * character, simulatedGoalFactory);
+		 */
+		simulateCookingAndFight(simulatorListener, simulatorManager, character, simulatedGoalFactory, goalParameter);
 	}
 
 	private static void simulateCookingAndFight(StrategySimulatorListener simulatorListener,
-			SimulatorManagerImpl simulatorManager, BotCharacter character, GoalFactory simulatedGoalFactory) {
-		simulatorManager.getFightService()
-				.sethPRecovery(new HPRecoveryUseSimulator(simulatorManager.getCharacterDAOSimulator(),
-						simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
-		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory.createMonstersGoals(resp -> !resp.fight().isWin());
+			SimulatorManagerImpl simulatorManager, BotCharacter character, GoalFactory simulatedGoalFactory,
+			GoalParameter goalParameter) {
+
+		StrategySimulatorListener secondSimulatorListener = new StrategySimulatorListener();
+		secondSimulatorListener
+				.setInnerListener((className, methodName, cooldown, error) -> System.out.println(methodName));
+		SimulatorManagerImpl secondSimulatorManager = new SimulatorManagerImpl(secondSimulatorListener,
+				botEvents -> new ArrayList<>());
+		secondSimulatorManager.load(true);
+
+		GoalParameter simulateGoalParameter = new GoalParameter(goalParameter.getMinFreeSlot(),
+				goalParameter.getRareItemSeuil(), goalParameter.getCoinReserve(),
+				goalParameter.getMinFreeInventorySpace());
+		simulateGoalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(
+				secondSimulatorManager.getCharacterDAOSimulator(), secondSimulatorManager.getItemDAOSimulator(),
+				secondSimulatorManager.getCharacterServiceSimulator()));
+		GoalFactory secondSimulatedGoalFactory = secondSimulatorManager.createFactory(simulateGoalParameter);
+
+		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory
+				.createMonstersGoals(resp -> !resp.fight().isWin());
 		SumAccumulator accumulator = new SumAccumulator();
-		simulatorListener
-				.setInnerListener((className, methodName, cooldown, error) -> {accumulator.accumulate(cooldown); if(error) {System.out.println(methodName);}});
-		MonsterGoalAchiever monsterGoal = monsterGoals.stream().filter(mga -> mga.getMonsterCode().equals("wolf"))
-				.findFirst().get();
-		GoalAchieverLoop simLoopGoal = new GoalAchieverLoop(simulatedGoalFactory.addDepositNoReservedItemGoalAchiever(monsterGoal), 100, false);
-		Bornes bornes = new Bornes(1, 1, 21);
-		Predicate<ArtifactGoalAchiever> simulatedPredicate = StrategySkillUtils
-				.createFilterCraftPredicate(simulatedGoalFactory, BotCraftSkill.COOKING, bornes);
+		simulatorListener.setInnerListener((className, methodName, cooldown, error) -> {
+			accumulator.accumulate(cooldown);
+			if (error) {
+				System.out.println(methodName);
+			}
+		});
 		List<ArtifactGoalAchiever> itemSimulatedGoals = simulatedGoalFactory
-				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING);
+				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING);
 		List<ArtifactGoalAchiever> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
 				simulatorManager.getCharacterServiceSimulator(), simulatedGoalFactory,
 				simulatorManager.getBankDAOSimulator());
-		List<ArtifactGoalAchiever> cookingSimGoals = allSimulateGoals.stream().filter(simulatedPredicate).toList();
+
+		MonsterTaskUseSimulatorFactory factoryMonster = new MonsterTaskUseSimulatorFactory(monsterGoals.stream()
+				.collect(Collectors.toMap(MonsterGoalAchiever::getMonsterCode, Function.identity())),
+				allSimulateGoals.stream().filter(
+						aga -> BotCraftSkill.COOKING.equals(simulatedGoalFactory.getInfos(aga).getBotCraftSkill())
+								|| BotCraftSkill.ALCHEMY.equals(simulatedGoalFactory.getInfos(aga).getBotCraftSkill()))
+						.collect(Collectors.toMap(aga -> simulatedGoalFactory.getInfos(aga).getItemCode(),
+								Function.identity())),
+				simulatorManager.getBankDAOSimulator(), simulatorManager.getCharacterDAOSimulator(),
+				simulatorManager.getMoveService(), simulatorManager.getCharacterServiceSimulator(),
+				secondSimulatorManager, secondSimulatorListener,
+				new GoalAverageOptimizerImpl(simulatorManager.getCharacterDAOSimulator()), secondSimulatedGoalFactory,
+				goalParameter, simulateGoalParameter, 25);
+
+		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("wolf", 100);
 		List<BotItem> viewItems = simulatorManager.getBankDAOSimulator().viewItems();
-		long begin = System.currentTimeMillis();
 		simulatorManager.setValue(character, viewItems);
+		accumulator.reset();
 		if (simLoopGoal.isRealisableAfterSetRoot(character)) {
 			simLoopGoal.clear();
 			boolean result = simLoopGoal.execute(new HashMap<>());
 			System.out.println("time :" + accumulator.get() + " : " + result);
 		}
-		for (ArtifactGoalAchiever artifactGoalAchiever : cookingSimGoals) {
-			simulatorManager.setValue(character, viewItems);
-			GoalAchieverList achieverList = new GoalAchieverList();
-			GoalAchieverLoop cookingLoop = new GoalAchieverLoop(artifactGoalAchiever, 1, false);
-			simulatedGoalFactory.getGoalAverageOptimizer().optimize(cookingLoop, 100, 0.9f);
-			achieverList.add(cookingLoop);
-			achieverList.add(simLoopGoal);
-			if (achieverList.isRealisableAfterSetRoot(character)) {
-				achieverList.clear();
-				boolean result = achieverList.execute(new HashMap<>());
-				System.out.println("time :" + accumulator.get() + " : " + result + ":" + artifactGoalAchiever);
-			}
-		}
 		long end = System.currentTimeMillis();
-		System.out.println("Duree:" + (end - begin));
-
 	}
 
 	private static void simulateFight(StrategySimulatorListener simulatorListener,
 			SimulatorManagerImpl simulatorManager, BotCharacter character, GoalFactory simulatedGoalFactory) {
-		simulatorManager.getFightService()
-				.sethPRecovery(new HPRecoveryUseSimulator(simulatorManager.getCharacterDAOSimulator(),
-						simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
-		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory.createMonstersGoals(resp -> !resp.fight().isWin());
+		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory
+				.createMonstersGoals(resp -> !resp.fight().isWin());
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorListener
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
@@ -161,11 +180,12 @@ public class TestSimulation {
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorListener
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
-
+		GoalAverageOptimizer goalAverageOptimizer = new GoalAverageOptimizerImpl(
+				simulatorManager.getCharacterDAOSimulator());
 		for (ArtifactGoalAchiever simGoal : simGoals) {
 			boolean success = true;
 			accumulator.reset();
-			simulatedGoalFactory.getGoalAverageOptimizer().optimize(simGoal, 5, 0.9f);
+			goalAverageOptimizer.optimize(simGoal, 5, 0.9f);
 			try {
 				for (int i = 0; i < 100; i++) {
 					simulatorManager.setValue(character, viewItems);

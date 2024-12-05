@@ -15,11 +15,11 @@ import hydra.model.BotCraftSkill;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.TimeGoalAchiever;
 import strategy.achiever.TimeGoalAchiever.XpGetter;
-import strategy.achiever.factory.ArtifactGoalAchiever;
-import strategy.achiever.factory.GoalAchieverChoose.ChooseBehaviorSelector;
-import strategy.achiever.factory.GoalAchieverInfo.INFO_TYPE;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.MonsterGoalAchiever;
 import strategy.util.AverageTimeXpCalculator;
 import strategy.util.Bornes;
 import strategy.util.CharacterService;
@@ -56,7 +56,7 @@ public final class BalanceTimeStrategy implements Strategy {
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
 		monsterGoals = goalFactory.createMonstersGoals(resp -> resp.fight().getXp() == 0);
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false);
-		taskGoals = goalFactory.createTaskGoals(resp -> !resp.fight().isWin());
+		taskGoals = goalFactory.createTaskGoals();
 		timeGoalAchieverMap = new HashMap<>();
 		itemGoals.stream().forEach(ga -> {
 			timeGoalAchieverMap.put(goalFactory.getInfos(ga).getItemCode(),

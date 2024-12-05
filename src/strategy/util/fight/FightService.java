@@ -21,10 +21,5 @@ public interface FightService {
 
 	Map<String, OptimizeResult> optimizeEquipementsPossesed(List<BotMonster> monsters, Map<String, Integer> reservedItems);
 
-	boolean restoreHP(Map<String, Integer> reservedItems);
-
 	FightDetails calculateFightResult(BotMonster monster);
-
-	void sethPRecovery(HPRecovery hPRecovery);
-
 }

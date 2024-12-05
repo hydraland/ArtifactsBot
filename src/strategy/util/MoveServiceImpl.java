@@ -10,7 +10,7 @@ import hydra.dao.MapDAO;
 import hydra.model.BotBox;
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
-import strategy.achiever.factory.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.util.Coordinate;
 
 public class MoveServiceImpl implements MoveService {

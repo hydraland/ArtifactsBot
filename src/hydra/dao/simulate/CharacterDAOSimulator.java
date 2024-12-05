@@ -184,11 +184,10 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 	}
 
 	private void updateUtility(BotCharacterInventorySlot slot, FightDetails calculateFightResult, int hpBeforeFight) {
-		// TODO voir pour MaJ HP en fonction potion?
 		int utilityQuantity = characterService.getUtilitySlotQuantity(slot);
 		if (utilityQuantity > 0) {
 			BotItemDetails item = itemDAO.getItem(CharacterService.getSlotValue(botCharacter, slot));
-			Optional<BotItemEffect> effectRestore = item.getEffects().stream()
+			final Optional<BotItemEffect> effectRestore = item.getEffects().stream()
 					.filter(bie -> BotEffect.RESTORE.equals(bie.getName())).findAny();
 			int quantity;
 			if (effectRestore.isPresent()) {
@@ -196,6 +195,9 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 				quantity = calculateFightResult.characterHP() > halfHp ? 0
 						: Math.min(utilityQuantity, (int) (calculateFightResult.nbTurn()
 								* (halfHp - calculateFightResult.characterHP()) / hpBeforeFight));
+				if(calculateFightResult.eval() > 1) {
+					botCharacter.setHp(botCharacter.getHp() + quantity*effectRestore.get().getValue());
+				}
 			} else {
 				quantity = 1;
 			}
@@ -449,7 +451,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 	@Override
 	public RestResponse rest() {
 		int missingPV = botCharacter.getMaxHp() - botCharacter.getHp();
-		int cooldown = Math.min(missingPV / 5 + (missingPV % 5 == 0 ? 0 : 1), 3);
+		int cooldown = Math.max(missingPV / 5 + (missingPV % 5 == 0 ? 0 : 1), 3);
 		simulatorListener.call(CLASS_NAME, "rest", cooldown, false);
 		botCharacter.setHp(botCharacter.getMaxHp());
 		return new RestResponse(true, missingPV);

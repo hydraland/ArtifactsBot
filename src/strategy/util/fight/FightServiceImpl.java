@@ -43,7 +43,6 @@ public final class FightServiceImpl implements FightService {
 	private final BankDAO bankDao;
 	private final MoveService moveService;
 	private final ItemDAO itemDAO;
-	private HPRecovery hPRecovery;
 	private final CacheManager<String, OptimizeResult> optimizeCacheManager;
 	private final GameService gameService;
 
@@ -55,7 +54,6 @@ public final class FightServiceImpl implements FightService {
 		this.characterService = characterService;
 		this.moveService = moveService;
 		this.gameService = gameService;
-		this.hPRecovery = new HPRecoveryImpl(characterDao, itemDAO, characterService);
 		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600);
 	}
 
@@ -566,15 +564,5 @@ public final class FightServiceImpl implements FightService {
 			}
 		}
 		return true;
-	}
-
-	@Override
-	public boolean restoreHP(Map<String, Integer> reservedItems) {
-		return hPRecovery.restoreHP(reservedItems);
-	}
-
-	@Override
-	public final void sethPRecovery(HPRecovery hPRecovery) {
-		this.hPRecovery = hPRecovery;
 	}
 }

@@ -16,7 +16,10 @@ import hydra.model.BotCharacter;
 import hydra.model.BotItem;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.GoalFactory;
+import strategy.achiever.factory.util.GameService;
 import strategy.util.CharacterService;
+import strategy.util.MoveService;
+import strategy.util.fight.FightService;
 
 public interface SimulatorManager {
 
@@ -51,4 +54,10 @@ public interface SimulatorManager {
 	MapDAO getMapDAOSimulator();
 
 	CharacterService getCharacterServiceSimulator();
+
+	FightService getFightService();
+
+	MoveService getMoveService();
+
+	GameService getGameService();
 }
