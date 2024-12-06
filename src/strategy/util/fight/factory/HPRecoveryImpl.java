@@ -41,7 +41,7 @@ public class HPRecoveryImpl implements HPRecovery {
 			int singleHeal = healItem.itemDetails().getEffects().stream()
 					.filter(bie -> BotEffect.HEAL.equals(bie.getName())).findFirst().get().getValue();
 			int quantity;
-			if (singleHeal * healItem.quantity() < hpToHeal) {
+			if (singleHeal * healItem.quantity() <= hpToHeal) {
 				quantity = healItem.quantity();
 			} else {
 				quantity = hpToHeal / singleHeal + 1;

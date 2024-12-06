@@ -56,7 +56,7 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 		for (RestoreStruct healItem : healItems) {
 			int singleHeal = getHealValue(healItem);
 			int quantity;
-			if (singleHeal * healItem.quantity() < hpToHeal) {
+			if (singleHeal * healItem.quantity() <= hpToHeal) {
 				quantity = healItem.quantity();
 			} else {
 				quantity = hpToHeal / singleHeal + 1;
@@ -110,7 +110,7 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 		for (RestoreStruct healItem : healItems) {
 			int singleHeal = getHealValue(healItem);
 			int quantity;
-			if (singleHeal * healItem.quantity() < hpToHeal) {
+			if (singleHeal * healItem.quantity() <= hpToHeal) {
 				quantity = healItem.quantity();
 			} else {
 				quantity = hpToHeal / singleHeal + 1;

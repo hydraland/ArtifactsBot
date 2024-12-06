@@ -56,12 +56,15 @@ public class TestSimulation {
 		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
 
+		character.setX(0);
+		character.setY(-2);
+		simulatorManager.getCharacterDAOSimulator().fight();
 		// simulateCrafting(simulatorListener, simulatorManager, character,
 		// simulatedGoalFactory);
 		// simulateFight(simulatorListener, simulatorManager, character,
 		// simulatedGoalFactory);
 
-		simulateCookingAndFight(simulatorListener, simulatorManager, character, simulatedGoalFactory, goalParameter);
+		//simulateCookingAndFight(simulatorListener, simulatorManager, character, simulatedGoalFactory, goalParameter);
 	}
 
 	private static void simulateCookingAndFight(StrategySimulatorListener simulatorListener,
