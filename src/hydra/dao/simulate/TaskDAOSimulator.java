@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
+import java.util.SplittableRandom;
 
 import hydra.GameConstants;
 import hydra.dao.MapDAO;
@@ -19,6 +19,7 @@ import hydra.model.BotBox;
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import hydra.model.BotResourceSkill;
 import hydra.model.BotRewardDetail;
 import hydra.model.BotRewards;
@@ -34,7 +35,7 @@ public final class TaskDAOSimulator implements TaskDAO, Simulator<TaskStruct> {
 	private final FilteredInnerCallSimulatorListener simulatorListener;
 	private final ByteArrayOutputStream memoryStream;
 	private final CharacterDAOSimulator characterDAOSimulator;
-	private final Random random;
+	private final SplittableRandom random;
 	private final MapDAO mapDAO;
 
 	public TaskDAOSimulator(FilteredInnerCallSimulatorListener simulatorListener,
@@ -43,7 +44,7 @@ public final class TaskDAOSimulator implements TaskDAO, Simulator<TaskStruct> {
 		this.characterDAOSimulator = characterDAOSimulator;
 		this.mapDAO = mapDAO;
 		memoryStream = new ByteArrayOutputStream();
-		this.random = new Random();
+		this.random = new SplittableRandom();
 	}
 
 	@Override
@@ -147,7 +148,7 @@ public final class TaskDAOSimulator implements TaskDAO, Simulator<TaskStruct> {
 			botRewards.setItems(items);
 
 			characterDAOSimulator.save(false);
-			for (BotItem itemReceived : items) {
+			for (BotItemReader itemReceived : items) {
 				if (characterDAOSimulator.checkDepositInInventory(itemReceived.getCode(), itemReceived.getQuantity())) {
 					characterDAOSimulator.depositInInventory(itemReceived.getCode(), itemReceived.getQuantity());
 				} else {

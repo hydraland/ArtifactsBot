@@ -10,8 +10,9 @@ import hydra.dao.MapDAO;
 import hydra.model.BotBox;
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import hydra.model.BotInventoryItem;
 import strategy.achiever.factory.util.Coordinate;
+import strategy.achiever.factory.util.ItemService;
 
 public class MoveServiceImpl implements MoveService {
 
@@ -19,9 +20,14 @@ public class MoveServiceImpl implements MoveService {
 	private List<Coordinate> bankLocation;
 	private List<Coordinate> grandExchangesLocation;
 	private Map<BotCraftSkill, List<Coordinate>> workshopLocation;
+	private final CharacterService characterService;
+	private final ItemService itemService;
 
-	public MoveServiceImpl(CharacterDAO characterDAO, MapDAO mapDAO) {
+	public MoveServiceImpl(CharacterDAO characterDAO, MapDAO mapDAO, CharacterService characterService,
+			ItemService itemService) {
 		this.characterDAO = characterDAO;
+		this.characterService = characterService;
+		this.itemService = itemService;
 		initBankLocation(mapDAO);
 		initGrandExchangesLocation(mapDAO);
 		initWorksShopsLocation(mapDAO);
@@ -74,8 +80,29 @@ public class MoveServiceImpl implements MoveService {
 		BotCharacter character = characterDAO.getCharacter();
 		int x = character.getX();
 		int y = character.getY();
-		Coordinate coordinate = ArtifactGoalAchiever.searchClosestLocation(x, y, coordinates);
-		return (x == coordinate.x() && y == coordinate.y())
-				|| characterDAO.move(coordinate.x(), coordinate.y()).ok();
+		List<BotInventoryItem> teleportItems = characterService
+				.getFilterEquipementInInventory(itemService.getAllTeleportItemCode(), "");
+		Coordinate coordinate = MoveService.searchClosestLocation(x, y, coordinates);
+		int minDistance = MoveService.calculManhattanDistance(x, y, coordinate.x(), coordinate.y());
+		BotInventoryItem useItem = null;
+		for (BotInventoryItem teleportItem : teleportItems) {
+			Coordinate coord = itemService.getTeleportItemValue(teleportItem.getCode());
+			int distance = MoveService.calculManhattanDistance(coord.x(), coord.y(), coordinate.x(), coordinate.y());
+			if (distance < minDistance) {
+				useItem = teleportItem;
+				minDistance = distance;
+			}
+		}
+
+		if (useItem != null) {
+			if(!characterDAO.use(useItem).ok()) {
+				return false;
+			}
+			character = characterDAO.getCharacter();
+			x = character.getX();
+			y = character.getY();
+		}
+		
+		return (x == coordinate.x() && y == coordinate.y()) || characterDAO.move(coordinate.x(), coordinate.y()).ok();
 	}
 }

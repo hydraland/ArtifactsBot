@@ -23,9 +23,10 @@ import hydra.model.BotEffect;
 import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import hydra.model.BotItemType;
 import hydra.model.BotMonster;
-import strategy.achiever.factory.util.GameService;
+import strategy.achiever.factory.util.ItemService;
 import strategy.util.BotItemInfo;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
@@ -43,11 +44,11 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 	private final BankDAO bankDAO;
 	private final MoveService moveService;
 	private final GrandExchangeDAO grandExchangeDAO;
-	private final GameService gameService;
+	private final ItemService itemService;
 
 	public UselessEquipmentManagerGoalAchiever(CharacterDAO characterDAO, ItemDAO itemDAO, BankDAO bankDAO,
 			GrandExchangeDAO grandExchangeDAO, FightService fightService, List<BotMonster> botMonsters,
-			MoveService moveService, GameService gameService, CharacterService characterService) {
+			MoveService moveService, ItemService itemService, CharacterService characterService) {
 		super(characterService);
 		this.characterDAO = characterDAO;
 		this.itemDAO = itemDAO;
@@ -56,7 +57,7 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 		this.fightService = fightService;
 		this.monsters = botMonsters;
 		this.moveService = moveService;
-		this.gameService = gameService;
+		this.itemService = itemService;
 		oldCall = 0;
 	}
 
@@ -73,12 +74,12 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 		Set<String> useEquipments = searchUsefulItems();
 
 		// Parcourt des items et rechercher les inutiles
-		Map<BotCraftSkill, List<BotItem>> uselessItemsToRecycle = new EnumMap<>(BotCraftSkill.class);
-		List<BotItem> deleteItems = new ArrayList<>();
-		List<BotItem> sellItems = new ArrayList<>();
+		Map<BotCraftSkill, List<BotItemReader>> uselessItemsToRecycle = new EnumMap<>(BotCraftSkill.class);
+		List<BotItemReader> deleteItems = new ArrayList<>();
+		List<BotItemReader> sellItems = new ArrayList<>();
 		BotCharacter character = characterDAO.getCharacter();
-		List<BotItem> inventoryItemList = characterService.getInventoryIgnoreEmpty().stream()
-				.<BotItem>map(this::botInventoryItemToBotItem).toList();
+		List<? extends BotItemReader> inventoryItemList = characterService.getInventoryIgnoreEmpty().stream()
+				.<BotItemReader>map(this::botInventoryItemToBotItem).toList();
 		searchUselessItem(useEquipments, uselessItemsToRecycle, deleteItems, sellItems, inventoryItemList,
 				character.getGold(), GameConstants.MAX_INVENTORY_SLOT);
 
@@ -110,7 +111,7 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 			if (characterService.isInventorySlotFull() || !withdrawItems(deleteItems)) {
 				return false;
 			}
-			for (List<BotItem> botItems : uselessItemsToRecycle.values()) {
+			for (List<BotItemReader> botItems : uselessItemsToRecycle.values()) {
 				if (characterService.isInventorySlotFull() || !withdrawItems(botItems)) {
 					return false;
 				}
@@ -138,12 +139,12 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 		return true;
 	}
 
-	private boolean sellItems(List<BotItem> sellItems) {
+	private boolean sellItems(List<BotItemReader> sellItems) {
 		if (!sellItems.isEmpty()) {
 			if (!moveService.moveToGrandEchange()) {
 				return false;
 			}
-			for (BotItem botItem : sellItems) {
+			for (BotItemReader botItem : sellItems) {
 				if (!grandExchangeDAO.sell(botItem,
 						grandExchangeDAO.estimateItemPrice(botItem.getCode(), characterDAO.getCharacter().getGold()))) {
 					return false;
@@ -158,10 +159,10 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 		// add tools and item with effect INVENTORY_SPACE
 		useEquipments
 				.addAll(characterService.getInventoryIgnoreEmpty().stream().map(bii -> itemDAO.getItem(bii.getCode()))
-						.filter(bid -> gameService.isTools(bid.getCode()) || addInventorySpace(bid))
+						.filter(bid -> itemService.isTools(bid.getCode()) || addInventorySpace(bid))
 						.map(bid -> bid.getCode()).toList());
 		useEquipments.addAll(bankDAO.viewItems().stream().map(bii -> itemDAO.getItem(bii.getCode()))
-				.filter(bid -> gameService.isTools(bid.getCode()) || addInventorySpace(bid)).map(bid -> bid.getCode())
+				.filter(bid -> itemService.isTools(bid.getCode()) || addInventorySpace(bid)).map(bid -> bid.getCode())
 				.toList());
 
 		Map<String, OptimizeResult> optimizeEquipementsPossesed = fightService.optimizeEquipementsPossesed(monsters,
@@ -183,13 +184,13 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 				.anyMatch(bie -> BotEffect.INVENTORY_SPACE.equals(bie.getName()) && bie.getValue() > 0);
 	}
 
-	private boolean recycleItems(Map<BotCraftSkill, List<BotItem>> uselessItemsToRecycle) {
-		for (Entry<BotCraftSkill, List<BotItem>> entry : uselessItemsToRecycle.entrySet()) {
-			List<BotItem> botItems = entry.getValue();
+	private boolean recycleItems(Map<BotCraftSkill, List<BotItemReader>> uselessItemsToRecycle) {
+		for (Entry<BotCraftSkill, List<BotItemReader>> entry : uselessItemsToRecycle.entrySet()) {
+			List<BotItemReader> botItems = entry.getValue();
 			if (!moveService.moveTo(entry.getKey())) {
 				return false;
 			}
-			for (BotItem botItem : botItems) {
+			for (BotItemReader botItem : botItems) {
 				if (!characterDAO.recycle(botItem).ok()) {
 					return false;
 				}
@@ -198,8 +199,8 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 		return true;
 	}
 
-	private boolean deleteItems(List<BotItem> deleteItems) {
-		for (BotItem botItem : deleteItems) {
+	private boolean deleteItems(List<BotItemReader> deleteItems) {
+		for (BotItemReader botItem : deleteItems) {
 			if (!characterDAO.deleteItem(botItem).ok()) {
 				return false;
 			}
@@ -207,8 +208,8 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 		return true;
 	}
 
-	private boolean withdrawItems(List<BotItem> deleteItems) {
-		for (BotItem botItem : deleteItems) {
+	private boolean withdrawItems(List<BotItemReader> deleteItems) {
+		for (BotItemReader botItem : deleteItems) {
 			if (!bankDAO.withdraw(botItem)) {
 				return false;
 			}
@@ -216,11 +217,11 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 		return true;
 	}
 
-	private void searchUselessItem(Set<String> useEquipments, Map<BotCraftSkill, List<BotItem>> uselessItemsToRecycle,
-			List<BotItem> deleteItems, List<BotItem> sellItems, List<BotItem> itemList, int characterGold, long maxItems) {
+	private void searchUselessItem(Set<String> useEquipments, Map<BotCraftSkill, List<BotItemReader>> uselessItemsToRecycle,
+			List<BotItemReader> deleteItems, List<BotItemReader> sellItems, List<? extends BotItemReader> itemList, int characterGold, long maxItems) {
 		boolean sellPossible = grandExchangeDAO.isSellPossible() && characterGold > SELL_MIN_CHARACTER_GOLD;
 		int itemCounter = 0;
-		for (BotItem botItem : itemList) {
+		for (BotItemReader botItem : itemList) {
 			if(itemCounter == maxItems) {
 				break;
 			}
@@ -238,7 +239,7 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 						deleteItems.add(botItem);
 					}
 				} else {
-					List<BotItem> botItems = uselessItemsToRecycle.computeIfAbsent(botItemDetail.getCraft().getSkill(),
+					List<BotItemReader> botItems = uselessItemsToRecycle.computeIfAbsent(botItemDetail.getCraft().getSkill(),
 							k -> new ArrayList<>());
 					botItems.add(botItem);
 				}

@@ -20,7 +20,7 @@ import hydra.model.BotEffect;
 import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
 import hydra.model.BotMonster;
-import strategy.achiever.factory.util.GameService;
+import strategy.achiever.factory.util.ItemService;
 import strategy.util.BotItemInfo;
 import strategy.util.CharacterService;
 import strategy.util.ItemOrigin;
@@ -44,16 +44,16 @@ public final class FightServiceImpl implements FightService {
 	private final MoveService moveService;
 	private final ItemDAO itemDAO;
 	private final CacheManager<String, OptimizeResult> optimizeCacheManager;
-	private final GameService gameService;
+	private final ItemService itemService;
 
 	public FightServiceImpl(CharacterDAO characterDao, BankDAO bankDao, ItemDAO itemDAO,
-			CharacterService characterService, MoveService moveService, GameService gameService) {
+			CharacterService characterService, MoveService moveService, ItemService itemService) {
 		this.characterDao = characterDao;
 		this.bankDao = bankDao;
 		this.itemDAO = itemDAO;
 		this.characterService = characterService;
 		this.moveService = moveService;
-		this.gameService = gameService;
+		this.itemService = itemService;
 		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600);
 	}
 
@@ -87,7 +87,7 @@ public final class FightServiceImpl implements FightService {
 			Map<String, Integer> reservedItems) {
 		Map<String, Integer> ignoreItems = new HashMap<>(reservedItems);
 		// On ignore les tools, ne sont pas fait pour le combat
-		addIgnoreItems(ignoreItems, gameService.getToolsCode());
+		addIgnoreItems(ignoreItems, itemService.getToolsCode());
 		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = characterService
 				.getEquipableCharacterEquipement(ignoreItems);
 		// On ignore les équipements que l'on a dans l'inventaire ou sur le perso avec

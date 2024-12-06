@@ -12,8 +12,8 @@ import hydra.dao.response.UseResponse;
 import hydra.model.BotCharacter;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import util.EventListener;
 
 public interface CharacterDAO {
@@ -22,7 +22,7 @@ public interface CharacterDAO {
 
 	FightResponse fight();
 
-	DeleteItemResponse deleteItem(BotItem item);
+	DeleteItemResponse deleteItem(BotItemReader item);
 
 	default EquipResponse equip(BotInventoryItem item, BotCharacterInventorySlot slot, int quantity) {
 		return equip(item.getCode(), slot, quantity);
@@ -32,7 +32,7 @@ public interface CharacterDAO {
 		return equip(item.getCode(), slot, quantity);
 	}
 
-	default EquipResponse equip(BotItem item, BotCharacterInventorySlot slot, int quantity) {
+	default EquipResponse equip(BotItemReader item, BotCharacterInventorySlot slot, int quantity) {
 		return equip(item.getCode(), slot, quantity);
 	}
 
@@ -40,7 +40,7 @@ public interface CharacterDAO {
 
 	CraftResponse craft(String code, int quantity);
 
-	default RecycleResponse recycle(BotItem item) {
+	default RecycleResponse recycle(BotItemReader item) {
 		return recycle(item.getCode(), item.getQuantity());
 	}
 
@@ -60,7 +60,7 @@ public interface CharacterDAO {
 
 	UseResponse use(String code, int quantity);
 
-	default UseResponse use(BotItem item) {
+	default UseResponse use(BotItemReader item) {
 		return use(item.getCode(), item.getQuantity());
 	}
 

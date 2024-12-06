@@ -39,6 +39,7 @@ import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotFight;
 import hydra.model.BotGatheringDetails;
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import hydra.model.BotRecycleDetails;
 import strategy.achiever.Interruptor;
 import util.EventListener;
@@ -311,7 +312,7 @@ public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 	}
 
 	@Override
-	public DeleteItemResponse deleteItem(BotItem item) {
+	public DeleteItemResponse deleteItem(BotItemReader item) {
 		cooldownManager.waitBeforeNextAction();
 		try {
 			SimpleItemSchema simpleItemSchema = new SimpleItemSchema();

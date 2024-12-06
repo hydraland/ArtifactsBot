@@ -10,9 +10,10 @@ import hydra.model.BotCharacter;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
-import strategy.achiever.factory.util.GameService;
+import strategy.achiever.factory.util.ItemService;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
@@ -22,19 +23,19 @@ public final class EquipToolGoalAchiever implements GoalAchiever {
 	private final CharacterDAO characterDao;
 	private final BankDAO bankDAO;
 	private final BotResourceSkill resourceSkill;
-	private final GameService gameService;
+	private final ItemService itemService;
 	private BotInventoryItem inventoryItem;
 	private String bankCode;
 	private final MoveService moveService;
 	private final CharacterService characterService;
 
 	public EquipToolGoalAchiever(CharacterDAO characterDAO, BankDAO bankDAO, MoveService moveService,
-			CharacterService characterService, GameService gameService, BotResourceSkill resourceSkill) {
+			CharacterService characterService, ItemService itemService, BotResourceSkill resourceSkill) {
 		this.characterDao = characterDAO;
 		this.bankDAO = bankDAO;
 		this.moveService = moveService;
 		this.characterService = characterService;
-		this.gameService = gameService;
+		this.itemService = itemService;
 		this.resourceSkill = resourceSkill;
 	}
 
@@ -50,17 +51,17 @@ public final class EquipToolGoalAchiever implements GoalAchiever {
 		bankCode = null;
 		for (BotInventoryItem currentInventoryItem : characterService.getInventoryIgnoreEmpty()) {
 			String code = currentInventoryItem.getCode();
-			if (gameService.isTools(code, resourceSkill) && gameService.getToolValue(code) < cooldownReduction) {
+			if (itemService.isTools(code, resourceSkill) && itemService.getToolValue(code) < cooldownReduction) {
 				inventoryItem = currentInventoryItem;
-				cooldownReduction = gameService.getToolValue(code);
+				cooldownReduction = itemService.getToolValue(code);
 			}
 		}
-		for (BotItem item : bankDAO.viewItems()) {
+		for (BotItemReader item : bankDAO.viewItems()) {
 			String code = item.getCode();
-			if (gameService.isTools(code, resourceSkill) && gameService.getToolValue(code) < cooldownReduction) {
+			if (itemService.isTools(code, resourceSkill) && itemService.getToolValue(code) < cooldownReduction) {
 				bankCode = code;
 				inventoryItem = null;
-				cooldownReduction = gameService.getToolValue(code);
+				cooldownReduction = itemService.getToolValue(code);
 			}
 		}
 	}
@@ -73,8 +74,8 @@ public final class EquipToolGoalAchiever implements GoalAchiever {
 				return false;// On n'a rien à équiper
 			}
 			BotCharacterInventorySlot slot = inventoryItem != null
-					? GameService.typeToSlot(gameService.getToolType(inventoryItem.getCode()))
-					: GameService.typeToSlot(gameService.getToolType(bankCode));
+					? ItemService.typeToSlot(itemService.getToolType(inventoryItem.getCode()))
+					: ItemService.typeToSlot(itemService.getToolType(bankCode));
 			BotCharacter character = characterDao.getCharacter();
 			if ((inventoryItem != null
 					&& CharacterService.getSlotValue(character, slot).equals(inventoryItem.getCode()))

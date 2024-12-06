@@ -13,8 +13,8 @@ import hydra.GameConstants;
 import hydra.dao.ItemDAO;
 import hydra.dao.response.UseInCraftResponse;
 import hydra.model.BotCraftSkill;
-import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import hydra.model.BotItemType;
 import util.LimitedTimeCacheManager;
 
@@ -102,7 +102,7 @@ public final class ItemDAOSimulator implements ItemDAO, Simulator<List<BotItemDe
 		UseInCraftResponse trueResponse = new UseInCraftResponse(false, true);
 		for (BotItemDetails item : items) {
 			if (item.getCraft() != null) {
-				for (BotItem craftItem : item.getCraft().getItems()) {
+				for (BotItemReader craftItem : item.getCraft().getItems()) {
 					useInCraftMap.put(craftItem.getCode(), trueResponse);
 				}
 			}

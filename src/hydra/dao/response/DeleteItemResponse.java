@@ -1,6 +1,6 @@
 package hydra.dao.response;
 
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 
-public record DeleteItemResponse(boolean ok, BotItem item) {
+public record DeleteItemResponse(boolean ok, BotItemReader item) {
 }

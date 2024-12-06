@@ -15,8 +15,8 @@ import hydra.dao.CharacterDAO;
 import hydra.dao.ItemDAO;
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
-import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import strategy.util.CharacterService;
 import strategy.util.GraphProcessor;
 import strategy.util.MoveService;
@@ -52,10 +52,10 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 
 	@Override
 	public boolean execute() {
-		List<BotItem> uselessItems = new ArrayList<>();
-		List<BotItem> resourceInBank = bankDAO.viewItems().stream().filter(bi -> resourceItems.contains(bi.getCode()))
-				.toList();
-		for (BotItem botItem : resourceInBank) {
+		List<BotItemReader> uselessItems = new ArrayList<>();
+		List<? extends BotItemReader> resourceInBank = bankDAO.viewItems().stream()
+				.filter(bi -> resourceItems.contains(bi.getCode())).toList();
+		for (BotItemReader botItem : resourceInBank) {
 			Map<BotCraftSkill, Integer> result = cache.computeIfAbsent(botItem.getCode(),
 					code -> resourceGraph.process(code, new SkillLevelProcessor()));
 			if (isUseless(result)) {
@@ -65,7 +65,7 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 
 		if (!uselessItems.isEmpty()) {
 			if (moveService.moveToBank()) {
-				for (BotItem uselessItem : uselessItems) {
+				for (BotItemReader uselessItem : uselessItems) {
 					if (!bankDAO.withdraw(uselessItem)) {
 						return false;
 					}

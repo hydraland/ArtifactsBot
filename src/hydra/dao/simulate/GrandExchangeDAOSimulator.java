@@ -6,7 +6,7 @@ import java.util.Collections;
 
 import hydra.dao.GrandExchangeDAO;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 
 public final class GrandExchangeDAOSimulator implements GrandExchangeDAO, Simulator<GrandExchangeStruct> {
 
@@ -30,7 +30,7 @@ public final class GrandExchangeDAOSimulator implements GrandExchangeDAO, Simula
 	}
 
 	@Override
-	public boolean sell(BotItem sellItem, int price) {
+	public boolean sell(BotItemReader sellItem, int price) {
 		return sell(sellItem.getCode(), sellItem.getQuantity());
 	}
 

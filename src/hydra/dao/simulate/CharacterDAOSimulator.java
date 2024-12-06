@@ -2,16 +2,15 @@ package hydra.dao.simulate;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
+import java.util.SplittableRandom;
 import java.util.function.IntUnaryOperator;
 
 import hydra.GameConstants;
-import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
 import hydra.dao.ItemDAO;
 import hydra.dao.MapDAO;
@@ -38,19 +37,23 @@ import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemEffect;
+import hydra.model.BotItemReader;
 import hydra.model.BotMonster;
 import hydra.model.BotRecycleDetails;
 import hydra.model.BotResource;
-import strategy.achiever.factory.util.GameService;
-import strategy.achiever.factory.util.GameServiceImpl;
+import strategy.achiever.factory.util.Coordinate;
+import strategy.achiever.factory.util.ItemService;
+import strategy.achiever.factory.util.ItemServiceImpl;
 import strategy.util.CharacterService;
 import strategy.util.CharacterServiceImpl;
 import strategy.util.MoveService;
 import strategy.util.fight.FightDetails;
 import strategy.util.fight.FightService;
 import strategy.util.fight.FightServiceImpl;
+import util.CacheManager;
 import util.EventListener;
 import util.ListenerAdapter;
+import util.PermanentCacheManager;
 
 public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotCharacter> {
 
@@ -72,10 +75,12 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 	private final MapDAO mapDAO;
 	private final FightService fightService;
 	private final MonsterDAO monsterDAO;
-	private final Random random;
+	private final SplittableRandom random;
 	private final ByteArrayOutputStream memoryStream;
 	private final ResourceDAO resourceDAO;
 	private final ListenerAdapter<String> listenerAdapter;
+	private final CacheManager<String, Optional<BotBox>> monsterBoxCache;
+	private ItemService itemService;
 
 	// TODO prendre en compte l'interruption
 	public CharacterDAOSimulator(FilteredInnerCallSimulatorListener simulatorListener, ItemDAO itemDAO, MapDAO mapDAO,
@@ -87,17 +92,11 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		this.resourceDAO = resourceDAO;
 		this.characterService = new FilteredCallCharacterService(simulatorListener,
 				new CharacterServiceImpl(this, itemDAO));
-		MoveService fictifMoveService = (MoveService) Proxy.newProxyInstance(MoveService.class.getClassLoader(),
-				new Class<?>[] { MoveService.class }, (proxy, method, args) -> null);
-		BankDAO fictifBankDAO = (BankDAO) Proxy.newProxyInstance(BankDAO.class.getClassLoader(),
-				new Class<?>[] { BankDAO.class }, (proxy, method, args) -> null);
-		GameService fictifGameService = (GameService) Proxy.newProxyInstance(GameService.class.getClassLoader(),
-				new Class<?>[] { GameService.class }, (proxy, method, args) -> null);
-		this.fightService = new FightServiceImpl(this, fictifBankDAO, itemDAO, characterService, fictifMoveService,
-				fictifGameService);
-		this.random = new Random();
+		this.fightService = new FightServiceImpl(this, null, itemDAO, characterService, null, null);
+		this.random = new SplittableRandom();
 		memoryStream = new ByteArrayOutputStream();
 		this.listenerAdapter = new ListenerAdapter<>();
+		this.monsterBoxCache = new PermanentCacheManager<>();
 	}
 
 	@Override
@@ -127,8 +126,15 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 	public FightResponse fight() {
 		// Déterminer quel monstre est sur la case
 		simulatorListener.startInnerCall();
-		Optional<BotBox> searchBoxMonster = mapDAO.getMonstersBox().stream()
-				.filter(bb -> bb.getX() == botCharacter.getX() && bb.getY() == botCharacter.getY()).findFirst();
+		Optional<BotBox> searchBoxMonster;
+		String key = botCharacter.getX() + ":" + botCharacter.getY();
+		if (monsterBoxCache.contains(key)) {
+			searchBoxMonster = monsterBoxCache.get(key);
+		} else {
+			searchBoxMonster = mapDAO.getMonstersBox().stream()
+					.filter(bb -> bb.getX() == botCharacter.getX() && bb.getY() == botCharacter.getY()).findFirst();
+			monsterBoxCache.add(key, searchBoxMonster);
+		}
 		simulatorListener.stopInnerCall();
 		if (searchBoxMonster.isEmpty()) {
 			simulatorListener.call(CLASS_NAME, FIGHT, 0, true);
@@ -169,6 +175,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 				botCharacter.setTaskProgress(botCharacter.getTaskProgress() + 1);
 			}
 		} else {
+			botFight.setDrops(Collections.emptyList());
 			botCharacter.setHp(1);
 			botCharacter.setX(0);
 			botCharacter.setY(0);
@@ -195,8 +202,8 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 				quantity = calculateFightResult.characterHP() > halfHp ? 0
 						: Math.min(utilityQuantity, (int) (calculateFightResult.nbTurn()
 								* (halfHp - calculateFightResult.characterHP()) / hpBeforeFight));
-				if(calculateFightResult.eval() > 1) {
-					botCharacter.setHp(botCharacter.getHp() + quantity*effectRestore.get().getValue());
+				if (calculateFightResult.eval() > 1) {
+					botCharacter.setHp(botCharacter.getHp() + quantity * effectRestore.get().getValue());
 				}
 			} else {
 				quantity = 1;
@@ -224,7 +231,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		for (int i = 0; i < quantity; i++) {
 			// On fait le mininum
 			int indexItemChoosed = random.nextInt(items.size());
-			BotItem item = items.get(indexItemChoosed);
+			BotItemReader item = items.get(indexItemChoosed);
 			int nbReceived = Math.min(item.getQuantity() / 3, 1);
 			Optional<BotItem> searchItemInResult = result.stream().filter(bi -> bi.getCode().equals(item.getCode()))
 					.findFirst();
@@ -250,7 +257,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 
 			save(false);
 			withdrawInInventory(code, quantity);
-			for (BotItem itemReceived : botRecycleDetails.getItems()) {
+			for (BotItemReader itemReceived : botRecycleDetails.getItems()) {
 				if (checkDepositInInventory(itemReceived.getCode(), itemReceived.getQuantity())) {
 					depositInInventory(itemReceived.getCode(), itemReceived.getQuantity());
 				} else {
@@ -297,7 +304,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		}
 
 		BotGatheringDetails botGatheringDetails = new BotGatheringDetails();
-		botGatheringDetails.setItems(drops.stream().<BotItem>map(bdr -> {
+		botGatheringDetails.setItems(drops.stream().<BotItemReader>map(bdr -> {
 			BotItem item = new BotItem();
 			item.setCode(bdr.getCode());
 			item.setQuantity(bdr.getQuantity());
@@ -306,19 +313,17 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		// On met une valeur arbitraire ppur le moment
 		botGatheringDetails.setXp((characterService.getLevel(resource.getSkill())
 				- resource.getLevel()) > GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP ? 0 : 13);
-		simulatorListener.startInnerCall();
-		GameService gameService = new GameServiceImpl(itemDAO);
-		simulatorListener.stopInnerCall();
+		initItemService();
 		int cooldown = 25 - Math.round((characterService.getLevel(resource.getSkill()) - resource.getLevel() + 1) / 10f)
-				+ (gameService.isTools(botCharacter.getWeaponSlot(), resource.getSkill())
-						? Math.round(gameService.getToolValue(botCharacter.getWeaponSlot()) * 0.25f)
+				+ (itemService.isTools(botCharacter.getWeaponSlot(), resource.getSkill())
+						? Math.round(itemService.getToolValue(botCharacter.getWeaponSlot()) * 0.25f)
 						: 0);
 		simulatorListener.call(CLASS_NAME, COLLECT, cooldown, false);
 		return new GatheringResponse(true, botGatheringDetails, false);
 	}
 
 	@Override
-	public DeleteItemResponse deleteItem(BotItem item) {
+	public DeleteItemResponse deleteItem(BotItemReader item) {
 		if (checkWithdrawInInventory(item.getCode(), item.getQuantity())) {
 			withdrawInInventory(item.getCode(), item.getQuantity());
 			simulatorListener.call(CLASS_NAME, "deleteItem", 3, false);
@@ -421,7 +426,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		save(false);
 		BotItemDetails item = getItem(code);
 		if (item.getCraft() != null) {
-			for (BotItem sourceItem : item.getCraft().getItems()) {
+			for (BotItemReader sourceItem : item.getCraft().getItems()) {
 				if (checkWithdrawInInventory(sourceItem.getCode(), sourceItem.getQuantity() * quantity)) {
 					withdrawInInventory(sourceItem.getCode(), sourceItem.getQuantity() * quantity);
 				} else {
@@ -459,6 +464,20 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 
 	@Override
 	public UseResponse use(String code, int quantity) {
+		initItemService();
+		if (itemService.isTeleportItem(code)) {
+			if (checkWithdrawInInventory(code, quantity)) {
+				simulatorListener.call(CLASS_NAME, "use", 3, false);
+				Coordinate coordinate = itemService.getTeleportItemValue(code);
+				botCharacter.setX(coordinate.x());
+				botCharacter.setY(coordinate.y());
+				withdrawInInventory(code, quantity);
+				return new UseResponse(true);
+			}
+			simulatorListener.call(CLASS_NAME, "use", 0, false);
+			return new UseResponse(false);
+		}
+
 		int restoreValue = getRestoreValue(code) * quantity;
 		if (checkWithdrawInInventory(code, quantity) && restoreValue > 0) {
 			simulatorListener.call(CLASS_NAME, "use", 3, false);
@@ -613,6 +632,14 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		try {
 			return itemDAO.getItem(code);
 		} finally {
+			simulatorListener.stopInnerCall();
+		}
+	}
+
+	private void initItemService() {
+		if (itemService == null) {
+			simulatorListener.startInnerCall();
+			itemService = new ItemServiceImpl(itemDAO);
 			simulatorListener.stopInnerCall();
 		}
 	}

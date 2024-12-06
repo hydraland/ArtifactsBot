@@ -33,8 +33,8 @@ import hydra.dao.util.CharacterCache;
 import hydra.dao.util.CharacterCacheImpl;
 import hydra.dao.util.CooldownManagerImpl;
 import strategy.achiever.GoalInterruptor;
-import strategy.achiever.factory.util.GameService;
-import strategy.achiever.factory.util.GameServiceImpl;
+import strategy.achiever.factory.util.ItemService;
+import strategy.achiever.factory.util.ItemServiceImpl;
 import strategy.util.BankRecorder;
 import strategy.util.BankRecorderImpl;
 import strategy.util.CharacterService;
@@ -56,7 +56,7 @@ public abstract class Bot {
 	protected final BankDAO bankDao;
 	protected final TaskDAO taskDao;
 	protected final BankRecorder bankRecorder;
-	protected final GameService gameService;
+	protected final ItemService itemService;
 	protected final CharacterCache characterCache;
 	private final ApiClient apiClient;
 	protected final CharacterService characterService;
@@ -93,7 +93,7 @@ public abstract class Bot {
 		interruptor = new GoalInterruptor();
 		characterDao = new CharacterDAOImpl(apiClient, persoName, cooldownManager, characterCache, interruptor);
 		itemDao = new ItemDAOImpl(apiClient);
-		gameService = new GameServiceImpl(itemDao);
+		itemService = new ItemServiceImpl(itemDao);
 		mapDao = new MapDAOImpl(apiClient);
 		monsterDao = new MonsterDAOImpl(apiClient);
 		resourceDAO = new ResourceDAOImpl(apiClient);
@@ -102,7 +102,7 @@ public abstract class Bot {
 		taskDao = new TaskDAOImpl(apiClient, persoName, cooldownManager, characterCache);
 		eventsDao = new EventsDAOImpl(apiClient);
 		characterService = new CharacterServiceImpl(characterDao, itemDao);
-		moveService = new MoveServiceImpl(characterDao, mapDao);
+		moveService = new MoveServiceImpl(characterDao, mapDao, characterService, itemService);
 	}
 
 	protected abstract void run();

@@ -3,14 +3,15 @@ package strategy.util;
 import java.util.List;
 
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 
 public interface BankRecorder {
 
 	void putItem(BotItem item);
 
-	BotItem remove(BotItem botItem);
+	BotItemReader remove(BotItemReader botItem);
 
-	List<BotItem> viewItems();
+	List<? extends BotItemReader> viewItems();
 	
-	BotItem getItem(String code);
+	BotItemReader getItem(String code);
 }

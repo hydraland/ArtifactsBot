@@ -18,7 +18,7 @@ import hydra.dao.util.CharacterCache;
 import hydra.dao.util.CooldownManager;
 import hydra.model.BotCharacter;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import util.CacheManager;
 import util.LimitedTimeCacheManager;
 
@@ -87,7 +87,7 @@ public class GrandExchangeDAOImpl extends AbstractDAO implements GrandExchangeDA
 	}
 
 	@Override
-	public boolean sell(BotItem sellItem, int price) {
+	public boolean sell(BotItemReader sellItem, int price) {
 		return sell(sellItem.getCode(), sellItem.getQuantity(), price);
 	}
 

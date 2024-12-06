@@ -1,5 +1,6 @@
 package strategy.util;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,7 +82,7 @@ public interface CharacterService {
 
 	List<String> getNoPotionEquipedItems();
 
-	List<BotInventoryItem> getFilterEquipementInInventory(List<String> equipementNames, String excludeEquipementName);
+	List<BotInventoryItem> getFilterEquipementInInventory(Collection<String> equipementNames, String excludeEquipementName);
 
 	Optional<BotInventoryItem> getFirstEquipementInInventory(List<String> equipementNames);
 
@@ -94,6 +95,8 @@ public interface CharacterService {
 	boolean isPossessAny(List<String> codes, BankDAO bankDAO);
 
 	boolean inventoryConstaints(String code, int number);
+
+	boolean isPossessOnSelf(String code);
 
 
 }

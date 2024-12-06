@@ -1,5 +1,6 @@
 package hydra.dao.simulate;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -186,7 +187,7 @@ public final class FilteredCallCharacterService implements CharacterService {
 	}
 
 	@Override
-	public List<BotInventoryItem> getFilterEquipementInInventory(List<String> equipementNames,
+	public List<BotInventoryItem> getFilterEquipementInInventory(Collection<String> equipementNames,
 			String excludeEquipementName) {
 		simulatorListener.startInnerCall();
 		try {
@@ -231,6 +232,16 @@ public final class FilteredCallCharacterService implements CharacterService {
 		simulatorListener.startInnerCall();
 		try {
 			return characterService.isPossessAny(codes, bankDAO);
+		} finally {
+			simulatorListener.stopInnerCall();
+		}
+	}
+
+	@Override
+	public boolean isPossessOnSelf(String code) {
+		simulatorListener.startInnerCall();
+		try {
+			return characterService.isPossessOnSelf(code);
 		} finally {
 			simulatorListener.stopInnerCall();
 		}

@@ -22,6 +22,7 @@ import hydra.model.BotBankDetail;
 import hydra.model.BotCharacter;
 import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import strategy.util.BankRecorder;
 import util.CacheManager;
 import util.LimitedTimeCacheManager;
@@ -104,7 +105,7 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 	}
 
 	@Override
-	public boolean withdraw(BotItem item) {
+	public boolean withdraw(BotItemReader item) {
 		if(item.getQuantity() > bankRecorder.getItem(item.getCode()).getQuantity()) {
 			return false;
 		}
@@ -191,12 +192,12 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 	}
 
 	@Override
-	public List<BotItem> viewItems() {
+	public List<? extends BotItemReader> viewItems() {
 		return bankRecorder.viewItems();
 	}
 
 	@Override
-	public BotItem getItem(String code) {
+	public BotItemReader getItem(String code) {
 		return bankRecorder.getItem(code);
 	}
 }

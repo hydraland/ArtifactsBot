@@ -16,12 +16,12 @@ import hydra.dao.MonsterDAO;
 import hydra.dao.ResourceDAO;
 import hydra.dao.TaskDAO;
 import hydra.model.BotCharacter;
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.ArtifactGoalFactory;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.util.GameService;
-import strategy.achiever.factory.util.GameServiceImpl;
+import strategy.achiever.factory.util.ItemService;
+import strategy.achiever.factory.util.ItemServiceImpl;
 import strategy.util.CharacterService;
 import strategy.util.MonsterEquipementService;
 import strategy.util.MonsterEquipementServiceImpl;
@@ -42,7 +42,7 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	private final BankDAOSimulator bankDAOSimulator;
 	private final MapDAOSimulator mapDAOSimulator;
 	private MoveService moveService;
-	private GameService gameService;
+	private ItemService itemService;
 	private FightService fightService;
 
 	public SimulatorManagerImpl(SimulatorListener simulatorListener, ActiveEventsSimulator activeEventsSimulator) {
@@ -106,20 +106,20 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 
 	@Override
 	public GoalFactory createFactory(GoalParameter goalParameter) {
-		moveService = new MoveServiceImpl(characterDAOSimulator, mapDAOSimulator);
-		gameService = new GameServiceImpl(itemDAOSimulator);
+		itemService = new ItemServiceImpl(itemDAOSimulator);
+		moveService = new MoveServiceImpl(characterDAOSimulator, mapDAOSimulator, characterDAOSimulator.getCharacterService(), itemService);
 		fightService = new FightServiceImpl(characterDAOSimulator, bankDAOSimulator, itemDAOSimulator,
-				characterDAOSimulator.getCharacterService(), moveService, gameService);
+				characterDAOSimulator.getCharacterService(), moveService, itemService);
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDAOSimulator.addEquipmentChangeListener(monsterEquipementService);
 		return new ArtifactGoalFactory(resourceDAOSimulator, monsterDAOSimulator, mapDAOSimulator, itemDAOSimulator,
 				characterDAOSimulator, grandExchangeDAOSimulator, bankDAOSimulator, taskDAOSimulator, goalParameter,
-				gameService, characterDAOSimulator.getCharacterService(), moveService, fightService,
+				itemService, characterDAOSimulator.getCharacterService(), moveService, fightService,
 				monsterEquipementService);
 	}
 
 	@Override
-	public void setValue(BotCharacter botCharacter, List<BotItem> bankItems) {
+	public void setValue(BotCharacter botCharacter, List<? extends BotItemReader> bankItems) {
 		characterDAOSimulator.set(botCharacter);
 		characterDAOSimulator.save(false);
 		characterDAOSimulator.load(false);
@@ -190,11 +190,11 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	}
 
 	@Override
-	public final GameService getGameService() {
-		return gameService;
+	public final ItemService getItemService() {
+		return itemService;
 	}
 
-	private HashMap<String, Integer> bankItemsToMap(List<BotItem> bankItems) {
-		return new HashMap<>(bankItems.stream().collect(Collectors.toMap(BotItem::getCode, BotItem::getQuantity)));
+	private HashMap<String, Integer> bankItemsToMap(List<? extends BotItemReader> bankItems) {
+		return new HashMap<>(bankItems.stream().collect(Collectors.toMap(BotItemReader::getCode, BotItemReader::getQuantity)));
 	}
 }

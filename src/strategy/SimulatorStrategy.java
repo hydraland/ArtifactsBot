@@ -15,7 +15,7 @@ import hydra.dao.simulate.SimulatorManager;
 import hydra.dao.simulate.StopSimulationException;
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
@@ -25,8 +25,8 @@ import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector
 import strategy.achiever.factory.goals.GoalAchieverLoop;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
-import strategy.achiever.factory.util.GameService;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
+import strategy.achiever.factory.util.ItemService;
 import strategy.util.Bornes;
 import strategy.util.CharacterService;
 import strategy.util.StrategySkillUtils;
@@ -48,20 +48,20 @@ public class SimulatorStrategy implements Strategy {
 	private final List<ArtifactGoalAchiever> itemSimulatedGoals;
 	private final GoalFactory simulatedGoalFactory;
 	private final StrategySimulatorListener simulatorListener;
-	private final GameService gameService;
+	private final ItemService itemService;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
 	private final GoalAverageOptimizer goalAverageOptimizer;
 
 	public SimulatorStrategy(SimulatorManager simulatorManager, StrategySimulatorListener simulatorListener,
 			CharacterDAO characterDAO, BankDAO bankDAO, GoalFactory goalFactory, CharacterService characterService,
-			GameService gameService, GoalFactory simulatedGoalFactory, GoalAverageOptimizer goalAverageOptimizer) {
+			ItemService itemService, GoalFactory simulatedGoalFactory, GoalAverageOptimizer goalAverageOptimizer) {
 		this.simulatorManager = simulatorManager;
 		this.simulatorListener = simulatorListener;
 		this.characterDAO = characterDAO;
 		this.bankDAO = bankDAO;
 		this.goalFactory = goalFactory;
 		this.characterService = characterService;
-		this.gameService = gameService;
+		this.itemService = itemService;
 		this.goalAverageOptimizer = goalAverageOptimizer;
 		this.simulatedGoalFactory = simulatedGoalFactory;
 		
@@ -209,7 +209,7 @@ public class SimulatorStrategy implements Strategy {
 		Predicate<ArtifactGoalAchiever> simulatedPredicate = StrategySkillUtils
 				.createFilterCraftPredicate(simulatedGoalFactory, craftSkill, bornes);
 		List<ArtifactGoalAchiever> simGoals = allSimulateGoals.stream().filter(simulatedPredicate).toList();
-		List<BotItem> bankItems = bankDAO.viewItems();
+		List<? extends BotItemReader> bankItems = bankDAO.viewItems();
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorListener
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
@@ -264,7 +264,7 @@ public class SimulatorStrategy implements Strategy {
 					.compare(goalFactory.getInfos(aga1).getLevel(), goalFactory.getInfos(aga2).getLevel()));
 			if (resultGoal.isPresent()) {
 				GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 10);
-				if (characterService.isPossessAny(gameService.getToolsCode(BotResourceSkill.FISHING), bankDAO)) {
+				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.FISHING), bankDAO)) {
 					optimize(returnGoal, goalFactory);
 				}
 				return returnGoal;
@@ -283,7 +283,7 @@ public class SimulatorStrategy implements Strategy {
 			Optional<ArtifactGoalAchiever> resultGoal = allGoals.stream().filter(predicate).max((aga1, aga2) -> Integer
 					.compare(goalFactory.getInfos(aga1).getLevel(), goalFactory.getInfos(aga2).getLevel()));
 			if (resultGoal.isPresent()) {
-				if (characterService.isPossessAny(gameService.getToolsCode(BotResourceSkill.WOODCUTTING), bankDAO)) {
+				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.WOODCUTTING), bankDAO)) {
 					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 5);
 					optimize(returnGoal, goalFactory);
 					return returnGoal;
@@ -303,7 +303,7 @@ public class SimulatorStrategy implements Strategy {
 			Optional<ArtifactGoalAchiever> resultGoal = allGoals.stream().filter(predicate).max((aga1, aga2) -> Integer
 					.compare(goalFactory.getInfos(aga1).getLevel(), goalFactory.getInfos(aga2).getLevel()));
 			if (resultGoal.isPresent()) {
-				if (characterService.isPossessAny(gameService.getToolsCode(BotResourceSkill.MINING), bankDAO)) {
+				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.MINING), bankDAO)) {
 					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 5);
 					optimize(returnGoal, goalFactory);
 					return returnGoal;

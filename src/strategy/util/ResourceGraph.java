@@ -6,8 +6,8 @@ import java.util.Map;
 
 import hydra.dao.ItemDAO;
 import hydra.model.BotCraft;
-import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 
 public class ResourceGraph {
 
@@ -25,7 +25,7 @@ public class ResourceGraph {
 			graph.get(code).setValue(botItemDetails);
 			BotCraft craft = botItemDetails.getCraft();
 			if (craft != null) {
-				for (BotItem botItem : craft.getItems()) {
+				for (BotItemReader botItem : craft.getItems()) {
 					String itemCode = botItem.getCode();
 					graph.computeIfAbsent(itemCode, c -> new ItemNode());
 					graph.get(itemCode).addTransition(code, botItem.getQuantity());

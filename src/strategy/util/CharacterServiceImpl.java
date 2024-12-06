@@ -2,6 +2,7 @@ package strategy.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -17,18 +18,22 @@ import hydra.model.BotCharacter;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
+import util.CacheManager;
+import util.LimitedTimeCacheManager;
 
 public final class CharacterServiceImpl implements CharacterService {
 	private final CharacterDAO characterDao;
 	private final ItemDAO itemDAO;
+	private final CacheManager<String, Object> cache;
 
 	public CharacterServiceImpl(CharacterDAO characterDao, ItemDAO itemDAO) {
 		this.characterDao = characterDao;
 		this.itemDAO = itemDAO;
+		this.cache = new LimitedTimeCacheManager<>(86400);
 	}
 
 	@Override
@@ -130,15 +135,24 @@ public final class CharacterServiceImpl implements CharacterService {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private List<BotItemInfo> getEquipableCharacterEquipement(BotItemType itemType, Map<String, Integer> reservedItems,
 			SlotQuantityStruct... equipementSlots) {
 		BotCharacter character = characterDao.getCharacter();
 		Map<String, BotItemInfo> inventoryItemInfo = new HashMap<>();
-		List<BotItemDetails> equipements = itemDAO.getItems(itemType, 1, character.getLevel());
-		Map<String, BotItemDetails> equipementsMap = equipements.stream()
-				.collect(Collectors.toMap(item -> item.getCode(), item -> item));
+		Map<String, BotItemDetails> equipementsMap;
+		List<String> equipementsName;
+		if (cache.contains("M" + itemType + character.getLevel())) {
+			equipementsMap = (Map<String, BotItemDetails>) cache.get("M" + itemType + character.getLevel());
+			equipementsName = (List<String>) cache.get("N" + itemType + character.getLevel());
+		} else {
+			List<BotItemDetails> equipements = itemDAO.getItems(itemType, 1, character.getLevel());
+			equipementsMap = equipements.stream().collect(Collectors.toMap(item -> item.getCode(), item -> item));
+			equipementsName = equipements.stream().map(item -> item.getCode()).toList();
+			cache.add("M" + itemType + character.getLevel(), equipementsMap);
+			cache.add("N" + itemType + character.getLevel(), equipementsName);
+		}
 
-		List<String> equipementsName = equipements.stream().map(item -> item.getCode()).toList();
 		List<BotInventoryItem> inventoryEqtsFiltered = getFilterEquipementInInventory(equipementsName, "").stream()
 				.filter(bii -> !reservedItems.containsKey(bii.getCode())).toList();
 		List<BotItemInfo> equipementsCharacter = new ArrayList<>();
@@ -230,18 +244,24 @@ public final class CharacterServiceImpl implements CharacterService {
 		return GameConstants.HP_LEVEL_1 + GameConstants.HP_PER_LEVEL * character.getLevel();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
 			Map<String, Integer> reservedItems) {
 		BotCharacter character = characterDao.getCharacter();
-		List<BotItemDetails> equipements = itemDAO.getItems(1, character.getLevel());
-		Map<String, BotItemDetails> equipementsMap = equipements.stream()
-				.collect(Collectors.toMap(item -> item.getCode(), item -> item));
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> result = new EnumMap<>(BotCharacterInventorySlot.class);
+		Map<String, BotItemDetails> equipementsMap;
+		if (cache.contains("M" + character.getLevel())) {
+			equipementsMap = (Map<String, BotItemDetails>) cache.get("M" + character.getLevel());
+		} else {
+			List<BotItemDetails> equipements = itemDAO.getItems(1, character.getLevel());
+			equipementsMap = equipements.stream().collect(Collectors.toMap(item -> item.getCode(), item -> item));
+			cache.add("M" + character.getLevel(), equipementsMap);
+		}
 
-		List<BotItem> itemInBankFiltered = bankDAO.viewItems().stream()
+		Map<BotCharacterInventorySlot, List<BotItemInfo>> result = new EnumMap<>(BotCharacterInventorySlot.class);
+		List<? extends BotItemReader> itemInBankFiltered = bankDAO.viewItems().stream()
 				.filter(bi -> !reservedItems.containsKey(bi.getCode())).toList();
-		for (BotItem item : itemInBankFiltered) {
+		for (BotItemReader item : itemInBankFiltered) {
 			BotItemDetails botItemDetails = equipementsMap.get(item.getCode());
 			if (botItemDetails != null && !BotItemType.RESOURCE.equals(botItemDetails.getType())
 					&& !BotItemType.CURRENCY.equals(botItemDetails.getType())
@@ -397,11 +417,18 @@ public final class CharacterServiceImpl implements CharacterService {
 	}
 
 	@Override
+	public boolean isPossessOnSelf(String code) {
+		BotCharacter character = characterDao.getCharacter();
+		return code.equals(character.getUtility1Slot()) || code.equals(character.getUtility2Slot())
+				|| getNoPotionEquipedItems().contains(code) || inventoryConstaints(code, 1);
+	}
+
+	@Override
 	public List<BotInventoryItem> getInventoryIgnoreEmpty() {
 		BotCharacter character = characterDao.getCharacter();
 		return character.getInventory().stream().filter(item -> item.getQuantity() > 0).toList();
 	}
-	
+
 	@Override
 	public boolean inventoryConstaints(String code, int number) {
 		BotCharacter character = characterDao.getCharacter();
@@ -418,7 +445,7 @@ public final class CharacterServiceImpl implements CharacterService {
 	}
 
 	@Override
-	public List<BotInventoryItem> getFilterEquipementInInventory(List<String> equipementNames,
+	public List<BotInventoryItem> getFilterEquipementInInventory(Collection<String> equipementNames,
 			String excludeEquipementName) {
 		BotCharacter character = characterDao.getCharacter();
 		return character.getInventory().stream()

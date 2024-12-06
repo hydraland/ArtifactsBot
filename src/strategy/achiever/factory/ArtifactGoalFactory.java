@@ -25,6 +25,7 @@ import hydra.model.BotDropDescription;
 import hydra.model.BotEffect;
 import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import hydra.model.BotItemType;
 import hydra.model.BotMonster;
 import hydra.model.BotResource;
@@ -67,7 +68,7 @@ import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 import strategy.achiever.factory.info.MultiGoalAchieverInfo;
 import strategy.achiever.factory.info.SimpleGoalAchieverInfo;
 import strategy.achiever.factory.util.Coordinate;
-import strategy.achiever.factory.util.GameService;
+import strategy.achiever.factory.util.ItemService;
 import strategy.achiever.factory.util.StopValidator;
 import strategy.util.CharacterService;
 import strategy.util.MonsterEquipementService;
@@ -89,7 +90,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	private final List<String> rareResourceItems;
 	private final List<String> resourceItemsCraftable;
 	private final TaskDAO taskDao;
-	private final GameService gameService;
+	private final ItemService itemService;
 	private final Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos;
 	private final CharacterService characterService;
 	private final FightService fightService;
@@ -97,7 +98,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 
 	public ArtifactGoalFactory(ResourceDAO resourceDAO, MonsterDAO monsterDao, MapDAO mapDAO, ItemDAO itemDao,
 			CharacterDAO characterDAO, GrandExchangeDAO grandExchangeDAO, BankDAO bankDAO, TaskDAO taskDao,
-			GoalParameter parameter, GameService gameService, CharacterService characterService,
+			GoalParameter parameter, ItemService itemService, CharacterService characterService,
 			MoveService moveService, FightService fightService, MonsterEquipementService monsterEquipementService) {
 		this.resourceDao = resourceDAO;
 		this.monsterDao = monsterDao;
@@ -108,7 +109,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 		this.bankDao = bankDAO;
 		this.taskDao = taskDao;
 		this.parameter = parameter;
-		this.gameService = gameService;
+		this.itemService = itemService;
 		this.characterService = characterService;
 		this.moveService = moveService;
 		this.goals = new ArrayList<>();
@@ -271,7 +272,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 				botItemDetails.getCraft().getSkill(), goalAchieverList);
 		boolean containtsRareResource = false;
 		boolean containtsTaskResource = false;
-		for (BotItem botItem : items) {
+		for (BotItemReader botItem : items) {
 			ArtifactGoalAchiever subGoal = goalsMap.get(botItem.getCode());
 			ItemGetBankGoalAchiever itemGetBankGoalAchiever = new ItemGetBankGoalAchiever(bankDao, botItem.getCode(),
 					moveService, characterService);
@@ -410,14 +411,14 @@ public final class ArtifactGoalFactory implements GoalFactory {
 						.map(bid -> bid.getCode()).toList()));
 		customGoals.add(new DepositGoldInBankGoalAchiever(characterDao, bankDao, moveService, characterService));
 		customGoals.add(new ExtendBankSlotGoalAchiever(characterDao, bankDao, moveService, characterService));
-		customGoals.add(new DepositToolGoalAchiever(bankDao, gameService, moveService, parameter, characterService));
+		customGoals.add(new DepositToolGoalAchiever(bankDao, itemService, moveService, parameter, characterService));
 		customGoals.add(new DepositTaskCoinGoalAchiever(bankDao, moveService, parameter, characterService));
 		customGoals.add(new DepositResourceGoalAchiever(bankDao, moveService, resourceItemsCraftable, parameter,
 				characterService));
 		customGoals.add(new EquipmentManagerGoalAchiever(characterDao, itemDao, bankDao, grandExchangeDao, moveService,
 				parameter, characterService));
 		customGoals.add(new UselessEquipmentManagerGoalAchiever(characterDao, itemDao, bankDao, grandExchangeDao,
-				fightService, monsterDao.getMonsters(), moveService, gameService, characterService));
+				fightService, monsterDao.getMonsters(), moveService, itemService, characterService));
 		customGoals.add(new UselessResourceManagerGoalAchiever(characterDao, bankDao, itemDao, characterService,
 				moveService, rareResourceItems));
 		// Pour stocker les éventuelles ressources recyclées
@@ -441,7 +442,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	}
 
 	private GoalAchiever createEquipToolGoalAchiever(BotResourceSkill resourceSkill) {
-		return new EquipToolGoalAchiever(characterDao, bankDao, moveService, characterService, gameService,
+		return new EquipToolGoalAchiever(characterDao, bankDao, moveService, characterService, itemService,
 				resourceSkill);
 	}
 

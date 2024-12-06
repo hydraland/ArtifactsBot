@@ -4,13 +4,13 @@ import java.util.List;
 
 import hydra.model.BotBankDetail;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 
 public interface BankDAO {
 
 	boolean deposit(BotInventoryItem item);
 
-	boolean withdraw(BotItem item);
+	boolean withdraw(BotItemReader item);
 
 	public BotBankDetail getBankDetail();
 
@@ -20,7 +20,7 @@ public interface BankDAO {
 
 	boolean withdrawGold(int quantity);
 
-	List<BotItem> viewItems();
+	List<? extends BotItemReader> viewItems();
 
-	BotItem getItem(String code);
+	BotItemReader getItem(String code);
 }

@@ -8,7 +8,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 public class BotGatheringDetails implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int xp;
-	private List<BotItem> items;
+	private List<BotItemReader> items;
 
 	public int getXp() {
 		return xp;
@@ -18,11 +18,11 @@ public class BotGatheringDetails implements Serializable {
 		this.xp = xp;
 	}
 
-	public List<BotItem> getItems() {
+	public List<BotItemReader> getItems() {
 		return items;
 	}
 
-	public void setItems(List<BotItem> items) {
+	public void setItems(List<BotItemReader> items) {
 		this.items = items;
 	}
 	

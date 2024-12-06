@@ -1,12 +1,18 @@
 package strategy.achiever.factory.util;
 
 import java.util.List;
+import java.util.Set;
 
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 
-public interface GameService {
+public interface ItemService {
+	
+	boolean isTeleportItem(String code);
+	
+	Coordinate getTeleportItemValue(String code);
+	
 	boolean isTools(String code);
 
 	boolean isTools(String code, BotResourceSkill botResourceSkill);
@@ -39,4 +45,6 @@ public interface GameService {
 	List<String> getToolsCode(BotResourceSkill botResourceSkill);
 
 	List<String> getToolsCode();
+
+	Set<String> getAllTeleportItemCode();
 }

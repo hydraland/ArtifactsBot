@@ -17,8 +17,8 @@ import hydra.GameConstants;
 import hydra.dao.response.UseInCraftResponse;
 import hydra.dao.util.Convertor;
 import hydra.model.BotCraftSkill;
-import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import hydra.model.BotItemType;
 import util.PermanentCacheManager;
 import util.CacheManager;
@@ -79,7 +79,7 @@ public class ItemDAOImpl extends AbstractDAO implements ItemDAO {
 		// Mise à jour de l'autre cache
 		for (BotItemDetails item : items) {
 			if (item.getCraft() != null) {
-				for (BotItem craftItem : item.getCraft().getItems()) {
+				for (BotItemReader craftItem : item.getCraft().getItems()) {
 					craftCacheManager.add(craftItem.getCode(), trueResponse);
 				}
 			}

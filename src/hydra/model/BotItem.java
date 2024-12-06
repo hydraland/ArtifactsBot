@@ -4,11 +4,12 @@ import java.io.Serializable;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class BotItem implements Serializable {
+public class BotItem implements Serializable, BotItemReader {
 	private static final long serialVersionUID = 1L;
 	private String code;
 	private int quantity;
 
+	@Override
 	public String getCode() {
 		return code;
 	}
@@ -17,6 +18,7 @@ public class BotItem implements Serializable {
 		this.code = code;
 	}
 
+	@Override
 	public int getQuantity() {
 		return quantity;
 	}

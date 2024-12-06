@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import hydra.dao.ItemDAO;
 import hydra.model.BotEffect;
@@ -13,13 +15,20 @@ import hydra.model.BotItemDetails;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 
-public final class GameServiceImpl implements GameService {
+public final class ItemServiceImpl implements ItemService {
 	private static final List<BotEffect> TOOLS_EFFECT = Arrays.<BotEffect>asList(BotEffect.FISHING, BotEffect.MINING,
 			BotEffect.WOODCUTTING, BotEffect.ALCHEMY);
 	private final Map<String, ToolStruct> toolsItemCache;
+	private final Map<String, Coordinate> teleportItemCache;
 
-	public GameServiceImpl(ItemDAO itemDao) {
+	public ItemServiceImpl(ItemDAO itemDao) {
 		toolsItemCache = new HashMap<>();
+		initTools(itemDao);
+		teleportItemCache = itemDao.getItems().stream()
+				.filter(bid -> bid.getEffects().stream().anyMatch(bie -> BotEffect.TELEPORT_X.equals(bie.getName()))).collect(Collectors.toMap(BotItemDetails::getCode, this::createCoordinate));
+	}
+
+	private void initTools(ItemDAO itemDao) {
 		List<BotItemDetails> toolItems = itemDao.getItems().stream()
 				.filter(bid -> bid.getEffects().stream().anyMatch(bie -> TOOLS_EFFECT.contains(bie.getName())))
 				.toList();
@@ -93,5 +102,26 @@ public final class GameServiceImpl implements GameService {
 	@Override
 	public BotItemType getToolType(String code) {
 		return toolsItemCache.get(code).type;
+	}
+
+	@Override
+	public boolean isTeleportItem(String code) {
+		return teleportItemCache.containsKey(code);
+	}
+
+	@Override
+	public Coordinate getTeleportItemValue(String code) {
+		return teleportItemCache.get(code);
+	}
+	
+	@Override
+	public Set<String> getAllTeleportItemCode(){
+		return teleportItemCache.keySet();
+	}
+
+	private Coordinate createCoordinate(BotItemDetails item) {
+		int x = item.getEffects().stream().filter(bie -> BotEffect.TELEPORT_X.equals(bie.getName())).map(bie -> bie.getValue()).findFirst().get();
+		int y = item.getEffects().stream().filter(bie -> BotEffect.TELEPORT_Y.equals(bie.getName())).map(bie -> bie.getValue()).findFirst().get();
+		return new Coordinate(x, y);
 	}
 }

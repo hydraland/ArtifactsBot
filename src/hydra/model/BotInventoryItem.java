@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class BotInventoryItem implements Serializable {
+public class BotInventoryItem implements Serializable, BotItemReader {
 	private static final long serialVersionUID = 1L;
 	private int slot;
 	private String code;
@@ -18,6 +18,7 @@ public class BotInventoryItem implements Serializable {
 		this.slot = slot;
 	}
 
+	@Override
 	public String getCode() {
 		return code;
 	}
@@ -26,6 +27,7 @@ public class BotInventoryItem implements Serializable {
 		this.code = code;
 	}
 
+	@Override
 	public int getQuantity() {
 		return quantity;
 	}

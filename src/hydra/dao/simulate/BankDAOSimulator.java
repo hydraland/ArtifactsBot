@@ -9,6 +9,7 @@ import hydra.dao.BankDAO;
 import hydra.model.BotBankDetail;
 import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 
 public final class BankDAOSimulator implements BankDAO, Simulator<BankStruct> {
 
@@ -42,7 +43,7 @@ public final class BankDAOSimulator implements BankDAO, Simulator<BankStruct> {
 	}
 
 	@Override
-	public boolean withdraw(BotItem item) {
+	public boolean withdraw(BotItemReader item) {
 		if (bankStruct.getStock().getOrDefault(item.getCode(), 0) >= item.getQuantity()
 				&& characterDAOSimulator.checkDepositInInventory(item.getCode(), item.getQuantity())) {
 			simulatorListener.call(CLASS_NAME, "withdraw", COOLDOWN, false);
@@ -115,8 +116,8 @@ public final class BankDAOSimulator implements BankDAO, Simulator<BankStruct> {
 	}
 
 	@Override
-	public List<BotItem> viewItems() {
-		return bankStruct.getStock().entrySet().stream().<BotItem>map(entry -> {
+	public List<? extends BotItemReader> viewItems() {
+		return bankStruct.getStock().entrySet().stream().<BotItemReader>map(entry -> {
 			BotItem botItem = new BotItem();
 			botItem.setCode(entry.getKey());
 			botItem.setQuantity(entry.getValue());
@@ -125,7 +126,7 @@ public final class BankDAOSimulator implements BankDAO, Simulator<BankStruct> {
 	}
 
 	@Override
-	public BotItem getItem(String code) {
+	public BotItemReader getItem(String code) {
 		int quantity = bankStruct.getStock().getOrDefault(code, 0);
 		BotItem item = new BotItem();
 		item.setCode(code);

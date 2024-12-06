@@ -13,10 +13,10 @@ import hydra.dao.MonsterDAO;
 import hydra.dao.ResourceDAO;
 import hydra.dao.TaskDAO;
 import hydra.model.BotCharacter;
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.util.GameService;
+import strategy.achiever.factory.util.ItemService;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 import strategy.util.fight.FightService;
@@ -31,7 +31,7 @@ public interface SimulatorManager {
 
 	void save(boolean persistant);
 
-	void setValue(BotCharacter botCharacter, List<BotItem> bankItems);
+	void setValue(BotCharacter botCharacter, List<? extends BotItemReader> bankItems);
 
 	GoalFactory createFactory(GoalParameter goalParameter);
 
@@ -59,5 +59,5 @@ public interface SimulatorManager {
 
 	MoveService getMoveService();
 
-	GameService getGameService();
+	ItemService getItemService();
 }

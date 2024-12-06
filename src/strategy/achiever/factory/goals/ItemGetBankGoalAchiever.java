@@ -10,6 +10,7 @@ import hydra.dao.BankDAO;
 import hydra.model.BotCharacter;
 import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import strategy.achiever.factory.util.Cumulator;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
@@ -47,7 +48,7 @@ public class ItemGetBankGoalAchiever implements ArtifactGoalAchiever {
 			return true;
 		}
 		int currentQuantity = quantity * coefficient;
-		BotItem itemInBank = bankDao.getItem(code);
+		BotItemReader itemInBank = bankDao.getItem(code);
 		return itemInBank.getQuantity() >= currentQuantity;
 	}
 
@@ -71,7 +72,7 @@ public class ItemGetBankGoalAchiever implements ArtifactGoalAchiever {
 				}
 			}
 
-			BotItem searchBankItem = bankDao.getItem(code);
+			BotItemReader searchBankItem = bankDao.getItem(code);
 			if (searchBankItem.getQuantity() > 0) {
 				if (!moveService.moveToBank()) {
 					return false;

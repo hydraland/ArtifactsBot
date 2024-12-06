@@ -95,7 +95,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 			if (response.monsterNotFound()) {
 				this.coordinates = null;
 			}
-			if (response.ok()) {
+			if (response.ok() && response.fight().isWin()) {
 				List<BotDropReceived> drops = response.fight().getDrops();
 				for (BotDropReceived botDrop : drops) {
 					String dropCode = botDrop.getCode();

@@ -36,11 +36,11 @@ public final class EquilibrumBot extends Bot {
 		GoalParameter goalParameter = new GoalParameter(MIN_FREE_SLOT, RARE_ITEM_SEUIL_RATE, RESERVED_COINS,
 				MIN_FREE_INVENTORY_SPACE);
 		FightService fightService = new FightServiceImpl(characterDao, bankDao, itemDao, characterService, moveService,
-				gameService);
+				itemService);
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDao.addEquipmentChangeListener(monsterEquipementService);
 		GoalFactory goalFactory = new ArtifactGoalFactory(resourceDAO, monsterDao, mapDao, itemDao, characterDao,
-				grandExchangeDAO, bankDao, taskDao, goalParameter, gameService, characterService, moveService,
+				grandExchangeDAO, bankDao, taskDao, goalParameter, itemService, characterService, moveService,
 				fightService, monsterEquipementService);
 		MonsterTaskFactory monsterTaskFactory = new DefaultMonsterTaskFactory(
 				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), bankDao, characterDao, moveService,

@@ -9,7 +9,7 @@ import hydra.dao.CharacterDAO;
 import hydra.dao.MapDAO;
 import hydra.dao.response.GatheringResponse;
 import hydra.model.BotCharacter;
-import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.Cumulator;
@@ -79,8 +79,8 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 				this.coordinates = null;
 			}
 			if (response.ok()) {
-				List<BotItem> items = response.botDetails().getItems();
-				for (BotItem botItem : items) {
+				List<BotItemReader> items = response.botDetails().getItems();
+				for (BotItemReader botItem : items) {
 					String itemCode = botItem.getCode();
 					if (itemCode.equals(this.resourceCode)) {
 						ResourceGoalAchiever.reserveItem(itemCode, reservedItems, 1);

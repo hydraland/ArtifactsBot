@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import hydra.model.BotItem;
+import hydra.model.BotItemReader;
 
 public class BankRecorderImpl implements BankRecorder {
 	private static final Logger LOGGER = Logger.getLogger(MethodHandles.lookup().lookupClass().getName());
@@ -45,7 +46,7 @@ public class BankRecorderImpl implements BankRecorder {
 	}
 	
 	@Override
-	public BotItem remove(BotItem botItem) {
+	public BotItemReader remove(BotItemReader botItem) {
 		BotItem searchedItem = getItem(botItem.getCode());
 		if(botItem.getQuantity() == searchedItem.getQuantity()) {
 			items.remove(searchedItem);
@@ -79,7 +80,7 @@ public class BankRecorderImpl implements BankRecorder {
 	}
 
 	@Override
-	public List<BotItem> viewItems() {
+	public List<? extends BotItemReader> viewItems() {
 		return items;
 	}
 }
