@@ -19,7 +19,6 @@ import strategy.util.CharacterService;
 import strategy.util.MonsterEquipementService;
 import strategy.util.MoveService;
 import strategy.util.fight.FightService;
-import strategy.util.fight.HPRecovery;
 
 public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 
@@ -36,7 +35,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 	private final FightService fightService;
 	private final MoveService moveService;
 	private final CharacterService characterService;
-	private final HPRecovery hpRecovery;
+	private final GoalParameter goalParameter;
 
 	public ItemMonsterGoalAchiever(CharacterDAO characterDAO, MapDAO mapDao, String resourceCode, int rate,
 			List<Coordinate> coordinates, BotMonster monster, MonsterEquipementService monsterEquipementService,
@@ -51,7 +50,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 		this.fightService = fightService;
 		this.moveService = moveService;
 		this.characterService = characterService;
-		this.hpRecovery = goalParameter.getHPRecoveryFactory().createHPRecovery();
+		this.goalParameter = goalParameter;
 		this.finish = false;
 	}
 
@@ -87,7 +86,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 				return false;// le monstre n'est plus présent.
 			}
 		}
-		if (!hpRecovery.restoreHP(reservedItems)) {
+		if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 			return false;
 		}
 		if (moveService.moveTo(coordinates)) {
@@ -104,7 +103,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 						this.finish = true;
 					}
 				}
-				return hpRecovery.restoreHP(reservedItems);
+				return goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
 			}
 		}
 		return false;

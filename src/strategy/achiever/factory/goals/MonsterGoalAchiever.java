@@ -18,7 +18,6 @@ import strategy.achiever.factory.util.StopValidator;
 import strategy.util.MonsterEquipementService;
 import strategy.util.MoveService;
 import strategy.util.fight.FightService;
-import strategy.util.fight.HPRecovery;
 
 public class MonsterGoalAchiever implements GoalAchiever {
 
@@ -32,7 +31,7 @@ public class MonsterGoalAchiever implements GoalAchiever {
 	private final StopValidator<FightResponse> stopCondition;
 	private final FightService fightService;
 	private final MoveService moveService;
-	private final HPRecovery hpRecovery;
+	private final GoalParameter goalParameter;
 
 	public MonsterGoalAchiever(CharacterDAO characterDAO, MapDAO mapDao, List<Coordinate> coordinates,
 			BotMonster monster, MonsterEquipementService monsterEquipementService,
@@ -45,7 +44,7 @@ public class MonsterGoalAchiever implements GoalAchiever {
 		this.stopCondition = stopCondition;
 		this.fightService = fightService;
 		this.moveService = moveService;
-		this.hpRecovery = goalParameter.getHPRecoveryFactory().createHPRecovery();
+		this.goalParameter = goalParameter;
 		this.finish = false;
 	}
 
@@ -73,7 +72,7 @@ public class MonsterGoalAchiever implements GoalAchiever {
 					return false;// le monstre n'est plus présent.
 				}
 			}
-			if (!hpRecovery.restoreHP(reservedItems)) {
+			if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 				return false;
 			}
 			if (moveService.moveTo(coordinates)) {
@@ -82,7 +81,7 @@ public class MonsterGoalAchiever implements GoalAchiever {
 					this.coordinates = null;
 				}
 				if (response.ok()) {
-					if (!hpRecovery.restoreHP(reservedItems)) {
+					if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 						return false;
 					}
 					return !stopCondition.isStop(response);

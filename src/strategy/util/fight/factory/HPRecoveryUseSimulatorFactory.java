@@ -18,6 +18,7 @@ public class HPRecoveryUseSimulatorFactory implements HPRecoveryFactory {
 	private final MoveService moveService;
 	private final StrategySimulatorListener simulatorListener;
 	private final SimulatorManager simulatorManager;
+	private HPRecovery hpRecovery;
 
 	public HPRecoveryUseSimulatorFactory(CharacterDAO characterDao, ItemDAO itemDAO, BankDAO bankDAO,
 			MoveService moveService, CharacterService characterService, StrategySimulatorListener simulatorListener,
@@ -33,7 +34,10 @@ public class HPRecoveryUseSimulatorFactory implements HPRecoveryFactory {
 
 	@Override
 	public HPRecovery createHPRecovery() {
-		return new HPRecoveryUseSimulator(characterDao, itemDAO, bankDAO, moveService, characterService,
-				simulatorListener, simulatorManager);
+		if (hpRecovery == null) {
+			hpRecovery = new HPRecoveryUseSimulator(characterDao, itemDAO, bankDAO, moveService, characterService,
+					simulatorListener, simulatorManager);
+		}
+		return hpRecovery;
 	}
 }

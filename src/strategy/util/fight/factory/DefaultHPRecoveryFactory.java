@@ -10,6 +10,7 @@ public class DefaultHPRecoveryFactory implements HPRecoveryFactory {
 	private final CharacterDAO characterDao;
 	private final ItemDAO itemDAO;
 	private final CharacterService characterService;
+	private HPRecovery hpRecovery;
 
 	public DefaultHPRecoveryFactory(CharacterDAO characterDao, ItemDAO itemDAO, CharacterService characterService) {
 		this.characterDao = characterDao;
@@ -19,6 +20,9 @@ public class DefaultHPRecoveryFactory implements HPRecoveryFactory {
 
 	@Override
 	public HPRecovery createHPRecovery() {
-		return new HPRecoveryImpl(characterDao, itemDAO, characterService);
+		if (hpRecovery == null) {
+			hpRecovery = new HPRecoveryImpl(characterDao, itemDAO, characterService);
+		}
+		return hpRecovery;
 	}
 }
