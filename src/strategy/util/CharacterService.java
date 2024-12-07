@@ -26,10 +26,11 @@ public interface CharacterService {
 	int getQuantityInInventory(String code);
 
 	int getLevel(BotCraftSkill key);
-	
+
 	int getLevel(BotResourceSkill key);
-	
-	Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipement(Map<String, Integer> reservedItems);
+
+	Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipement(
+			Map<String, Integer> reservedItems, boolean useUtility);
 
 	static String getSlotValue(BotCharacter character, BotCharacterInventorySlot slot) {
 		switch (slot) {
@@ -62,13 +63,14 @@ public interface CharacterService {
 		case SHIELD:
 			return character.getShieldSlot();
 		default:
-			throw new IllegalArgumentException("Value  "+slot+" not authorize");
+			throw new IllegalArgumentException("Value  " + slot + " not authorize");
 		}
 	}
 
 	int getCharacterHPWihtoutEquipment();
 
-	Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO, Map<String, Integer> reservedItems);
+	Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
+			Map<String, Integer> reservedItems, boolean useUtility);
 
 	int getQuantityEquipableForUtility(BotItemInfo botItemInfo, BotCharacterInventorySlot slot);
 
@@ -82,7 +84,8 @@ public interface CharacterService {
 
 	List<String> getNoPotionEquipedItems();
 
-	List<BotInventoryItem> getFilterEquipementInInventory(Collection<String> equipementNames, String excludeEquipementName);
+	List<BotInventoryItem> getFilterEquipementInInventory(Collection<String> equipementNames,
+			String excludeEquipementName);
 
 	Optional<BotInventoryItem> getFirstEquipementInInventory(List<String> equipementNames);
 
@@ -97,6 +100,5 @@ public interface CharacterService {
 	boolean inventoryConstaints(String code, int number);
 
 	boolean isPossessOnSelf(String code);
-
 
 }

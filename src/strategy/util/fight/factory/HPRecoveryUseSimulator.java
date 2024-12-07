@@ -83,6 +83,7 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
 		simulatorManager.setValue(characterDao.getCharacter(), bankDAO.viewItems());
 		accumulator.reset();
+		accumulator.setMax(Integer.MAX_VALUE);
 		simulatorManager.getCharacterDAOSimulator().rest();
 		int maxTime = accumulator.get();
 		accumulator.reset();

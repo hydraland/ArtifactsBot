@@ -96,10 +96,10 @@ public final class FilteredCallCharacterService implements CharacterService {
 
 	@Override
 	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipement(
-			Map<String, Integer> reservedItems) {
+			Map<String, Integer> reservedItems, boolean useUtility) {
 		simulatorListener.startInnerCall();
 		try {
-			return characterService.getEquipableCharacterEquipement(reservedItems);
+			return characterService.getEquipableCharacterEquipement(reservedItems, useUtility);
 		} finally {
 			simulatorListener.stopInnerCall();
 		}
@@ -117,10 +117,10 @@ public final class FilteredCallCharacterService implements CharacterService {
 
 	@Override
 	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
-			Map<String, Integer> reservedItems) {
+			Map<String, Integer> reservedItems, boolean useUtility) {
 		simulatorListener.startInnerCall();
 		try {
-			return characterService.getEquipableCharacterEquipementInBank(bankDAO, reservedItems);
+			return characterService.getEquipableCharacterEquipementInBank(bankDAO, reservedItems, useUtility);
 		} finally {
 			simulatorListener.stopInnerCall();
 		}

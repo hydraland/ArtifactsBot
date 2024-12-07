@@ -187,7 +187,7 @@ public final class CharacterServiceImpl implements CharacterService {
 
 	@Override
 	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipement(
-			Map<String, Integer> reservedItems) {
+			Map<String, Integer> reservedItems, boolean useUtility) {
 		BotCharacter character = characterDao.getCharacter();
 
 		List<BotItemInfo> weaponCharacter = getEquipableCharacterEquipement(BotItemType.WEAPON, reservedItems,
@@ -208,9 +208,14 @@ public final class CharacterServiceImpl implements CharacterService {
 				new SlotQuantityStruct(character.getRing1Slot(), 1),
 				new SlotQuantityStruct(character.getRing2Slot(), 1));
 		List<BotItemInfo> ring2Character = new ArrayList<>(ring1Character);
-		List<BotItemInfo> conso1Character = getEquipableCharacterEquipement(BotItemType.UTILITY, reservedItems,
-				new SlotQuantityStruct(character.getUtility1Slot(), character.getUtility1SlotQuantity()),
-				new SlotQuantityStruct(character.getUtility2Slot(), character.getUtility2SlotQuantity()));
+		List<BotItemInfo> conso1Character;
+		if (useUtility) {
+			conso1Character = getEquipableCharacterEquipement(BotItemType.UTILITY, reservedItems,
+					new SlotQuantityStruct(character.getUtility1Slot(), character.getUtility1SlotQuantity()),
+					new SlotQuantityStruct(character.getUtility2Slot(), character.getUtility2SlotQuantity()));
+		} else {
+			conso1Character = new ArrayList<>();
+		}
 		List<BotItemInfo> conso2Character = new ArrayList<>(conso1Character);
 		List<BotItemInfo> artifact1Character = getEquipableCharacterEquipement(BotItemType.ARTIFACT, reservedItems,
 				new SlotQuantityStruct(character.getArtifact1Slot(), 1),
@@ -247,7 +252,7 @@ public final class CharacterServiceImpl implements CharacterService {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
-			Map<String, Integer> reservedItems) {
+			Map<String, Integer> reservedItems, boolean useUtility) {
 		BotCharacter character = characterDao.getCharacter();
 		Map<String, BotItemDetails> equipementsMap;
 		if (cache.contains("M" + character.getLevel())) {
@@ -311,11 +316,13 @@ public final class CharacterServiceImpl implements CharacterService {
 					break;
 				}
 				case UTILITY: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.UTILITY1,
-							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
-					listItems = result.computeIfAbsent(BotCharacterInventorySlot.UTILITY2, k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					if (useUtility) {
+						List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.UTILITY1,
+								k -> new ArrayList<>());
+						listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+						listItems = result.computeIfAbsent(BotCharacterInventorySlot.UTILITY2, k -> new ArrayList<>());
+						listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					}
 					break;
 				}
 				case RING: {

@@ -56,15 +56,14 @@ public class TestSimulation {
 		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
 
-		character.setX(0);
-		character.setY(-2);
-		simulatorManager.getCharacterDAOSimulator().fight();
-		// simulateCrafting(simulatorListener, simulatorManager, character,
-		// simulatedGoalFactory);
-		// simulateFight(simulatorListener, simulatorManager, character,
-		// simulatedGoalFactory);
+		/*
+		 * character.setX(0); character.setY(-2);
+		 * simulatorManager.getCharacterDAOSimulator().fight();
+		 */
+		simulateCrafting(simulatorListener, simulatorManager, character, simulatedGoalFactory);
+		simulateFight(simulatorListener, simulatorManager, character, simulatedGoalFactory);
 
-		//simulateCookingAndFight(simulatorListener, simulatorManager, character, simulatedGoalFactory, goalParameter);
+		simulateCookingAndFight(simulatorListener, simulatorManager, character, simulatedGoalFactory, goalParameter);
 	}
 
 	private static void simulateCookingAndFight(StrategySimulatorListener simulatorListener,
@@ -93,13 +92,11 @@ public class TestSimulation {
 
 		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory
 				.createMonstersGoals(resp -> !resp.fight().isWin());
-		SumAccumulator accumulator = new SumAccumulator();
-		simulatorListener.setInnerListener((className, methodName, cooldown, error) -> {
-			accumulator.accumulate(cooldown);
-			if (error) {
-				System.out.println(methodName);
-			}
-		});
+		/*
+		 * simulatorListener.setInnerListener((className, methodName, cooldown, error)
+		 * -> { accumulator.accumulate(cooldown); if (error) {
+		 * System.out.println(methodName); } });
+		 */
 		List<ArtifactGoalAchiever> itemSimulatedGoals = simulatedGoalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING);
 		List<ArtifactGoalAchiever> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
@@ -122,7 +119,13 @@ public class TestSimulation {
 		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("pig", 100);
 		List<? extends BotItemReader> viewItems = simulatorManager.getBankDAOSimulator().viewItems();
 		simulatorManager.setValue(character, viewItems);
-		accumulator.reset();
+		SumAccumulator accumulator = new SumAccumulator();
+		simulatorListener.setInnerListener((className, methodName, cooldown, error) -> {
+			accumulator.accumulate(cooldown);
+			if (error) {
+				System.out.println(methodName);
+			}
+		});
 		if (simLoopGoal.isRealisableAfterSetRoot(character)) {
 			simLoopGoal.clear();
 			boolean result = simLoopGoal.execute(new HashMap<>());
