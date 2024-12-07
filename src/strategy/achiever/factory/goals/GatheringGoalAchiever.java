@@ -79,7 +79,7 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 				this.coordinates = null;
 			}
 			if (response.ok()) {
-				List<BotItemReader> items = response.botDetails().getItems();
+				List<? extends BotItemReader> items = response.botDetails().getItems();
 				for (BotItemReader botItem : items) {
 					String itemCode = botItem.getCode();
 					if (itemCode.equals(this.resourceCode)) {

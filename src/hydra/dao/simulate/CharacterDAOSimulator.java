@@ -304,7 +304,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		}
 
 		BotGatheringDetails botGatheringDetails = new BotGatheringDetails();
-		botGatheringDetails.setItems(drops.stream().<BotItemReader>map(bdr -> {
+		botGatheringDetails.setItems(drops.stream().map(bdr -> {
 			BotItem item = new BotItem();
 			item.setCode(bdr.getCode());
 			item.setQuantity(bdr.getQuantity());
