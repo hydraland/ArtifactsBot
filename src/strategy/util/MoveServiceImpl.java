@@ -89,13 +89,14 @@ public class MoveServiceImpl implements MoveService {
 			Coordinate coord = itemService.getTeleportItemValue(teleportItem.getCode());
 			int distance = MoveService.calculManhattanDistance(coord.x(), coord.y(), coordinate.x(), coordinate.y());
 			if (distance < minDistance) {
-				useItem = teleportItem;
+				useItem = new BotInventoryItem();
+				useItem.setCode(teleportItem.getCode());
+				useItem.setQuantity(1);
 				minDistance = distance;
 			}
 		}
 
 		if (useItem != null) {
-			useItem.setQuantity(1);
 			if(!characterDAO.use(useItem).ok()) {
 				return false;
 			}
