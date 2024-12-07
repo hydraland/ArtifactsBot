@@ -95,6 +95,7 @@ public class MoveServiceImpl implements MoveService {
 		}
 
 		if (useItem != null) {
+			useItem.setQuantity(1);
 			if(!characterDAO.use(useItem).ok()) {
 				return false;
 			}
