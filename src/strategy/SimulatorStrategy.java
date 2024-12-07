@@ -263,7 +263,7 @@ public class SimulatorStrategy implements Strategy {
 			Optional<ArtifactGoalAchiever> resultGoal = allGoals.stream().filter(predicate).max((aga1, aga2) -> Integer
 					.compare(goalFactory.getInfos(aga1).getLevel(), goalFactory.getInfos(aga2).getLevel()));
 			if (resultGoal.isPresent()) {
-				GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 10);
+				GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 10, true);
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.FISHING), bankDAO)) {
 					optimize(returnGoal, goalFactory);
 				}
@@ -284,7 +284,7 @@ public class SimulatorStrategy implements Strategy {
 					.compare(goalFactory.getInfos(aga1).getLevel(), goalFactory.getInfos(aga2).getLevel()));
 			if (resultGoal.isPresent()) {
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.WOODCUTTING), bankDAO)) {
-					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 5);
+					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 5, true);
 					optimize(returnGoal, goalFactory);
 					return returnGoal;
 				}
@@ -304,7 +304,7 @@ public class SimulatorStrategy implements Strategy {
 					.compare(goalFactory.getInfos(aga1).getLevel(), goalFactory.getInfos(aga2).getLevel()));
 			if (resultGoal.isPresent()) {
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.MINING), bankDAO)) {
-					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 5);
+					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get(), 5, true);
 					optimize(returnGoal, goalFactory);
 					return returnGoal;
 				}
