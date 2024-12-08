@@ -17,6 +17,8 @@ import strategy.achiever.factory.custom.UselessResourceManagerGoalAchiever;
 import strategy.achiever.factory.goals.DepositNoReservedItemGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverLoop;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
+import strategy.achiever.factory.goals.TradeGoalAchiever;
+import strategy.achiever.factory.util.Coordinate;
 
 public interface GoalFactoryCreator {
 
@@ -47,5 +49,7 @@ public interface GoalFactoryCreator {
 	ItemGetBankGoalAchiever createItemGetBankGoalAchieverForceNoRoot(String code);
 
 	GoalAchieverLoop createGoalAchieverLoop(GoalAchiever subGoal, int quantity);
+
+	TradeGoalAchiever createTradeGoalAchiever(List<Coordinate> coordinates, String code, int quantity);
 
 }

@@ -16,6 +16,7 @@ import hydra.model.BotCharacter;
 import hydra.model.BotItemReader;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.GoalFactory;
+import strategy.achiever.factory.GoalFactoryCreator;
 import strategy.achiever.factory.util.ItemService;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
@@ -60,4 +61,6 @@ public interface SimulatorManager {
 	MoveService getMoveService();
 
 	ItemService getItemService();
+
+	GoalFactoryCreator getGoalFactoryCreator();
 }

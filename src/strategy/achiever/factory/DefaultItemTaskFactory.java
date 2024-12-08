@@ -3,42 +3,30 @@ package strategy.achiever.factory;
 import java.util.List;
 import java.util.Map;
 
-import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
-import hydra.dao.TaskDAO;
 import hydra.model.BotCharacter;
 import strategy.achiever.GoalAchiever;
-import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.DepositNoReservedItemGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverList;
-import strategy.achiever.factory.goals.GoalAchieverLoop;
 import strategy.achiever.factory.goals.GoalAchieverTwoStep;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
-import strategy.achiever.factory.goals.TradeGoalAchiever;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
-import strategy.util.MoveService;
 
 public class DefaultItemTaskFactory implements ItemTaskFactory {
 
 	protected final CharacterDAO characterDAO;
-	protected final TaskDAO taskDao;
-	protected final BankDAO bankDAO;
 	protected final Map<String, ArtifactGoalAchiever> itemsGoals;
 	protected final CharacterService characterService;
-	protected final MoveService moveService;
-	protected final GoalParameter goalParameter;
+	protected final GoalFactoryCreator factoryCreator;
 
-	public DefaultItemTaskFactory(CharacterDAO characterDAO, TaskDAO taskDao, BankDAO bankDAO,
-			Map<String, ArtifactGoalAchiever> itemsGoals, CharacterService characterService, MoveService moveService, GoalParameter goalParameter) {
+	public DefaultItemTaskFactory(CharacterDAO characterDAO, GoalFactoryCreator factoryCreator,
+			Map<String, ArtifactGoalAchiever> itemsGoals, CharacterService characterService) {
 		this.characterDAO = characterDAO;
-		this.taskDao = taskDao;
-		this.bankDAO = bankDAO;
+		this.factoryCreator = factoryCreator;
 		this.itemsGoals = itemsGoals;
 		this.characterService = characterService;
-		this.moveService = moveService;
-		this.goalParameter = goalParameter;
 	}
 
 	@Override
@@ -49,8 +37,8 @@ public class DefaultItemTaskFactory implements ItemTaskFactory {
 			GoalAchieverList goalAchieverList = new GoalAchieverList();
 			int freeSpace = characterService.getFreeInventorySpace();
 			if (freeSpace < total) {
-				DepositNoReservedItemGoalAchiever depositNoReservedItemGoalAchiever = new DepositNoReservedItemGoalAchiever(
-						bankDAO, moveService, characterService, goalParameter);
+				DepositNoReservedItemGoalAchiever depositNoReservedItemGoalAchiever = factoryCreator
+						.createDepositNoReservedItemGoalAchiever();
 				goalAchiever = new GoalAchieverTwoStep(characterDAO, depositNoReservedItemGoalAchiever,
 						goalAchieverList, true, false);
 				BotCharacter character = characterDAO.getCharacter();
@@ -65,33 +53,32 @@ public class DefaultItemTaskFactory implements ItemTaskFactory {
 			if (total > freeSpace) {
 				int nbPack = total / freeSpace;
 				for (int i = 0; i < nbPack; i++) {
-					ItemGetBankGoalAchiever itemGetBankGoalAchiever = new ItemGetBankGoalAchiever(bankDAO, code,
-							moveService, characterService);
+					ItemGetBankGoalAchiever itemGetBankGoalAchiever = factoryCreator
+							.createItemGetBankGoalAchiever(code);
 					itemGetBankGoalAchiever.setQuantity(freeSpace);
 					goalAchieverList.add(itemGetBankGoalAchiever);
-					goalAchieverList.add(new GoalAchieverLoop(itemsGoal, freeSpace));
-					goalAchieverList.add(new TradeGoalAchiever(moveService, taskDao, taskMasterCoordinates, code, freeSpace));
+					goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, freeSpace));
+					goalAchieverList
+							.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, freeSpace));
 				}
 				int quantity = total % freeSpace;
 				if (quantity > 0) {
-					ItemGetBankGoalAchiever itemGetBankGoalAchiever = new ItemGetBankGoalAchiever(bankDAO, code,
-							moveService, characterService);
+					ItemGetBankGoalAchiever itemGetBankGoalAchiever = factoryCreator
+							.createItemGetBankGoalAchiever(code);
 					itemGetBankGoalAchiever.setQuantity(quantity);
 					goalAchieverList.add(itemGetBankGoalAchiever);
-					goalAchieverList.add(new GoalAchieverLoop(itemsGoal, quantity));
-					goalAchieverList.add(new TradeGoalAchiever(moveService, taskDao, taskMasterCoordinates, code, quantity));
+					goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, quantity));
+					goalAchieverList.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, quantity));
 				}
 			} else {
-				ItemGetBankGoalAchiever itemGetBankGoalAchiever = new ItemGetBankGoalAchiever(bankDAO, code,
-						moveService, characterService);
+				ItemGetBankGoalAchiever itemGetBankGoalAchiever = factoryCreator.createItemGetBankGoalAchiever(code);
 				itemGetBankGoalAchiever.setQuantity(total);
 				goalAchieverList.add(itemGetBankGoalAchiever);
-				goalAchieverList.add(new GoalAchieverLoop(itemsGoal, total));
-				goalAchieverList.add(new TradeGoalAchiever(moveService, taskDao, taskMasterCoordinates, code, total));
+				goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, total));
+				goalAchieverList.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, total));
 			}
 			return goalAchiever;
 		}
 		return null;
 	}
-
 }

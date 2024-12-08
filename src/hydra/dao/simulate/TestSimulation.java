@@ -112,9 +112,8 @@ public class TestSimulation {
 						.collect(Collectors.toMap(aga -> simulatedGoalFactory.getInfos(aga).getItemCode(),
 								Function.identity())),
 				simulatorManager.getBankDAOSimulator(), simulatorManager.getCharacterDAOSimulator(),
-				simulatorManager.getMoveService(), simulatorManager.getCharacterServiceSimulator(),
-				secondSimulatorManager, secondSimulatorListener, secondSimulatedGoalFactory, goalParameter,
-				simulateGoalParameter, 25);
+				simulatorManager.getGoalFactoryCreator(), simulatorManager.getCharacterServiceSimulator(),
+				secondSimulatorManager, secondSimulatorListener, secondSimulatedGoalFactory, 25);
 
 		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("pig", 100);
 		List<? extends BotItemReader> viewItems = simulatorManager.getBankDAOSimulator().viewItems();

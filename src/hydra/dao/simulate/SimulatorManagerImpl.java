@@ -46,6 +46,7 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	private MoveService moveService;
 	private ItemService itemService;
 	private FightService fightService;
+	private GoalFactoryCreator goalFactoryCreator;
 
 	public SimulatorManagerImpl(SimulatorListener simulatorListener, ActiveEventsSimulator activeEventsSimulator) {
 		FilteredInnerCallSimulatorListener filteredInnerCallSimulatorListener = new FilteredInnerCallSimulatorListener(
@@ -115,8 +116,8 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 				characterDAOSimulator.getCharacterService(), moveService, itemService);
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDAOSimulator.addEquipmentChangeListener(monsterEquipementService);
-		GoalFactoryCreator goalFactoryCreator = new GoalFactoryCreatorImpl(characterDAOSimulator, bankDAOSimulator,
-				itemDAOSimulator, grandExchangeDAOSimulator, moveService, getCharacterServiceSimulator(), itemService,
+		goalFactoryCreator = new GoalFactoryCreatorImpl(characterDAOSimulator, bankDAOSimulator, itemDAOSimulator,
+				grandExchangeDAOSimulator, taskDAOSimulator, moveService, getCharacterServiceSimulator(), itemService,
 				fightService, goalParameter);
 		return new ArtifactGoalFactory(resourceDAOSimulator, monsterDAOSimulator, mapDAOSimulator, itemDAOSimulator,
 				characterDAOSimulator, bankDAOSimulator, taskDAOSimulator, goalParameter, itemService,
@@ -198,6 +199,11 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	@Override
 	public final ItemService getItemService() {
 		return itemService;
+	}
+
+	@Override
+	public final GoalFactoryCreator getGoalFactoryCreator() {
+		return goalFactoryCreator;
 	}
 
 	private HashMap<String, Integer> bankItemsToMap(List<? extends BotItemReader> bankItems) {

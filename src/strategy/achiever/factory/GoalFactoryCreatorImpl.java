@@ -6,6 +6,7 @@ import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
 import hydra.dao.GrandExchangeDAO;
 import hydra.dao.ItemDAO;
+import hydra.dao.TaskDAO;
 import hydra.model.BotMonster;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalParameter;
@@ -22,6 +23,8 @@ import strategy.achiever.factory.custom.UselessResourceManagerGoalAchiever;
 import strategy.achiever.factory.goals.DepositNoReservedItemGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverLoop;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
+import strategy.achiever.factory.goals.TradeGoalAchiever;
+import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.ItemService;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
@@ -38,14 +41,17 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 	private final ItemDAO itemDao;
 	private final GrandExchangeDAO grandExchangeDAO;
 	private final FightService fightService;
+	private final TaskDAO taskDAO;
 
 	public GoalFactoryCreatorImpl(CharacterDAO characterDAO, BankDAO bankDAO, ItemDAO itemDao,
-			GrandExchangeDAO grandExchangeDAO, MoveService moveService, CharacterService characterService,
-			ItemService itemService, FightService fightService, GoalParameter parameter) {
+			GrandExchangeDAO grandExchangeDAO, TaskDAO taskDAO, MoveService moveService,
+			CharacterService characterService, ItemService itemService, FightService fightService,
+			GoalParameter parameter) {
 		this.characterDAO = characterDAO;
 		this.bankDAO = bankDAO;
 		this.itemDao = itemDao;
 		this.grandExchangeDAO = grandExchangeDAO;
+		this.taskDAO = taskDAO;
 		this.moveService = moveService;
 		this.characterService = characterService;
 		this.itemService = itemService;
@@ -111,17 +117,15 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 	public DepositNoReservedItemGoalAchiever createDepositNoReservedItemGoalAchiever() {
 		return new DepositNoReservedItemGoalAchiever(bankDAO, moveService, characterService, parameter);
 	}
-	
+
 	@Override
 	public ItemGetBankGoalAchiever createItemGetBankGoalAchiever(String code) {
-		return new ItemGetBankGoalAchiever(bankDAO, code, moveService,
-				characterService);
+		return new ItemGetBankGoalAchiever(bankDAO, code, moveService, characterService);
 	}
-	
+
 	@Override
 	public ItemGetBankGoalAchiever createItemGetBankGoalAchieverForceNoRoot(String code) {
-		return new ItemGetBankGoalAchiever(bankDAO, code, moveService,
-				characterService) {
+		return new ItemGetBankGoalAchiever(bankDAO, code, moveService, characterService) {
 			@Override
 			public void setRoot() {
 				// On force le comportement comme s'il n'est pas root
@@ -129,9 +133,14 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 			}
 		};
 	}
-	
+
 	@Override
 	public GoalAchieverLoop createGoalAchieverLoop(GoalAchiever subGoal, int quantity) {
 		return new GoalAchieverLoop(subGoal, quantity);
+	}
+
+	@Override
+	public TradeGoalAchiever createTradeGoalAchiever(List<Coordinate> coordinates, String code, int quantity) {
+		return new TradeGoalAchiever(moveService, taskDAO, coordinates, code, quantity);
 	}
 }

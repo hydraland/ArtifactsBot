@@ -42,19 +42,18 @@ public final class SolarBot extends Bot {
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDao.addEquipmentChangeListener(monsterEquipementService);
 		GoalFactoryCreator goalFactoryCreator = new GoalFactoryCreatorImpl(characterDao, bankDao, itemDao,
-				grandExchangeDAO, moveService, characterService, itemService, fightService, goalParameter);
+				grandExchangeDAO, taskDao, moveService, characterService, itemService, fightService, goalParameter);
 		GoalFactory goalFactory = new ArtifactGoalFactory(resourceDAO, monsterDao, mapDao, itemDao, characterDao,
 				bankDao, taskDao, goalParameter, itemService, characterService, moveService, fightService,
 				monsterEquipementService, goalFactoryCreator);
 		MonsterTaskFactory monsterTaskFactory = new DefaultMonsterTaskFactory(
-				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), bankDao, characterDao, moveService,
-				characterService, goalParameter);
+				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), characterDao, goalFactoryCreator);
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING).stream()
 				.collect(Collectors.toMap(aga -> goalFactory.getInfos(aga).getItemCode(), Function.identity()));
-		ItemTaskFactory itemTaskFactory = new DefaultItemTaskFactory(characterDao, taskDao, bankDao, itemGoalsMap,
-				characterService, moveService, goalParameter);
+		ItemTaskFactory itemTaskFactory = new DefaultItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
+				characterService);
 		goalParameter.setItemTaskFactory(itemTaskFactory);
 		HPRecoveryFactory hpRecoveryFactory = new DefaultHPRecoveryFactory(characterDao, itemDao, characterService);
 		goalParameter.setHPRecoveryFactory(hpRecoveryFactory);
