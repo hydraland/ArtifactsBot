@@ -263,7 +263,7 @@ public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 			}
 		} catch (ApiException e) {
 			logError(e);
-			return new GatheringResponse(false, null, false);
+			return new GatheringResponse(false, null, e.getCode() == NOT_FOUND_CODE);
 		}
 	}
 

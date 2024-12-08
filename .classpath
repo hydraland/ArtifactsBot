@@ -6,6 +6,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/all-in-one-jar-3.2.jar"/>
+	<classpathentry kind="lib" path="lib/all-in-one-jar-3.2.jar" sourcepath="generate/src/main/java"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
