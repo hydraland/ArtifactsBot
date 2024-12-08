@@ -20,6 +20,8 @@ import hydra.model.BotItemReader;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.ArtifactGoalFactory;
 import strategy.achiever.factory.GoalFactory;
+import strategy.achiever.factory.GoalFactoryCreator;
+import strategy.achiever.factory.GoalFactoryCreatorImpl;
 import strategy.achiever.factory.util.ItemService;
 import strategy.achiever.factory.util.ItemServiceImpl;
 import strategy.util.CharacterService;
@@ -107,15 +109,19 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	@Override
 	public GoalFactory createFactory(GoalParameter goalParameter) {
 		itemService = new ItemServiceImpl(itemDAOSimulator);
-		moveService = new MoveServiceImpl(characterDAOSimulator, mapDAOSimulator, characterDAOSimulator.getCharacterService(), itemService);
+		moveService = new MoveServiceImpl(characterDAOSimulator, mapDAOSimulator,
+				characterDAOSimulator.getCharacterService(), itemService);
 		fightService = new FightServiceImpl(characterDAOSimulator, bankDAOSimulator, itemDAOSimulator,
 				characterDAOSimulator.getCharacterService(), moveService, itemService);
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDAOSimulator.addEquipmentChangeListener(monsterEquipementService);
+		GoalFactoryCreator goalFactoryCreator = new GoalFactoryCreatorImpl(characterDAOSimulator, bankDAOSimulator,
+				itemDAOSimulator, grandExchangeDAOSimulator, moveService, getCharacterServiceSimulator(), itemService,
+				fightService, goalParameter);
 		return new ArtifactGoalFactory(resourceDAOSimulator, monsterDAOSimulator, mapDAOSimulator, itemDAOSimulator,
-				characterDAOSimulator, grandExchangeDAOSimulator, bankDAOSimulator, taskDAOSimulator, goalParameter,
-				itemService, characterDAOSimulator.getCharacterService(), moveService, fightService,
-				monsterEquipementService);
+				characterDAOSimulator, bankDAOSimulator, taskDAOSimulator, goalParameter, itemService,
+				getCharacterServiceSimulator(), moveService, fightService, monsterEquipementService,
+				goalFactoryCreator);
 	}
 
 	@Override
@@ -195,6 +201,7 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	}
 
 	private HashMap<String, Integer> bankItemsToMap(List<? extends BotItemReader> bankItems) {
-		return new HashMap<>(bankItems.stream().collect(Collectors.toMap(BotItemReader::getCode, BotItemReader::getQuantity)));
+		return new HashMap<>(
+				bankItems.stream().collect(Collectors.toMap(BotItemReader::getCode, BotItemReader::getQuantity)));
 	}
 }

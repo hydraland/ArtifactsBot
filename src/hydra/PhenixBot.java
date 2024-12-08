@@ -22,6 +22,8 @@ import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.ArtifactGoalFactory;
 import strategy.achiever.factory.DefaultMonsterTaskFactory;
 import strategy.achiever.factory.GoalFactory;
+import strategy.achiever.factory.GoalFactoryCreator;
+import strategy.achiever.factory.GoalFactoryCreatorImpl;
 import strategy.achiever.factory.ItemTaskFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.achiever.factory.MonsterTaskUseSimulatorFactory;
@@ -60,9 +62,11 @@ public final class PhenixBot extends Bot {
 				itemService);
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDao.addEquipmentChangeListener(monsterEquipementService);
+		GoalFactoryCreator goalFactoryCreator = new GoalFactoryCreatorImpl(characterDao, bankDao, itemDao,
+				grandExchangeDAO, moveService, characterService, itemService, fightService, goalParameter);
 		GoalFactory goalFactory = new ArtifactGoalFactory(resourceDAO, monsterDao, mapDao, itemDao, characterDao,
-				grandExchangeDAO, bankDao, taskDao, goalParameter, itemService, characterService, moveService,
-				fightService, monsterEquipementService);
+				bankDao, taskDao, goalParameter, itemService, characterService, moveService, fightService,
+				monsterEquipementService, goalFactoryCreator);
 		StrategySimulatorListener strategySimulatorListener = new StrategySimulatorListener();
 		SimulatorManager simulator = new SimulatorManagerImpl(strategySimulatorListener,
 				botEvents -> Collections.emptyList());
