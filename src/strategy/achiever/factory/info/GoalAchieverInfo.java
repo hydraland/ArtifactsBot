@@ -18,7 +18,7 @@ public interface GoalAchieverInfo {
 	boolean isLevelInBorne(Bornes borne, INFO_TYPE infoType);
 	boolean isLevel(int skillLevel, INFO_TYPE infoType);
 	int getLevel();
-	default String getBoxCode() {
-		return "";
+	default boolean isMatchBoxCode(String boxCode) {
+		return false;
 	}
 }

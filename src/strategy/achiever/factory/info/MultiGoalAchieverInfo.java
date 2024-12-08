@@ -15,17 +15,19 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	private static final String EXCEPTION_MESSAGE = "Value  %s not authorize";
 	private boolean needTaskMasterResource;
 	private boolean needRareResource;
-	private List<Integer> craftLevels;
-	private List<Integer> gatheringLevels;
+	private final List<Integer> craftLevels;
+	private final List<Integer> gatheringLevels;
 	private BotCraftSkill botCraftSkill;
 	private BotResourceSkill botResourceSkill;
-//TODO voir pour boxCode
+	private final ArrayList<String> boxCodes;
+
 	public MultiGoalAchieverInfo(String code, BotItemType type) {
 		super(code, type);
 		needTaskMasterResource = false;
 		needRareResource = false;
 		craftLevels = new ArrayList<>();
 		gatheringLevels = new ArrayList<>();
+		boxCodes = new ArrayList<>();
 		botCraftSkill = null;
 		botResourceSkill = null;
 	}
@@ -62,8 +64,9 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 		return botResourceSkill != null;
 	}
 
-	public void setGathering(BotResourceSkill botResourceSkill) {
+	public void setGathering(BotResourceSkill botResourceSkill, String boxCode) {
 		this.botResourceSkill = botResourceSkill;
+		boxCodes.add(boxCode);
 	}
 
 	public void addLevel(int level, INFO_TYPE infoType) {
@@ -114,6 +117,11 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 		default:
 			throw new IllegalArgumentException(String.format(EXCEPTION_MESSAGE, infoType));
 		}
+	}
+	
+	@Override
+	public final boolean isMatchBoxCode(String aBoxCode) {
+		return boxCodes.contains(aBoxCode);
 	}
 
 	@Override

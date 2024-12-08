@@ -110,7 +110,7 @@ public interface Strategy {
 			return goalAchiever.isPresent() && goalAchiever.get().isRealisableAfterSetRoot(characterDAO.getCharacter());
 		} else if ("resource".equals(type)) {
 			Optional<ArtifactGoalAchiever> goalAchiever = itemGoals.stream()
-					.filter(aga -> code.equals(goalFactory.getInfos(aga).getBoxCode())).findFirst();
+					.filter(aga -> goalFactory.getInfos(aga).isMatchBoxCode(code)).findFirst();
 			return goalAchiever.isPresent() && goalAchiever.get().isRealisableAfterSetRoot(characterDAO.getCharacter());
 		}
 		return false;
@@ -123,8 +123,9 @@ public interface Strategy {
 					.findFirst().get();
 			return new GoalAchieverConditional(goalAchiever, () -> false, true);
 		} else if ("resource".equals(type)) {
+			//TODO voir pour equiper le tool qui va bien
 			ArtifactGoalAchiever goalAchiever = itemGoals.stream()
-					.filter(aga -> code.equals(goalFactory.getInfos(aga).getBoxCode())).findFirst().get();
+					.filter(aga -> goalFactory.getInfos(aga).isMatchBoxCode(code)).findFirst().get();
 			return new GoalAchieverConditional(goalFactory.addDepositNoReservedItemGoalAchiever(goalAchiever), () -> false, true);
 		}
 		return NOTHING_GOAL;

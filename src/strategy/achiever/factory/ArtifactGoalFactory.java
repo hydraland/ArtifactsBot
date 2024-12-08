@@ -327,7 +327,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 				this.goals.remove(oldGoalInMap);
 				// On met à jour le nouveau
 				if (infosRemoved.isGathering()) {
-					multiGoalAchieverInfo.setGathering(infosRemoved.getBotResourceSkill());
+					multiGoalAchieverInfo.setGathering(infosRemoved.getBotResourceSkill(), ((GatheringGoalAchieverInfo)infosRemoved).getBoxCode());
 					multiGoalAchieverInfo.addLevel(infosRemoved.getLevel(), INFO_TYPE.GATHERING);
 				}
 				goalsMap.put(craftGoal.getCode(), goalAchieverChoose);
@@ -378,7 +378,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 					GoalAchieverInfo infos = getInfos(goal);
 					goalAchieverChoose.addGoal(goal, infos);
 					if (infos.isGathering()) {
-						artifactGoalAchieverInfo.setGathering(infos.getBotResourceSkill());
+						artifactGoalAchieverInfo.setGathering(infos.getBotResourceSkill(), ((GatheringGoalAchieverInfo)infos).getBoxCode());
 						artifactGoalAchieverInfo.addLevel(((GatheringGoalAchieverInfo) infos).getLevel(),
 								INFO_TYPE.GATHERING);
 					}

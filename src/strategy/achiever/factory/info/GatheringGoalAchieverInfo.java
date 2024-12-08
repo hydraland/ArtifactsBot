@@ -46,6 +46,10 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	}
 	
 	@Override
+	public final boolean isMatchBoxCode(String aBoxCode) {
+		return boxCode.equals(aBoxCode);
+	}
+	
 	public final String getBoxCode() {
 		return boxCode;
 	}
