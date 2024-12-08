@@ -1,5 +1,6 @@
 package hydra.dao;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.openapitools.client.ApiClient;
@@ -11,9 +12,8 @@ import org.openapitools.client.model.MonsterResponseSchema;
 
 import hydra.dao.util.Convertor;
 import hydra.model.BotMonster;
-import java.util.Collections;
-import util.PermanentCacheManager;
 import util.CacheManager;
+import util.PermanentCacheManager;
 
 public class MonsterDAOImpl extends AbstractDAO implements MonsterDAO {
 	private static final String MONSTERS_KEY_CACHE = "monsters";

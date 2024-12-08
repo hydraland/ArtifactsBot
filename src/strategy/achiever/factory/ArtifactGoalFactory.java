@@ -148,7 +148,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 						depositNoReservedItemGoalAchiever, goalAchiever, true, true);
 				this.goals.add(achieverTwoStep);
 				getGoalInfo(achieverTwoStep, new GatheringGoalAchieverInfo(resourceCode, BotItemType.RESOURCE,
-						resource.getSkill(), resource.getLevel()));
+						resource.getSkill(), resource.getLevel(), boxCode));
 				List<ArtifactGoalAchiever> goal = goalsMap.computeIfAbsent(resourceCode, c -> new ArrayList<>());
 				goal.add(achieverTwoStep);
 				if (rate >= parameter.getRareItemSeuil()) {

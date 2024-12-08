@@ -110,7 +110,7 @@ public interface Strategy {
 			return goalAchiever.isPresent() && goalAchiever.get().isRealisableAfterSetRoot(characterDAO.getCharacter());
 		} else if ("resource".equals(type)) {
 			Optional<ArtifactGoalAchiever> goalAchiever = itemGoals.stream()
-					.filter(aga -> code.equals(goalFactory.getInfos(aga).getItemCode())).findFirst();
+					.filter(aga -> code.equals(goalFactory.getInfos(aga).getBoxCode())).findFirst();
 			return goalAchiever.isPresent() && goalAchiever.get().isRealisableAfterSetRoot(characterDAO.getCharacter());
 		}
 		return false;
@@ -121,11 +121,11 @@ public interface Strategy {
 		if ("monster".equals(type)) {
 			MonsterGoalAchiever goalAchiever = monsterGoals.stream().filter(mga -> code.equals(mga.getMonsterCode()))
 					.findFirst().get();
-			return new GoalAchieverConditional(goalAchiever, () -> true, true);
+			return new GoalAchieverConditional(goalAchiever, () -> false, true);
 		} else if ("resource".equals(type)) {
 			ArtifactGoalAchiever goalAchiever = itemGoals.stream()
-					.filter(aga -> code.equals(goalFactory.getInfos(aga).getItemCode())).findFirst().get();
-			return new GoalAchieverConditional(goalFactory.addDepositNoReservedItemGoalAchiever(goalAchiever), () -> true, true);
+					.filter(aga -> code.equals(goalFactory.getInfos(aga).getBoxCode())).findFirst().get();
+			return new GoalAchieverConditional(goalFactory.addDepositNoReservedItemGoalAchiever(goalAchiever), () -> false, true);
 		}
 		return NOTHING_GOAL;
 	}

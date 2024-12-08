@@ -7,9 +7,9 @@ import hydra.dao.ItemDAO;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
+import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
-import strategy.achiever.factory.GoalFactory;
 
 public interface StrategySkillUtils {
 

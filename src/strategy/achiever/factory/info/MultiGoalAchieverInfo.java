@@ -19,7 +19,7 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	private List<Integer> gatheringLevels;
 	private BotCraftSkill botCraftSkill;
 	private BotResourceSkill botResourceSkill;
-
+//TODO voir pour boxCode
 	public MultiGoalAchieverInfo(String code, BotItemType type) {
 		super(code, type);
 		needTaskMasterResource = false;

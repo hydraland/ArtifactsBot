@@ -10,11 +10,13 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 
 	private final BotResourceSkill resourceSkill;
 	private final int level;
+	private final String boxCode;
 
-	public GatheringGoalAchieverInfo(String code, BotItemType type, BotResourceSkill resourceSkill, int level) {
+	public GatheringGoalAchieverInfo(String code, BotItemType type, BotResourceSkill resourceSkill, int level, String boxCode) {
 		super(code, type);
 		this.resourceSkill = resourceSkill;
 		this.level = level;
+		this.boxCode = boxCode;
 	}
 
 	@Override
@@ -42,6 +44,11 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	public int getLevel() {
 		return level;
 	}
+	
+	@Override
+	public final String getBoxCode() {
+		return boxCode;
+	}
 
 	@Override
 	public String toString() {
@@ -50,6 +57,7 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 		builder.append("type", type);
 		builder.append("level", level);
 		builder.append("resourceSkill", resourceSkill);
+		builder.append("boxCode", boxCode);
 		return builder.toString();
 	}
 }

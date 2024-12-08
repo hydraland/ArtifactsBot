@@ -14,9 +14,9 @@ import org.openapitools.client.model.BankResponseSchema;
 import org.openapitools.client.model.DepositWithdrawGoldSchema;
 import org.openapitools.client.model.SimpleItemSchema;
 
-import hydra.dao.util.Convertor;
 import hydra.GameConstants;
 import hydra.dao.util.CharacterCache;
+import hydra.dao.util.Convertor;
 import hydra.dao.util.CooldownManager;
 import hydra.model.BotBankDetail;
 import hydra.model.BotCharacter;

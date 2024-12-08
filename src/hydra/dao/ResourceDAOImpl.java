@@ -1,5 +1,6 @@
 package hydra.dao;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.openapitools.client.ApiClient;
@@ -11,9 +12,8 @@ import org.openapitools.client.model.ResourceResponseSchema;
 
 import hydra.dao.util.Convertor;
 import hydra.model.BotResource;
-import java.util.Collections;
-import util.PermanentCacheManager;
 import util.CacheManager;
+import util.PermanentCacheManager;
 
 public class ResourceDAOImpl extends AbstractDAO implements ResourceDAO {
 	private static final String RESOURCE_CACHE_NAME = "resource";
