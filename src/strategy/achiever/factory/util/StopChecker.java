@@ -1,5 +1,5 @@
 package strategy.achiever.factory.util;
 
-public interface StopValidator<R> {
+public interface StopChecker<R> {
 	boolean isStop(R response);
 }

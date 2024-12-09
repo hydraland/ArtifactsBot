@@ -10,7 +10,7 @@ public class GoalAchieverConditional implements GoalAchiever {
 
 	private GoalAchiever subGoal;
 	private boolean finish;
-	private boolean fictifRoot;
+	private boolean virtualRoot;
 	private Condition condition;
 
 	public GoalAchieverConditional(GoalAchiever subGoal, Condition condition) {
@@ -19,10 +19,10 @@ public class GoalAchieverConditional implements GoalAchiever {
 		this.finish = false;
 	}
 
-	public GoalAchieverConditional(GoalAchiever subGoal, Condition condition, boolean fictifRoot) {
+	public GoalAchieverConditional(GoalAchiever subGoal, Condition condition, boolean virtualRoot) {
 		this.subGoal = subGoal;
 		this.condition = condition;
-		this.fictifRoot = fictifRoot;
+		this.virtualRoot = virtualRoot;
 		this.finish = false;
 	}
 
@@ -62,7 +62,7 @@ public class GoalAchieverConditional implements GoalAchiever {
 
 	@Override
 	public void setRoot() {
-		if (fictifRoot) {
+		if (virtualRoot) {
 			subGoal.setRoot();
 		} else {
 			subGoal.unsetRoot();
@@ -77,7 +77,7 @@ public class GoalAchieverConditional implements GoalAchiever {
 	@Override
 	public String toString() {
 		ToStringBuilder builder = new ToStringBuilder(this);
-		builder.append("fictifRoot", fictifRoot);
+		builder.append("virtualRoot", virtualRoot);
 		builder.append("subGoal", subGoal);
 		return builder.toString();
 	}

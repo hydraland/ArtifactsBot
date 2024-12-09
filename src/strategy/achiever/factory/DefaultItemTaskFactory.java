@@ -7,9 +7,7 @@ import hydra.dao.CharacterDAO;
 import hydra.model.BotCharacter;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
-import strategy.achiever.factory.goals.DepositNoReservedItemGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverList;
-import strategy.achiever.factory.goals.GoalAchieverTwoStep;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
@@ -34,12 +32,12 @@ public class DefaultItemTaskFactory implements ItemTaskFactory {
 		ArtifactGoalAchiever itemsGoal = itemsGoals.get(code);
 		if (itemsGoal != null) {
 			GoalAchiever goalAchiever;
-			GoalAchieverList goalAchieverList = new GoalAchieverList();
+			GoalAchieverList goalAchieverList = factoryCreator.createGoalAchieverList();
 			int freeSpace = characterService.getFreeInventorySpace();
 			if (freeSpace < total) {
-				DepositNoReservedItemGoalAchiever depositNoReservedItemGoalAchiever = factoryCreator
+				GoalAchiever depositNoReservedItemGoalAchiever = factoryCreator
 						.createDepositNoReservedItemGoalAchiever();
-				goalAchiever = new GoalAchieverTwoStep(characterDAO, depositNoReservedItemGoalAchiever,
+				goalAchiever = factoryCreator.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever,
 						goalAchieverList, true, false);
 				BotCharacter character = characterDAO.getCharacter();
 				freeSpace = character.getInventoryMaxItems();
@@ -57,7 +55,7 @@ public class DefaultItemTaskFactory implements ItemTaskFactory {
 							.createItemGetBankGoalAchiever(code);
 					itemGetBankGoalAchiever.setQuantity(freeSpace);
 					goalAchieverList.add(itemGetBankGoalAchiever);
-					goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, freeSpace));
+					goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, freeSpace, false));
 					goalAchieverList
 							.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, freeSpace));
 				}
@@ -67,14 +65,14 @@ public class DefaultItemTaskFactory implements ItemTaskFactory {
 							.createItemGetBankGoalAchiever(code);
 					itemGetBankGoalAchiever.setQuantity(quantity);
 					goalAchieverList.add(itemGetBankGoalAchiever);
-					goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, quantity));
+					goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, quantity, false));
 					goalAchieverList.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, quantity));
 				}
 			} else {
 				ItemGetBankGoalAchiever itemGetBankGoalAchiever = factoryCreator.createItemGetBankGoalAchiever(code);
 				itemGetBankGoalAchiever.setQuantity(total);
 				goalAchieverList.add(itemGetBankGoalAchiever);
-				goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, total));
+				goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, total, false));
 				goalAchieverList.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, total));
 			}
 			return goalAchiever;

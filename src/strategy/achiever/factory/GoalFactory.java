@@ -8,11 +8,11 @@ import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
-import strategy.achiever.factory.util.StopValidator;
+import strategy.achiever.factory.util.StopChecker;
 
 public interface GoalFactory {
 
-	List<MonsterGoalAchiever> createMonstersGoals(StopValidator<FightResponse> stopCondition);
+	List<MonsterGoalAchiever> createMonstersGoals(StopChecker<FightResponse> stopCondition);
 
 	List<ArtifactGoalAchiever> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector);
 

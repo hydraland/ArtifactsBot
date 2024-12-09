@@ -117,12 +117,10 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDAOSimulator.addEquipmentChangeListener(monsterEquipementService);
 		goalFactoryCreator = new GoalFactoryCreatorImpl(characterDAOSimulator, bankDAOSimulator, itemDAOSimulator,
-				grandExchangeDAOSimulator, taskDAOSimulator, moveService, getCharacterServiceSimulator(), itemService,
-				fightService, goalParameter);
+				grandExchangeDAOSimulator, taskDAOSimulator, mapDAOSimulator, moveService,
+				getCharacterServiceSimulator(), itemService, fightService, monsterEquipementService, goalParameter);
 		return new ArtifactGoalFactory(resourceDAOSimulator, monsterDAOSimulator, mapDAOSimulator, itemDAOSimulator,
-				characterDAOSimulator, bankDAOSimulator, taskDAOSimulator, goalParameter, itemService,
-				getCharacterServiceSimulator(), moveService, fightService, monsterEquipementService,
-				goalFactoryCreator);
+				characterDAOSimulator, goalParameter, getCharacterServiceSimulator(), goalFactoryCreator);
 	}
 
 	@Override

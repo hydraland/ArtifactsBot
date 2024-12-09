@@ -14,7 +14,7 @@ import hydra.model.BotMonster;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.util.Coordinate;
-import strategy.achiever.factory.util.StopValidator;
+import strategy.achiever.factory.util.StopChecker;
 import strategy.util.MonsterEquipementService;
 import strategy.util.MoveService;
 import strategy.util.fight.FightService;
@@ -28,14 +28,14 @@ public class MonsterGoalAchiever implements GoalAchiever {
 	private boolean finish;
 	private final MonsterEquipementService monsterEquipementService;
 	private final MapDAO mapDao;
-	private final StopValidator<FightResponse> stopCondition;
+	private final StopChecker<FightResponse> stopCondition;
 	private final FightService fightService;
 	private final MoveService moveService;
 	private final GoalParameter goalParameter;
 
 	public MonsterGoalAchiever(CharacterDAO characterDAO, MapDAO mapDao, List<Coordinate> coordinates,
 			BotMonster monster, MonsterEquipementService monsterEquipementService,
-			StopValidator<FightResponse> stopCondition, FightService fightService, MoveService moveService, GoalParameter goalParameter) {
+			StopChecker<FightResponse> stopCondition, FightService fightService, MoveService moveService, GoalParameter goalParameter) {
 		this.mapDao = mapDao;
 		this.coordinates = coordinates;
 		this.monsterEquipementService = monsterEquipementService;

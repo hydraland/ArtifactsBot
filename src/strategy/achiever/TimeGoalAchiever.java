@@ -11,7 +11,7 @@ public class TimeGoalAchiever implements GoalAchiever {
 
 	private GoalAchiever subGoal;
 	private boolean finish;
-	private boolean fictifRoot;
+	private boolean virtualRoot;
 	private XpGetter xpGetter;
 	private AverageTimeXpCalculator averageTimeXpCalculator;
 
@@ -23,9 +23,9 @@ public class TimeGoalAchiever implements GoalAchiever {
 	}
 
 	public TimeGoalAchiever(GoalAchiever subGoal, XpGetter xpGetter, AverageTimeXpCalculator averageTimeXpCalculator,
-			boolean fictifRoot) {
+			boolean virtualRoot) {
 		this(subGoal, xpGetter, averageTimeXpCalculator);
-		this.fictifRoot = fictifRoot;
+		this.virtualRoot = virtualRoot;
 	}
 
 	@Override
@@ -64,7 +64,7 @@ public class TimeGoalAchiever implements GoalAchiever {
 
 	@Override
 	public void setRoot() {
-		if (fictifRoot) {
+		if (virtualRoot) {
 			subGoal.setRoot();
 		} else {
 			subGoal.unsetRoot();
@@ -83,7 +83,7 @@ public class TimeGoalAchiever implements GoalAchiever {
 	@Override
 	public String toString() {
 		ToStringBuilder builder = new ToStringBuilder(this);
-		builder.append("fictifRoot", fictifRoot);
+		builder.append("virtualRoot", virtualRoot);
 		builder.append("subGoal", subGoal);
 		return builder.toString();
 	}

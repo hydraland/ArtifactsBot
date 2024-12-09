@@ -15,21 +15,17 @@ public class GoalAchieverLoop implements ArtifactGoalAchiever {
 	private int quantity;
 	private final GoalAchiever subGoal;
 	private boolean finish;
-	private boolean fictifRoot;
+	private boolean virtualRoot;
 	private int coefficient;
 	private int step;
 
-	public GoalAchieverLoop(GoalAchiever subGoal, int quantity) {
+	public GoalAchieverLoop(GoalAchiever subGoal, int quantity, boolean virtualRoot) {
 		this.subGoal = subGoal;
 		this.quantity = quantity;
 		this.finish = false;
 		this.coefficient = 1;
 		this.step = 1;
-	}
-
-	public GoalAchieverLoop(GoalAchiever subGoal, int quantity, boolean fictifRoot) {
-		this(subGoal, quantity);
-		this.fictifRoot = fictifRoot;
+		this.virtualRoot = virtualRoot;
 	}
 
 	@Override
@@ -71,7 +67,7 @@ public class GoalAchieverLoop implements ArtifactGoalAchiever {
 
 	@Override
 	public void setRoot() {
-		if (fictifRoot) {
+		if (virtualRoot) {
 			subGoal.setRoot();
 		} else {
 			subGoal.unsetRoot();
@@ -124,7 +120,7 @@ public class GoalAchieverLoop implements ArtifactGoalAchiever {
 	public String toString() {
 		ToStringBuilder builder = new ToStringBuilder(this);
 		builder.append("quantity", quantity);
-		builder.append("fictifRoot", fictifRoot);
+		builder.append("virtualRoot", virtualRoot);
 		builder.append("coefficient", coefficient);
 		builder.append("step", step);
 		builder.append("subGoal", subGoal);

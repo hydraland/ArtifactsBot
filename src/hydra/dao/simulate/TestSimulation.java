@@ -55,7 +55,7 @@ public class TestSimulation {
 		GoalFactory simulatedGoalFactory = simulatorManager.createFactory(goalParameter);
 		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
-
+		List<ArtifactGoalAchiever> dropItemGoal = simulatedGoalFactory.getDropItemGoal();
 		/*
 		 * character.setX(0); character.setY(-2);
 		 * simulatorManager.getCharacterDAOSimulator().fight();

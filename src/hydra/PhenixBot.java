@@ -63,10 +63,10 @@ public final class PhenixBot extends Bot {
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
 		characterDao.addEquipmentChangeListener(monsterEquipementService);
 		GoalFactoryCreator goalFactoryCreator = new GoalFactoryCreatorImpl(characterDao, bankDao, itemDao,
-				grandExchangeDAO, taskDao, moveService, characterService, itemService, fightService, goalParameter);
+				grandExchangeDAO, taskDao, mapDao, moveService, characterService, itemService, fightService,
+				monsterEquipementService, goalParameter);
 		GoalFactory goalFactory = new ArtifactGoalFactory(resourceDAO, monsterDao, mapDao, itemDao, characterDao,
-				bankDao, taskDao, goalParameter, itemService, characterService, moveService, fightService,
-				monsterEquipementService, goalFactoryCreator);
+				goalParameter, characterService, goalFactoryCreator);
 		StrategySimulatorListener strategySimulatorListener = new StrategySimulatorListener();
 		SimulatorManager simulator = new SimulatorManagerImpl(strategySimulatorListener,
 				botEvents -> Collections.emptyList());
@@ -116,7 +116,7 @@ public final class PhenixBot extends Bot {
 		if (isForSimu) {
 			goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(characterDao, itemDao, characterService));
 			goalParameter.setMonsterTaskFactory(new DefaultMonsterTaskFactory(
-					goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), characterDao, goalFactoryCreator));
+					goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), goalFactoryCreator));
 		}
 	}
 

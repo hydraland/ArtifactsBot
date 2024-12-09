@@ -7,9 +7,7 @@ import hydra.dao.CharacterDAO;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.ClearGoalAchiever;
-import strategy.achiever.factory.goals.DepositNoReservedItemGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverList;
-import strategy.achiever.factory.goals.GoalAchieverTwoStep;
 import strategy.achiever.factory.goals.OptimizeGoalAchiever;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
@@ -32,7 +30,7 @@ public class OptimizedItemTaskFactory extends DefaultItemTaskFactory {
 		if (itemsGoal != null) {
 			int optimValue = goalAverageOptimizer.optimize(itemsGoal, total, 0.9f);
 			if (optimValue > 1) {
-				GoalAchieverList goalAchieverList = new GoalAchieverList();
+				GoalAchieverList goalAchieverList = factoryCreator.createGoalAchieverList();
 				if (total > optimValue) {
 					int nbPack = total / optimValue;
 					for (int i = 0; i < nbPack; i++) {
@@ -53,9 +51,9 @@ public class OptimizedItemTaskFactory extends DefaultItemTaskFactory {
 					goalAchieverList.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, total));
 				}
 
-				DepositNoReservedItemGoalAchiever depositNoReservedItemGoalAchiever = factoryCreator
+				GoalAchiever depositNoReservedItemGoalAchiever = factoryCreator
 						.createDepositNoReservedItemGoalAchiever();
-				return new GoalAchieverTwoStep(characterDAO, depositNoReservedItemGoalAchiever, goalAchieverList, true,
+				return factoryCreator.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever, goalAchieverList, true,
 						false);
 			}
 		}

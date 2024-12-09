@@ -2,54 +2,88 @@ package strategy.achiever.factory;
 
 import java.util.List;
 
+import hydra.dao.response.FightResponse;
+import hydra.model.BotCharacterInventorySlot;
+import hydra.model.BotCraftSkill;
 import hydra.model.BotMonster;
+import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
-import strategy.achiever.factory.custom.DepositGoldInBankGoalAchiever;
-import strategy.achiever.factory.custom.DepositResourceGoalAchiever;
-import strategy.achiever.factory.custom.DepositTaskCoinGoalAchiever;
-import strategy.achiever.factory.custom.DepositToolGoalAchiever;
-import strategy.achiever.factory.custom.EquipmentManagerGoalAchiever;
-import strategy.achiever.factory.custom.ExtendBankSlotGoalAchiever;
-import strategy.achiever.factory.custom.FoodManagerGoalAchiever;
-import strategy.achiever.factory.custom.PotionManagerGoalAchiever;
-import strategy.achiever.factory.custom.UselessEquipmentManagerGoalAchiever;
-import strategy.achiever.factory.custom.UselessResourceManagerGoalAchiever;
-import strategy.achiever.factory.goals.DepositNoReservedItemGoalAchiever;
-import strategy.achiever.factory.goals.GoalAchieverLoop;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.GoalAchieverChoose;
+import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.goals.GoalAchieverList;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
-import strategy.achiever.factory.goals.TradeGoalAchiever;
+import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.ResourceGoalAchiever;
 import strategy.achiever.factory.util.Coordinate;
+import strategy.achiever.factory.util.SlotMethod;
+import strategy.achiever.factory.util.StopChecker;
 
 public interface GoalFactoryCreator {
 
-	DepositGoldInBankGoalAchiever createDepositGoldInBankGoalAchiever();
+	GoalAchiever createDepositGoldInBankGoalAchiever();
 
-	ExtendBankSlotGoalAchiever createExtendBankSlotGoalAchiever();
+	GoalAchiever createExtendBankSlotGoalAchiever();
 
-	DepositToolGoalAchiever createDepositToolGoalAchiever();
+	GoalAchiever createDepositToolGoalAchiever();
 
-	DepositTaskCoinGoalAchiever createDepositTaskCoinGoalAchiever();
+	GoalAchiever createDepositTaskCoinGoalAchiever();
 
-	DepositResourceGoalAchiever createDepositResourceGoalAchiever(List<String> resourceItemsCraftable);
+	GoalAchiever createDepositResourceGoalAchiever(List<String> resourceItemsCraftable);
 
-	EquipmentManagerGoalAchiever createEquipmentManagerGoalAchiever();
+	GoalAchiever createEquipmentManagerGoalAchiever();
 
-	UselessEquipmentManagerGoalAchiever createUselessEquipmentManagerGoalAchiever(List<BotMonster> monsters);
+	GoalAchiever createUselessEquipmentManagerGoalAchiever(List<BotMonster> monsters);
 
-	UselessResourceManagerGoalAchiever createUselessResourceManagerGoalAchiever(List<String> rareResourceItems);
+	GoalAchiever createUselessResourceManagerGoalAchiever(List<String> rareResourceItems);
 
-	FoodManagerGoalAchiever createFoodManagerGoalAchiever();
+	GoalAchiever createFoodManagerGoalAchiever();
 
-	PotionManagerGoalAchiever createPotionManagerGoalAchiever();
+	GoalAchiever createPotionManagerGoalAchiever();
 
-	DepositNoReservedItemGoalAchiever createDepositNoReservedItemGoalAchiever();
+	GoalAchiever createDepositNoReservedItemGoalAchiever();
 
 	ItemGetBankGoalAchiever createItemGetBankGoalAchiever(String code);
 
 	ItemGetBankGoalAchiever createItemGetBankGoalAchieverForceNoRoot(String code);
 
-	GoalAchieverLoop createGoalAchieverLoop(GoalAchiever subGoal, int quantity);
+	ArtifactGoalAchiever createGoalAchieverLoop(GoalAchiever subGoal, int quantity, boolean virtualRoot);
 
-	TradeGoalAchiever createTradeGoalAchiever(List<Coordinate> coordinates, String code, int quantity);
+	ArtifactGoalAchiever createTradeGoalAchiever(List<Coordinate> coordinates, String code, int quantity);
+
+	GoalAchiever createEquipToolGoalAchiever(BotResourceSkill resourceSkill);
+
+	GoalAchiever createItemRecycleGoalAchiever(String code, BotCraftSkill botCraftSkill, int minPreserve);
+
+	ArtifactGoalAchiever createGoalAchieverTwoStep(GoalAchiever optionalGoal, GoalAchiever goal, boolean virtualRoot,
+			boolean checkBeforeExecuteOptional);
+
+	ResourceGoalAchiever createGatheringGoalAchiever(String resourceCode, int rate, List<Coordinate> coordinates,
+			int level, BotResourceSkill skill, String boxCode);
+
+	ResourceGoalAchiever createItemMonsterGoalAchiever(
+			String resourceCode, int rate, List<Coordinate> coordinates,
+			BotMonster monster);
+
+	MonsterGoalAchiever createMonsterGoalAchiever(List<Coordinate> coordinates, BotMonster monster,
+			StopChecker<FightResponse> stopCondition);
+
+	GoalAchiever createMonsterTaskGoalAchiever(List<Coordinate> coordinates);
+
+	GoalAchiever createItemTaskGoalAchiever(List<Coordinate> coordinates);
+
+	ArtifactGoalAchiever createItemGetInventoryOrBankGoalAchiever(String code,
+			ItemGetBankGoalAchiever itemGetBankGoalAchiever, int quantity);
+
+	GoalAchieverChoose createGoalAchieverChoose(ChooseBehaviorSelector chooseBehaviorSelector);
+
+	ResourceGoalAchiever createItemCraftGoalAchiever(String code, int level, BotCraftSkill skill,
+			ArtifactGoalAchiever goalAchiever);
+
+	GoalAchiever createUseGoldItemManagerGoalAchiever(List<String> goldResourceItems);
+
+	ResourceGoalAchiever createUnequipFirstWeaponGoalAchiever(SlotMethod method, BotCharacterInventorySlot slot);
+
+	GoalAchieverList createGoalAchieverList();
 
 }

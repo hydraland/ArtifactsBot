@@ -14,10 +14,10 @@ public class UseGoldItemManagerGoalAchiever extends AbstractCustomGoalAchiever {
 	private final CharacterDAO characterDAO;
 	private final List<String> goldResourceItems;
 
-	public UseGoldItemManagerGoalAchiever(CharacterDAO characterDAO, CharacterService characterService, List<String> goldResurceItems) {
+	public UseGoldItemManagerGoalAchiever(CharacterDAO characterDAO, CharacterService characterService, List<String> goldResourceItems) {
 		super(characterService);
 		this.characterDAO = characterDAO;
-		this.goldResourceItems = goldResurceItems;
+		this.goldResourceItems = goldResourceItems;
 	}
 
 	@Override
