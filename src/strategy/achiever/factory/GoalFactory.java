@@ -5,6 +5,7 @@ import java.util.List;
 
 import hydra.dao.response.FightResponse;
 import strategy.achiever.GoalAchiever;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
@@ -20,7 +21,7 @@ public interface GoalFactory {
 
 	List<GoalAchieverInfo> getDropItemGoal();
 
-	GoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve);
+	ArtifactGoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve);
 
 	GoalAchiever addDepositNoReservedItemGoalAchiever(GoalAchiever goalAchiever);
 

@@ -412,7 +412,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	}
 
 	@Override
-	public GoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve) {
+	public ArtifactGoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve) {
 		String code = goalAchiever.getItemCode();
 		ItemGetBankGoalAchiever itemGetBankGoalAchiever = factoryCreator.createItemGetBankGoalAchieverForceNoRoot(code);
 		itemGetBankGoalAchiever.setQuantity(characterService.getFreeInventorySpace());

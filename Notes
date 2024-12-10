@@ -1,4 +1,3 @@
-Ajout recyclage à SimulatorStrategy
 Gestion equiper tool pour resource event + ajout aller à la bank (voir si possible correction bug si erreur <> 498 sur évènement)
 gestion de la succession d'event Goal réalisable (list de pending action??)
 

@@ -240,9 +240,11 @@ public class SimulatorStrategy implements Strategy {
 		List<ArtifactGoalAchiever> result = new ArrayList<>();
 		if (searchRealGoal.isPresent()) {
 			optimize(searchRealGoal.get(), goalFactory);
-			result.add(searchRealGoal.get().getGoal());
+			ArtifactGoalAchiever itemRecycleGoalAchiever = goalFactory.addItemRecycleGoalAchiever(searchRealGoal.get(),
+					Strategy.calculMinItemPreserve(searchRealGoal.get()));
+			result.add(itemRecycleGoalAchiever);
 			if (craftingLevel < maxLevel) {
-				result.add(searchRealGoal.get().getGoal());
+				result.add(itemRecycleGoalAchiever);
 			}
 		}
 		return result;
