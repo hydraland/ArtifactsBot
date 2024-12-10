@@ -94,7 +94,9 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 				goalAverageOptimizer.optimize(artifactGoalAchiever, maxCookOrPotionTask, 0.9f);
 				genericGoalAchiever.setExecutableGoalAchiever(reservedItems -> {
 					artifactGoalAchiever.clear();
-					return artifactGoalAchiever.execute(reservedItems);
+					boolean result = artifactGoalAchiever.execute(reservedItems);
+					reservedItems.clear();
+					return result;
 				});
 			} else if (simCodeFound.length > 1) {
 				updateGenericGoal(simCodeFound, characterService, goalAverageOptimizer);

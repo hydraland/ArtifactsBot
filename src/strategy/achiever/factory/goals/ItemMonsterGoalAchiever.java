@@ -75,7 +75,9 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 				return true;
 			}
 		}
-
+		if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
+			return false;
+		}
 		if (!monsterEquipementService.equipBestEquipement(monster, reservedItems)) {
 			return false;
 		}
@@ -85,9 +87,6 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 			if (coordinates == null) {
 				return false;// le monstre n'est plus présent.
 			}
-		}
-		if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
-			return false;
 		}
 		if (moveService.moveTo(coordinates)) {
 			FightResponse response = characterDAO.fight();
@@ -105,6 +104,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 				}
 				return goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
 			}
+			goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
 		}
 		return false;
 	}
