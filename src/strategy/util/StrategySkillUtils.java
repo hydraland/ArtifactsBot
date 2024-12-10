@@ -7,8 +7,7 @@ import hydra.dao.ItemDAO;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
-import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 
 public interface StrategySkillUtils {
@@ -38,24 +37,21 @@ public interface StrategySkillUtils {
 		return searchIndex;
 	}
 
-	public static Predicate<ArtifactGoalAchiever> createFilterCraftPredicate(GoalFactory factory, BotCraftSkill skill,
-			Bornes borne) {
-		return p -> factory.getInfos(p).isCraft() && skill.equals(factory.getInfos(p).getBotCraftSkill())
-				&& factory.getInfos(p).isLevelInBorne(borne, INFO_TYPE.CRAFTING);
+	public static Predicate<GoalAchieverInfo> createFilterCraftPredicate(BotCraftSkill skill, Bornes borne) {
+		return p -> p.isCraft() && skill.equals(p.getBotCraftSkill()) && p.isLevelInBorne(borne, INFO_TYPE.CRAFTING);
 	}
 
-	public static Predicate<ArtifactGoalAchiever> createFilterResourcePredicate(GoalFactory factory, Bornes borne,
+	public static Predicate<GoalAchieverInfo> createFilterResourcePredicate(Bornes borne,
 			BotResourceSkill resourceSkill) {
-		return p -> factory.getInfos(p).isGathering() && resourceSkill.equals(factory.getInfos(p).getBotResourceSkill())
-				&& factory.getInfos(p).isLevelInBorne(borne, INFO_TYPE.GATHERING);
+		return p -> p.isGathering() && resourceSkill.equals(p.getBotResourceSkill())
+				&& p.isLevelInBorne(borne, INFO_TYPE.GATHERING);
 	}
 
-	public static Predicate<ArtifactGoalAchiever> createFilterResourceAndCraftPredicate(GoalFactory factory,
-			Bornes borne, BotResourceSkill resourceSkill, BotCraftSkill craftSkill) {
-		return p -> (factory.getInfos(p).isGathering()
-				&& resourceSkill.equals(factory.getInfos(p).getBotResourceSkill())
-				&& factory.getInfos(p).isLevelInBorne(borne, INFO_TYPE.GATHERING))
-				|| (factory.getInfos(p).isCraft() && craftSkill.equals(factory.getInfos(p).getBotCraftSkill())
-						&& factory.getInfos(p).isLevelInBorne(borne, INFO_TYPE.CRAFTING));
+	public static Predicate<GoalAchieverInfo> createFilterResourceAndCraftPredicate(Bornes borne,
+			BotResourceSkill resourceSkill, BotCraftSkill craftSkill) {
+		return p -> (p.isGathering() && resourceSkill.equals(p.getBotResourceSkill())
+				&& p.isLevelInBorne(borne, INFO_TYPE.GATHERING))
+				|| (p.isCraft() && craftSkill.equals(p.getBotCraftSkill())
+						&& p.isLevelInBorne(borne, INFO_TYPE.CRAFTING));
 	}
 }

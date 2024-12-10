@@ -1,6 +1,7 @@
 package strategy;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +19,9 @@ import strategy.achiever.GoalAchiever;
 import strategy.achiever.TimeGoalAchiever;
 import strategy.achiever.TimeGoalAchiever.XpGetter;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.util.AverageTimeXpCalculator;
@@ -35,13 +36,13 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 	private static final int ITEM_INITIAL_AVERAGE_TIME_VALUE = 1000;
 	private final CharacterDAO characterDAO;
 	private final List<GoalAchiever> inventoryGoals;
-	private final List<ArtifactGoalAchiever> itemGoals;
+	private final Collection<GoalAchieverInfo> itemGoals;
 	private final List<GoalAchiever> taskGoals;
 	private final Map<String, AverageTimeXpCalculator> timeGoalAchieverMap;
 	private final List<MonsterGoalAchiever> monsterGoals;
 	private int currentCall;
 	private final List<XpGetter> xpGetters;
-	private final List<ArtifactGoalAchiever> dropItemGoal;
+	private final List<GoalAchieverInfo> dropItemGoal;
 	private final CharacterService characterService;
 	private final GoalFactory goalFactory;
 	private GoalAchiever eventGoal;
@@ -50,7 +51,7 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 	private final GoalAverageOptimizer goalAverageOptimizer;
 
 	public OptimisedTimeStrategyV2(CharacterDAO characterDAO, ItemDAO itemDao, GoalFactory goalFactory,
-			CharacterService characterService, BankDAO bankDAO,GoalAverageOptimizer goalAverageOptimizer) {
+			CharacterService characterService, BankDAO bankDAO, GoalAverageOptimizer goalAverageOptimizer) {
 		this.characterDAO = characterDAO;
 		this.goalFactory = goalFactory;
 		this.characterService = characterService;
@@ -68,7 +69,7 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 				.map(bid -> bid.getCode()).toList();
 		itemGoals.stream().forEach(ga -> {
 			AverageTimeXpCalculator averageTimeXpCalculator;
-			String code = goalFactory.getInfos(ga).getItemCode();
+			String code = ga.getItemCode();
 			if (itemWithHasteEffectListCode.contains(code)) {
 				averageTimeXpCalculator = new AverageTimeXpCalculator(ITEM_INITIAL_AVERAGE_TIME_VALUE + 1,
 						AVERAGE_TIME_XP_CALCULATOR_MAX_SIZE);
@@ -94,35 +95,31 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 		BotCharacter character = this.characterDAO.getCharacter();
 		int[] skillLevels = new int[] { character.getGearcraftingLevel(), character.getWeaponcraftingLevel(),
 				character.getJewelrycraftingLevel(), character.getWoodcuttingLevel(), character.getMiningLevel() };
-		List<ArtifactGoalAchiever> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, goalFactory,
-				bankDAO);
+		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
 		// search min skill
 		int index = StrategySkillUtils.getMinSkillIndex(skillLevels);
 		if (skillLevels[index] < GameConstants.MAX_SKILL_LEVEL) {
 			// recherche tous les buts pour augmenter le skillMin
 			int minSkillLevel = Math.max(1, skillLevels[index] - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP + 1);
-			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, skillLevels[index]);
-			List<Predicate<ArtifactGoalAchiever>> filterPredicate = new ArrayList<>();
-			filterPredicate.addAll(createFiltersPredicate(goalFactory, bornes));
-			List<ArtifactGoalAchiever> searchGoalAchievers = allGoals.stream().filter(filterPredicate.get(index))
-					.sorted((c1, c2) -> Double.compare(
-							timeGoalAchieverMap.get(goalFactory.getInfos(c1).getItemCode()).getAverage(),
-							timeGoalAchieverMap.get(goalFactory.getInfos(c2).getItemCode()).getAverage()))
+			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, skillLevels[index] + 1);
+			List<Predicate<GoalAchieverInfo>> filterPredicate = new ArrayList<>();
+			filterPredicate.addAll(createFiltersPredicate(bornes));
+			List<GoalAchieverInfo> searchGoalAchievers = allGoals.stream().filter(filterPredicate.get(index))
+					.sorted((c1, c2) -> Double.compare(timeGoalAchieverMap.get(c1.getItemCode()).getAverage(),
+							timeGoalAchieverMap.get(c2.getItemCode()).getAverage()))
 					.toList().reversed();
 			ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
-			Optional<ArtifactGoalAchiever> goalAchiever = searchGoalAchievers.stream()
-					.filter(ga -> ga.isRealisableAfterSetRoot(character)).findFirst();
+			Optional<GoalAchieverInfo> goalAchiever = searchGoalAchievers.stream()
+					.filter(ga -> ga.getGoal().isRealisableAfterSetRoot(character)).findFirst();
 			float nbGoalNeedTask = searchGoalAchievers.stream()
-					.<Float>map(aga -> goalFactory.getInfos(aga).isNeedTaskMasterResource() ? 1f : 0f)
-					.reduce(0f, (a, b) -> a + b);
+					.<Float>map(aga -> aga.isNeedTaskMasterResource() ? 1f : 0f).reduce(0f, (a, b) -> a + b);
 			int maxTurn = Math.round((5f - 4f * nbGoalNeedTask / searchGoalAchievers.size()));
 			currentCall = (currentCall + 1) % maxTurn;
 			if (goalAchiever.isPresent()) {
 				goalAchievers.add(createGoalAchiever(goalAchiever.get(), xpGetters.get(index)));
 				// Pour optimiser le temps on ne fait les autres tâches que si on craft
-				if (currentCall == 0 && goalFactory.getInfos(goalAchiever.get()).isCraft()) {
-					goalAchievers
-							.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, goalFactory, bankDAO));
+				if (currentCall == 0 && goalAchiever.get().isCraft()) {
+					goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, bankDAO));
 					goalAchievers.addAll(taskGoals);
 				}
 			} else {
@@ -136,8 +133,7 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 				Optional<MonsterGoalAchiever> monsterGoalAchiever = monstersGoal.stream()
 						.filter(ga -> ga.isRealisableAfterSetRoot(character)).findFirst();
 				goalAchievers.add(createGoalAchiever(monsterGoalAchiever.get(), xpGetters.get(index)));
-				goalAchievers
-						.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, goalFactory, bankDAO));
+				goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, bankDAO));
 				goalAchievers.addAll(taskGoals);
 			}
 			return goalAchievers;
@@ -146,52 +142,45 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 		// On craft que du niveau max
 		ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 		goalAchievers.addAll(allGoals.stream()
-				.filter(ga -> goalFactory.getInfos(ga).isCraft()
-						&& goalFactory.getInfos(ga).isLevel(GameConstants.MAX_SKILL_LEVEL, INFO_TYPE.CRAFTING))
-				.toList());
-		goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, goalFactory, bankDAO));
+				.filter(ga -> ga.isCraft() && ga.isLevel(GameConstants.MAX_SKILL_LEVEL, INFO_TYPE.CRAFTING))
+				.map(GoalAchieverInfo::getGoal).toList());
+		goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, bankDAO));
 		goalAchievers.addAll(taskGoals);
 		return goalAchievers;
 	}
 
-	private GoalAchiever createGoalAchiever(ArtifactGoalAchiever goalAchiever, XpGetter xpGetter) {
+	private GoalAchiever createGoalAchiever(GoalAchieverInfo goalAchiever, XpGetter xpGetter) {
 		optimize(goalAchiever);
-		BotCraftSkill botCraftSkill = goalFactory.getInfos(goalAchiever).getBotCraftSkill();
-		if (goalFactory.getInfos(goalAchiever).isCraft() && (botCraftSkill.equals(BotCraftSkill.WEAPONCRAFTING)
+		BotCraftSkill botCraftSkill = goalAchiever.getBotCraftSkill();
+		if (goalAchiever.isCraft() && (botCraftSkill.equals(BotCraftSkill.WEAPONCRAFTING)
 				|| botCraftSkill.equals(BotCraftSkill.GEARCRAFTING)
 				|| botCraftSkill.equals(BotCraftSkill.JEWELRYCRAFTING))) {
 			GoalAchiever goalAchieverWithRecycle = goalFactory.addItemRecycleGoalAchiever(goalAchiever,
-					Strategy.calculMinItemPreserve(goalFactory, goalAchiever));
+					Strategy.calculMinItemPreserve(goalAchiever));
 			return new TimeGoalAchiever(goalAchieverWithRecycle, xpGetter,
-					timeGoalAchieverMap.get(goalFactory.getInfos(goalAchiever).getItemCode()), true);
+					timeGoalAchieverMap.get(goalAchiever.getItemCode()), true);
 		} else {
-			return new TimeGoalAchiever(goalAchiever, xpGetter,
-					timeGoalAchieverMap.get(goalFactory.getInfos(goalAchiever).getItemCode()), true);
+			return new TimeGoalAchiever(goalAchiever.getGoal(), xpGetter,
+					timeGoalAchieverMap.get(goalAchiever.getItemCode()), true);
 		}
 	}
 
-	private void optimize(ArtifactGoalAchiever goalAchiever) {
-		if (timeGoalAchieverMap.get(goalFactory.getInfos(goalAchiever).getItemCode())
-				.getAverage() < ITEM_INITIAL_AVERAGE_TIME_VALUE
-				&& !goalFactory.getInfos(goalAchiever).isNeedTaskMasterResource()
-				&& !goalFactory.getInfos(goalAchiever).isNeedRareResource()) {
-			goalAverageOptimizer.optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT, 0.9f);
+	private void optimize(GoalAchieverInfo goalAchiever) {
+		if (timeGoalAchieverMap.get(goalAchiever.getItemCode()).getAverage() < ITEM_INITIAL_AVERAGE_TIME_VALUE
+				&& !goalAchiever.isNeedTaskMasterResource() && !goalAchiever.isNeedRareResource()) {
+			goalAverageOptimizer.optimize(goalAchiever.getGoal(), MAX_MULTIPLIER_COEFFICIENT, 0.9f);
 		} else {
-			goalAverageOptimizer.optimize(goalAchiever, 1, 1f);
+			goalAverageOptimizer.optimize(goalAchiever.getGoal(), 1, 1f);
 		}
 	}
 
-	static List<Predicate<ArtifactGoalAchiever>> createFiltersPredicate(GoalFactory goalFactory, Bornes bornes) {
-		ArrayList<Predicate<ArtifactGoalAchiever>> filterPredicate = new ArrayList<>();
-		filterPredicate
-				.add(StrategySkillUtils.createFilterCraftPredicate(goalFactory, BotCraftSkill.GEARCRAFTING, bornes));
-		filterPredicate
-				.add(StrategySkillUtils.createFilterCraftPredicate(goalFactory, BotCraftSkill.WEAPONCRAFTING, bornes));
-		filterPredicate
-				.add(StrategySkillUtils.createFilterCraftPredicate(goalFactory, BotCraftSkill.JEWELRYCRAFTING, bornes));
-		filterPredicate
-				.add(StrategySkillUtils.createFilterCraftPredicate(goalFactory, BotCraftSkill.WOODCUTTING, bornes));
-		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(goalFactory, BotCraftSkill.MINING, bornes));
+	static List<Predicate<GoalAchieverInfo>> createFiltersPredicate(Bornes bornes) {
+		ArrayList<Predicate<GoalAchieverInfo>> filterPredicate = new ArrayList<>();
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.GEARCRAFTING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.WEAPONCRAFTING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.JEWELRYCRAFTING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.WOODCUTTING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.MINING, bornes));
 		return filterPredicate;
 	}
 
@@ -207,7 +196,7 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 
 	@Override
 	public boolean isAcceptEvent(String type, String code) {
-		return Strategy.isAcceptEvent(goalFactory, characterDAO, type, code, monsterGoalsForEvent, itemGoals);
+		return Strategy.isAcceptEvent(characterDAO, type, code, monsterGoalsForEvent, itemGoals);
 	}
 
 	@Override

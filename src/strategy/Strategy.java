@@ -1,5 +1,6 @@
 package strategy;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,16 +33,15 @@ public interface Strategy {
 
 	public Iterable<GoalAchiever> getManagedInventoryCustomGoal();
 
-	public static List<ArtifactGoalAchiever> filterDropItemGoals(List<ArtifactGoalAchiever> dropItemGoal,
-			CharacterService characterService, GoalFactory goalFactory, BankDAO bankDAO) {
+	public static List<ArtifactGoalAchiever> filterDropItemGoals(List<GoalAchieverInfo> dropItemGoal,
+			CharacterService characterService, BankDAO bankDAO) {
 		return dropItemGoal.stream()
-				.filter(aga -> !characterService.isPossess(goalFactory.getInfos(aga).getItemCode(), bankDAO)).toList();
+				.filter(aga -> !characterService.isPossess(aga.getItemCode(), bankDAO)).map(GoalAchieverInfo::getGoal).toList();
 	}
 
-	public static List<ArtifactGoalAchiever> filterTaskGoals(List<ArtifactGoalAchiever> itemsGoal,
-			CharacterService characterService, GoalFactory goalFactory, BankDAO bankDAO) {
-		Predicate<? super ArtifactGoalAchiever> predicate = goal -> {
-			GoalAchieverInfo infos = goalFactory.getInfos(goal);
+	public static List<GoalAchieverInfo> filterTaskGoals(Collection<GoalAchieverInfo> itemsGoal,
+			CharacterService characterService, BankDAO bankDAO) {
+		Predicate<GoalAchieverInfo> predicate = infos -> {
 			if (infos.isNeedTaskMasterResource()) {
 				if (BotItemType.RING.equals(infos.getItemType())) {
 					return !characterService.isPossess(infos.getItemCode(), 2, bankDAO);
@@ -54,8 +54,8 @@ public interface Strategy {
 		return itemsGoal.stream().filter(predicate).toList();
 	}
 
-	public static int calculMinItemPreserve(GoalFactory goalFactory, ArtifactGoalAchiever goalAchiever) {
-		return BotItemType.RING.equals(goalFactory.getInfos(goalAchiever).getItemType()) ? 2 : 1;
+	public static int calculMinItemPreserve(GoalAchieverInfo goalAchiever) {
+		return BotItemType.RING.equals(goalAchiever.getItemType()) ? 2 : 1;
 	}
 
 	public boolean isAcceptEvent(String type, String code);
@@ -102,22 +102,22 @@ public interface Strategy {
 		}
 	};
 
-	public static boolean isAcceptEvent(GoalFactory goalFactory, CharacterDAO characterDAO, String type, String code,
-			List<MonsterGoalAchiever> monsterGoals, List<ArtifactGoalAchiever> itemGoals) {
+	public static boolean isAcceptEvent(CharacterDAO characterDAO, String type, String code,
+			List<MonsterGoalAchiever> monsterGoals, Collection<GoalAchieverInfo> itemGoals) {
 		if ("monster".equals(type)) {
 			Optional<MonsterGoalAchiever> goalAchiever = monsterGoals.stream()
 					.filter(mga -> code.equals(mga.getMonsterCode())).findFirst();
 			return goalAchiever.isPresent() && goalAchiever.get().isRealisableAfterSetRoot(characterDAO.getCharacter());
 		} else if ("resource".equals(type)) {
-			Optional<ArtifactGoalAchiever> goalAchiever = itemGoals.stream()
-					.filter(aga -> goalFactory.getInfos(aga).isMatchBoxCode(code)).findFirst();
-			return goalAchiever.isPresent() && goalAchiever.get().isRealisableAfterSetRoot(characterDAO.getCharacter());
+			Optional<GoalAchieverInfo> goalAchiever = itemGoals.stream()
+					.filter(aga -> aga.isMatchBoxCode(code)).findFirst();
+			return goalAchiever.isPresent() && goalAchiever.get().getGoal().isRealisableAfterSetRoot(characterDAO.getCharacter());
 		}
 		return false;
 	}
 
 	public static GoalAchiever initializeGoal(GoalFactory goalFactory, String type,
-			String code, List<MonsterGoalAchiever> monsterGoals, List<ArtifactGoalAchiever> itemGoals) {
+			String code, List<MonsterGoalAchiever> monsterGoals, Collection<GoalAchieverInfo> itemGoals) {
 		if ("monster".equals(type)) {
 			MonsterGoalAchiever goalAchiever = monsterGoals.stream().filter(mga -> code.equals(mga.getMonsterCode()))
 					.findFirst().get();
@@ -125,7 +125,7 @@ public interface Strategy {
 		} else if ("resource".equals(type)) {
 			//TODO voir pour equiper le tool qui va bien
 			ArtifactGoalAchiever goalAchiever = itemGoals.stream()
-					.filter(aga -> goalFactory.getInfos(aga).isMatchBoxCode(code)).findFirst().get();
+					.filter(aga -> aga.isMatchBoxCode(code)).findFirst().get().getGoal();
 			return new GoalAchieverConditional(goalFactory.addDepositNoReservedItemGoalAchiever(goalAchiever), () -> false, true);
 		}
 		return NOTHING_GOAL;

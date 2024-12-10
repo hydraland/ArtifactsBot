@@ -1,10 +1,10 @@
 package strategy.achiever.factory;
 
+import java.util.Collection;
 import java.util.List;
 
 import hydra.dao.response.FightResponse;
 import strategy.achiever.GoalAchiever;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
@@ -14,15 +14,13 @@ public interface GoalFactory {
 
 	List<MonsterGoalAchiever> createMonstersGoals(StopChecker<FightResponse> stopCondition);
 
-	List<ArtifactGoalAchiever> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector);
+	Collection<GoalAchieverInfo> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector);
 
 	List<GoalAchiever> createManagedInventoryCustomGoal();
 
-	List<ArtifactGoalAchiever> getDropItemGoal();
+	List<GoalAchieverInfo> getDropItemGoal();
 
-	GoalAchieverInfo getInfos(ArtifactGoalAchiever goal);
-	
-	GoalAchiever addItemRecycleGoalAchiever(ArtifactGoalAchiever goalAchiever, int minPreserve);
+	GoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve);
 
 	GoalAchiever addDepositNoReservedItemGoalAchiever(GoalAchiever goalAchiever);
 

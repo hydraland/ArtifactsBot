@@ -4,6 +4,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.util.Bornes;
 
 public class CraftGoalAchieverInfo extends SimpleGoalAchieverInfo {
@@ -14,8 +15,8 @@ public class CraftGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	private final boolean needRareResource;
 
 	public CraftGoalAchieverInfo(String code, BotItemType type, BotCraftSkill craftSkill, int level,
-			boolean needTaskMasterResource, boolean neddRareResource) {
-		super(code, type);
+			boolean needTaskMasterResource, boolean neddRareResource, ArtifactGoalAchiever goalAchiever) {
+		super(code, type, goalAchiever);
 		this.craftSkill = craftSkill;
 		this.level = level;
 		this.needTaskMasterResource = needTaskMasterResource;
@@ -44,8 +45,8 @@ public class CraftGoalAchieverInfo extends SimpleGoalAchieverInfo {
 
 	@Override
 	public boolean isLevelInBorne(Bornes borne, INFO_TYPE infoType) {
-		return INFO_TYPE.CRAFTING.equals(infoType)
-				&& (level < borne.max() && level >= borne.min()) || (level == 1 && borne.max() == 1);
+		return INFO_TYPE.CRAFTING.equals(infoType) && (level < borne.max() && level >= borne.min())
+				|| (level == 1 && borne.max() == 1);
 	}
 
 	@Override

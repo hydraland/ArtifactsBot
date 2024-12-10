@@ -1,6 +1,7 @@
 package strategy;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -15,9 +16,9 @@ import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalAchieverConditional;
 import strategy.achiever.GoalAchieverConditional.Condition;
 import strategy.achiever.factory.GoalFactory;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 import strategy.util.Bornes;
 import strategy.util.CharacterService;
@@ -28,14 +29,14 @@ public final class BalanceRateStrategy implements Strategy {
 
 	private final CharacterDAO characterDAO;
 	private final List<GoalAchiever> inventoryGoals;
-	private final List<ArtifactGoalAchiever> itemGoals;
+	private final Collection<GoalAchieverInfo> itemGoals;
 	private final List<MonsterGoalAchiever> monsterGoals;
 	private final List<GoalAchiever> taskGoals;
 
 	private static final int[][] SKILL_LEVEL_LIST = new int[][] { Strategy.FISHING_LEVELS, Strategy.COOKING_LEVELS,
 			Strategy.WOODCUTTING_LEVELS, Strategy.GEARCRAFTING_LEVELS, Strategy.MINING_LEVELS,
 			Strategy.WEAPONCRAFTING_LEVELS, Strategy.JEWELRYCRAFTING_LEVELS, Strategy.ALCHEMY_LEVELS };
-	private List<ArtifactGoalAchiever> dropItemGoal;
+	private List<GoalAchieverInfo> dropItemGoal;
 	private final CharacterService characterService;
 	private final GoalFactory goalFactory;
 	private GoalAchiever eventGoal;
@@ -62,8 +63,7 @@ public final class BalanceRateStrategy implements Strategy {
 		int[] skillLevels = new int[] { character.getFishingLevel(), character.getCookingLevel(),
 				character.getWoodcuttingLevel(), character.getGearcraftingLevel(), character.getMiningLevel(),
 				character.getWeaponcraftingLevel(), character.getJewelrycraftingLevel(), character.getAlchemyLevel() };
-		List<ArtifactGoalAchiever> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, goalFactory,
-				bankDAO);
+		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
 		// search min skill
 		int index = StrategySkillUtils.getMinSkillIndex(skillLevels);
 		int charLevel = character.getLevel();
@@ -73,17 +73,18 @@ public final class BalanceRateStrategy implements Strategy {
 				// recherche tous les buts pour augmenter le skillMin
 				Bornes bornes = StrategySkillUtils.getBorneLevel(skillLevels[index], SKILL_LEVEL_LIST[index]);
 
-				List<Predicate<ArtifactGoalAchiever>> filterPredicate = new ArrayList<>(SKILL_LEVEL_LIST.length);
-				filterPredicate.addAll(createFiltersPredicate(goalFactory, bornes));
+				List<Predicate<GoalAchieverInfo>> filterPredicate = new ArrayList<>(SKILL_LEVEL_LIST.length);
+				filterPredicate.addAll(createFiltersPredicate(bornes));
 
-				List<ArtifactGoalAchiever> searchGoalAchievers = allGoals.stream().filter(filterPredicate.get(index))
-						.sorted((c1, c2) -> Double.compare(c1.getRate(), c2.getRate())).toList().reversed();
+				List<GoalAchieverInfo> searchGoalAchievers = allGoals.stream().filter(filterPredicate.get(index))
+						.sorted((c1, c2) -> Double.compare(c1.getGoal().getRate(), c2.getGoal().getRate())).toList()
+						.reversed();
 				ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
-				Optional<ArtifactGoalAchiever> goalAchiever = searchGoalAchievers.stream()
-						.filter(ga -> ga.isRealisableAfterSetRoot(character)).findFirst();
+				Optional<GoalAchieverInfo> goalAchiever = searchGoalAchievers.stream()
+						.filter(ga -> ga.getGoal().isRealisableAfterSetRoot(character)).findFirst();
 				if (goalAchiever.isPresent()) {
-					goalAchievers.addAll(
-							searchGoalAchievers.stream().filter(ga -> ga.isRealisableAfterSetRoot(character)).toList());
+					goalAchievers.addAll(searchGoalAchievers.stream().map(GoalAchieverInfo::getGoal)
+							.filter(ga -> ga.isRealisableAfterSetRoot(character)).toList());
 					List<Condition> conditions = new ArrayList<>(SKILL_LEVEL_LIST.length);
 					conditions.add(() -> characterDAO.getCharacter().getFishingLevel() > skillLevels[0]);
 					conditions.add(() -> characterDAO.getCharacter().getCookingLevel() > skillLevels[1]);
@@ -97,12 +98,11 @@ public final class BalanceRateStrategy implements Strategy {
 				} else {
 					bornes = new Bornes(bornes.oldMin(), bornes.oldMin(), bornes.min());
 					filterPredicate.clear();
-					filterPredicate.addAll(createFiltersPredicate(goalFactory, bornes));
+					filterPredicate.addAll(createFiltersPredicate(bornes));
 					goalAchievers.addAll(allGoals.stream().filter(filterPredicate.get(index))
 							.map(ga -> createGoalAchiever(ga, new OneExecutionCondition())).toList());
 				}
-				goalAchievers
-						.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, goalFactory, bankDAO));
+				goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, bankDAO));
 				goalAchievers.addAll(taskGoals);
 				return goalAchievers;
 			} else {
@@ -116,8 +116,7 @@ public final class BalanceRateStrategy implements Strategy {
 					goalAchievers.add(new GoalAchieverConditional(aGoal,
 							() -> characterDAO.getCharacter().getLevel() > charLevel, true));
 				}
-				goalAchievers
-						.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, goalFactory, bankDAO));
+				goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, bankDAO));
 				goalAchievers.addAll(taskGoals);
 				return goalAchievers;
 			}
@@ -126,43 +125,39 @@ public final class BalanceRateStrategy implements Strategy {
 		// On craft que du niveau max
 		ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 		goalAchievers.addAll(allGoals.stream()
-				.filter(ga -> goalFactory.getInfos(ga).isCraft()
-						&& goalFactory.getInfos(ga).isLevel(GameConstants.MAX_SKILL_LEVEL, INFO_TYPE.CRAFTING))
-				.toList());
-		goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, goalFactory, bankDAO));
+				.filter(ga -> ga.isCraft() && ga.isLevel(GameConstants.MAX_SKILL_LEVEL, INFO_TYPE.CRAFTING))
+				.map(GoalAchieverInfo::getGoal).toList());
+		goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, bankDAO));
 		goalAchievers.addAll(taskGoals);
 		return goalAchievers;
 	}
 
-	private GoalAchiever createGoalAchiever(ArtifactGoalAchiever goalAchiever, Condition condition) {
-		BotCraftSkill botCraftSkill = goalFactory.getInfos(goalAchiever).getBotCraftSkill();
-		if (goalFactory.getInfos(goalAchiever).isCraft() && (botCraftSkill.equals(BotCraftSkill.WEAPONCRAFTING)
+	private GoalAchiever createGoalAchiever(GoalAchieverInfo goalAchiever, Condition condition) {
+		BotCraftSkill botCraftSkill = goalAchiever.getBotCraftSkill();
+		if (goalAchiever.isCraft() && (botCraftSkill.equals(BotCraftSkill.WEAPONCRAFTING)
 				|| botCraftSkill.equals(BotCraftSkill.GEARCRAFTING)
 				|| botCraftSkill.equals(BotCraftSkill.JEWELRYCRAFTING))) {
 			GoalAchiever goalAchieverWithRecycle = goalFactory.addItemRecycleGoalAchiever(goalAchiever,
-					Strategy.calculMinItemPreserve(goalFactory, goalAchiever));
+					Strategy.calculMinItemPreserve(goalAchiever));
 			return new GoalAchieverConditional(goalAchieverWithRecycle, condition, true);
 		} else {
-			return new GoalAchieverConditional(goalAchiever, condition, true);
+			return new GoalAchieverConditional(goalAchiever.getGoal(), condition, true);
 		}
 	}
 
-	static List<Predicate<ArtifactGoalAchiever>> createFiltersPredicate(GoalFactory factory, Bornes bornes) {
-		ArrayList<Predicate<ArtifactGoalAchiever>> filterPredicate = new ArrayList<>();
-		filterPredicate
-				.add(StrategySkillUtils.createFilterResourcePredicate(factory, bornes, BotResourceSkill.FISHING));
-		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(factory, BotCraftSkill.COOKING, bornes));
-		filterPredicate.add(StrategySkillUtils.createFilterResourceAndCraftPredicate(factory, bornes,
+	static List<Predicate<GoalAchieverInfo>> createFiltersPredicate(Bornes bornes) {
+		ArrayList<Predicate<GoalAchieverInfo>> filterPredicate = new ArrayList<>();
+		filterPredicate.add(StrategySkillUtils.createFilterResourcePredicate(bornes, BotResourceSkill.FISHING));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.COOKING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterResourceAndCraftPredicate(bornes,
 				BotResourceSkill.WOODCUTTING, BotCraftSkill.WOODCUTTING));
-		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(factory, BotCraftSkill.GEARCRAFTING, bornes));
-		filterPredicate.add(StrategySkillUtils.createFilterResourceAndCraftPredicate(factory, bornes,
-				BotResourceSkill.MINING, BotCraftSkill.MINING));
-		filterPredicate
-				.add(StrategySkillUtils.createFilterCraftPredicate(factory, BotCraftSkill.WEAPONCRAFTING, bornes));
-		filterPredicate
-				.add(StrategySkillUtils.createFilterCraftPredicate(factory, BotCraftSkill.JEWELRYCRAFTING, bornes));
-		filterPredicate.add(StrategySkillUtils.createFilterResourceAndCraftPredicate(factory, bornes,
-				BotResourceSkill.ALCHEMY, BotCraftSkill.ALCHEMY));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.GEARCRAFTING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterResourceAndCraftPredicate(bornes, BotResourceSkill.MINING,
+				BotCraftSkill.MINING));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.WEAPONCRAFTING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.JEWELRYCRAFTING, bornes));
+		filterPredicate.add(StrategySkillUtils.createFilterResourceAndCraftPredicate(bornes, BotResourceSkill.ALCHEMY,
+				BotCraftSkill.ALCHEMY));
 		return filterPredicate;
 	}
 
@@ -173,7 +168,7 @@ public final class BalanceRateStrategy implements Strategy {
 
 	@Override
 	public boolean isAcceptEvent(String type, String code) {
-		return Strategy.isAcceptEvent(goalFactory, characterDAO, type, code, monsterGoalsForEvent, itemGoals);
+		return Strategy.isAcceptEvent(characterDAO, type, code, monsterGoalsForEvent, itemGoals);
 	}
 
 	@Override

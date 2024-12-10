@@ -1,6 +1,7 @@
 package strategy.achiever.factory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,6 @@ import strategy.achiever.factory.goals.GoalAchieverChoose;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.GoalAchieverList;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
-import strategy.achiever.factory.goals.ItemMonsterGoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.goals.ResourceGoalAchiever;
 import strategy.achiever.factory.info.CraftGoalAchieverInfo;
@@ -50,14 +50,12 @@ public final class ArtifactGoalFactory implements GoalFactory {
 
 	private final ResourceDAO resourceDao;
 	private final MapDAO mapDAO;
-	private final ArrayList<ArtifactGoalAchiever> goals;
 	private final CharacterDAO characterDao;
 	private final ItemDAO itemDao;
 	private final MonsterDAO monsterDao;
 	private final GoalParameter parameter;
 	private final List<String> rareResourceItems;
 	private final List<String> resourceItemsCraftable;
-	private final Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos;
 	private final CharacterService characterService;
 	private final GoalFactoryCreator factoryCreator;
 
@@ -72,16 +70,15 @@ public final class ArtifactGoalFactory implements GoalFactory {
 		this.parameter = parameter;
 		this.characterService = characterService;
 		this.factoryCreator = factoryCreator;
-		this.goals = new ArrayList<>();
 		this.rareResourceItems = new ArrayList<>();
 		this.resourceItemsCraftable = itemDao.getResourceItems().stream().<String>map(bid -> bid.getCode())
 				.filter(code -> itemDao.useInCraft(code).isUseInCraft()).toList();
 		// Tous les items des task sont rares
 		this.rareResourceItems.addAll(itemDao.getTaskItems().stream().<String>map(bid -> bid.getCode()).toList());
-		goalInfos = new HashMap<>();
 	}
 
-	private void createResourceGoal(Map<String, List<ArtifactGoalAchiever>> goalsMap) {
+	private void createResourceGoal(Map<String, List<ArtifactGoalAchiever>> goalsMap, List<ArtifactGoalAchiever> goals,
+			Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos) {
 		List<BotResource> resources = this.resourceDao.getAllResources();
 		List<BotBox> resourcesBox = this.mapDAO.getResourcesBox();
 		Map<String, List<Coordinate>> resourceLocation = new HashMap<>();
@@ -103,9 +100,9 @@ public final class ArtifactGoalFactory implements GoalFactory {
 						.createDepositNoReservedItemGoalAchiever();
 				ArtifactGoalAchiever achieverTwoStep = factoryCreator
 						.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever, goalAchiever, true, true);
-				this.goals.add(achieverTwoStep);
-				getGoalInfo(achieverTwoStep, new GatheringGoalAchieverInfo(resourceCode, BotItemType.RESOURCE,
-						resource.getSkill(), resource.getLevel(), boxCode));
+				goals.add(achieverTwoStep);
+				getGoalInfo(goalInfos, achieverTwoStep, new GatheringGoalAchieverInfo(resourceCode,
+						BotItemType.RESOURCE, resource.getSkill(), resource.getLevel(), boxCode, achieverTwoStep));
 				List<ArtifactGoalAchiever> goal = goalsMap.computeIfAbsent(resourceCode, c -> new ArrayList<>());
 				goal.add(achieverTwoStep);
 				if (rate >= parameter.getRareItemSeuil()) {
@@ -119,7 +116,8 @@ public final class ArtifactGoalFactory implements GoalFactory {
 		}
 	}
 
-	private void createResourceMonsterGoal(Map<String, List<ArtifactGoalAchiever>> goalsMap) {
+	private void createResourceMonsterGoal(Map<String, List<ArtifactGoalAchiever>> goalsMap,
+			List<ArtifactGoalAchiever> goals, Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos) {
 		List<BotMonster> monsters = this.monsterDao.getMonsters();
 		List<BotBox> monstersBox = this.mapDAO.getMonstersBox();
 		Map<String, List<Coordinate>> monsterLocation = new HashMap<>();
@@ -139,8 +137,9 @@ public final class ArtifactGoalFactory implements GoalFactory {
 						.createDepositNoReservedItemGoalAchiever();
 				ArtifactGoalAchiever achieverTwoStep = factoryCreator
 						.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever, goalAchiever, true, true);
-				this.goals.add(achieverTwoStep);
-				getGoalInfo(achieverTwoStep, new SimpleGoalAchieverInfo(resourceCode, BotItemType.RESOURCE));
+				goals.add(achieverTwoStep);
+				getGoalInfo(goalInfos, achieverTwoStep,
+						new SimpleGoalAchieverInfo(resourceCode, BotItemType.RESOURCE, achieverTwoStep));
 				List<ArtifactGoalAchiever> goal = goalsMap.computeIfAbsent(resourceCode, c -> new ArrayList<>());
 				goal.add(achieverTwoStep);
 				if (rate >= parameter.getRareItemSeuil()) {
@@ -192,7 +191,8 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	}
 
 	private void createCraftGoal(Map<String, ArtifactGoalAchiever> goalsMap,
-			ChooseBehaviorSelector chooseBehaviorSelector) {
+			ChooseBehaviorSelector chooseBehaviorSelector, List<ArtifactGoalAchiever> goals,
+			Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos) {
 		List<BotItemDetails> items = itemDao.getItems();
 		List<BotItemDetails> craftItems = items.stream().filter(botItem -> botItem.getCraft() != null)
 				.collect(Collectors.toList());
@@ -201,7 +201,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 			boolean goalCreate = false;
 			for (Iterator<BotItemDetails> iterator = craftItems.iterator(); iterator.hasNext();) {
 				BotItemDetails botItemDetails = iterator.next();
-				if (createGoal(goalsMap, botItemDetails, true, chooseBehaviorSelector)) {
+				if (createGoal(goalsMap, botItemDetails, true, chooseBehaviorSelector, goals, goalInfos)) {
 					iterator.remove();
 					goalCreate = true;
 				}
@@ -212,12 +212,13 @@ public final class ArtifactGoalFactory implements GoalFactory {
 		// Création des taches avec des items obtenus autrements (par les taches
 		// normalement)
 		for (BotItemDetails botItemDetails : craftItems) {
-			createGoal(goalsMap, botItemDetails, false, chooseBehaviorSelector);
+			createGoal(goalsMap, botItemDetails, false, chooseBehaviorSelector, goals, goalInfos);
 		}
 	}
 
 	private boolean createGoal(Map<String, ArtifactGoalAchiever> goalsMap, BotItemDetails botItemDetails,
-			boolean ignoreNoPresentGoal, ChooseBehaviorSelector chooseBehaviorSelector) {
+			boolean ignoreNoPresentGoal, ChooseBehaviorSelector chooseBehaviorSelector,
+			List<ArtifactGoalAchiever> goals, Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos) {
 		List<BotItem> items = botItemDetails.getCraft().getItems();
 		GoalAchieverList goalAchieverList = factoryCreator.createGoalAchieverList();
 		ResourceGoalAchiever craftGoal = factoryCreator.createItemCraftGoalAchiever(botItemDetails.getCode(),
@@ -230,9 +231,9 @@ public final class ArtifactGoalFactory implements GoalFactory {
 					.createItemGetBankGoalAchiever(botItem.getCode());
 			if (subGoal != null) {
 				GoalAchiever subSubGoalAchiever;
-				if (getInfos(subGoal).isGathering()) {
+				if (goalInfos.get(subGoal).isGathering()) {
 					GoalAchiever equipToolGoalAchiever = factoryCreator
-							.createEquipToolGoalAchiever(getInfos(subGoal).getBotResourceSkill());
+							.createEquipToolGoalAchiever(goalInfos.get(subGoal).getBotResourceSkill());
 					ArtifactGoalAchiever goalAchieverLoop = factoryCreator.createGoalAchieverLoop(subGoal,
 							botItem.getQuantity(), false);
 					subSubGoalAchiever = factoryCreator.createGoalAchieverTwoStep(equipToolGoalAchiever,
@@ -244,7 +245,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 				ArtifactGoalAchiever achieverTwoStep = factoryCreator.createGoalAchieverTwoStep(itemGetBankGoalAchiever,
 						subSubGoalAchiever, false, false);
 				goalAchieverList.add(achieverTwoStep);
-				if (!containtsRareResource && rareResourceItems.contains(getInfos(subGoal).getItemCode())) {
+				if (!containtsRareResource && rareResourceItems.contains(goalInfos.get(subGoal).getItemCode())) {
 					containtsRareResource = true;
 				}
 			} else if (ignoreNoPresentGoal) {
@@ -262,21 +263,21 @@ public final class ArtifactGoalFactory implements GoalFactory {
 			// Item qui peuvent être collecté, droppé ou bien crafté
 			MultiGoalAchieverInfo multiGoalAchieverInfo;
 			ArtifactGoalAchiever oldGoalInMap = goalsMap.get(craftGoal.getCode());
-			CraftGoalAchieverInfo craftInfo = createCraftInfo(botItemDetails, containtsTaskResource,
+			CraftGoalAchieverInfo craftInfo = createCraftInfo(craftGoal, botItemDetails, containtsTaskResource,
 					containtsRareResource);
 			if (oldGoalInMap instanceof GoalAchieverChoose goalAchieverChoose) {
 				// On met null car il doit déjà exister
-				multiGoalAchieverInfo = getGoalInfo(goalAchieverChoose, (MultiGoalAchieverInfo) null);
+				multiGoalAchieverInfo = getGoalInfo(goalInfos, goalAchieverChoose, (MultiGoalAchieverInfo) null);
 				goalAchieverChoose.addGoal(craftGoal, craftInfo);
 			} else {
 				GoalAchieverChoose goalAchieverChoose = factoryCreator.createGoalAchieverChoose(chooseBehaviorSelector);
-				multiGoalAchieverInfo = getGoalInfo(goalAchieverChoose,
-						new MultiGoalAchieverInfo(craftInfo.getItemCode(), craftInfo.getItemType()));
+				multiGoalAchieverInfo = getGoalInfo(goalInfos, goalAchieverChoose, new MultiGoalAchieverInfo(
+						craftInfo.getItemCode(), craftInfo.getItemType(), goalAchieverChoose));
 				goalAchieverChoose.addGoal(craftGoal, craftInfo);
 				// On supprime l'ancien buts et ses infos
 				GoalAchieverInfo infosRemoved = goalInfos.remove(oldGoalInMap);
 				goalAchieverChoose.addGoal(oldGoalInMap, infosRemoved);
-				this.goals.remove(oldGoalInMap);
+				goals.remove(oldGoalInMap);
 				// On met à jour le nouveau
 				if (infosRemoved.isGathering()) {
 					multiGoalAchieverInfo.setGathering(infosRemoved.getBotResourceSkill(),
@@ -284,7 +285,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 					multiGoalAchieverInfo.addLevel(infosRemoved.getLevel(), INFO_TYPE.GATHERING);
 				}
 				goalsMap.put(craftGoal.getCode(), goalAchieverChoose);
-				this.goals.add(goalAchieverChoose);
+				goals.add(goalAchieverChoose);
 			}
 			// Ajout des infos du craft
 			multiGoalAchieverInfo.setCraft(craftInfo.getBotCraftSkill());
@@ -292,26 +293,28 @@ public final class ArtifactGoalFactory implements GoalFactory {
 			multiGoalAchieverInfo.setNeedTaskMasterResource(craftInfo.isNeedTaskMasterResource());
 			multiGoalAchieverInfo.setNeedRareResource(craftInfo.isNeedRareResource());
 		} else {
-			getGoalInfo(craftGoal, createCraftInfo(botItemDetails, containtsTaskResource, containtsRareResource));
+			getGoalInfo(goalInfos, craftGoal,
+					createCraftInfo(craftGoal, botItemDetails, containtsTaskResource, containtsRareResource));
 			goalsMap.put(craftGoal.getCode(), craftGoal);
-			this.goals.add(craftGoal);
+			goals.add(craftGoal);
 		}
 		return true;
 	}
 
-	private CraftGoalAchieverInfo createCraftInfo(BotItemDetails botItemDetails, boolean containtsTaskResource,
-			boolean containtsRareResource) {
+	private CraftGoalAchieverInfo createCraftInfo(ArtifactGoalAchiever goalAchiever, BotItemDetails botItemDetails,
+			boolean containtsTaskResource, boolean containtsRareResource) {
 		return new CraftGoalAchieverInfo(botItemDetails.getCode(), botItemDetails.getType(),
 				botItemDetails.getCraft().getSkill(), botItemDetails.getLevel(), containtsTaskResource,
-				containtsRareResource);
+				containtsRareResource, goalAchiever);
 	}
 
 	@Override
-	public List<ArtifactGoalAchiever> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector) {
-		this.goals.clear();
+	public Collection<GoalAchieverInfo> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector) {
+		List<ArtifactGoalAchiever> goals = new ArrayList<>();
+		Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos = new HashMap<>();
 		Map<String, List<ArtifactGoalAchiever>> goalsMapResources = new HashMap<>();
-		createResourceGoal(goalsMapResources);
-		createResourceMonsterGoal(goalsMapResources);
+		createResourceGoal(goalsMapResources, goals, goalInfos);
+		createResourceMonsterGoal(goalsMapResources, goals, goalInfos);
 
 		// Traitement des ressources multiples
 		Map<String, ArtifactGoalAchiever> goalsMap = new HashMap<>();
@@ -322,12 +325,12 @@ public final class ArtifactGoalFactory implements GoalFactory {
 				goalsMap.put(entry.getKey(), firstValueInList);
 			} else {
 				GoalAchieverChoose goalAchieverChoose = factoryCreator.createGoalAchieverChoose(chooseBehaviorSelector);
-				MultiGoalAchieverInfo artifactGoalAchieverInfo = getGoalInfo(goalAchieverChoose,
-						new MultiGoalAchieverInfo(getInfos(firstValueInList).getItemCode(),
-								getInfos(firstValueInList).getItemType()));
+				MultiGoalAchieverInfo artifactGoalAchieverInfo = getGoalInfo(goalInfos, goalAchieverChoose,
+						new MultiGoalAchieverInfo(goalInfos.get(firstValueInList).getItemCode(),
+								goalInfos.get(firstValueInList).getItemType(), goalAchieverChoose));
 
 				for (ArtifactGoalAchiever goal : value) {
-					GoalAchieverInfo infos = getInfos(goal);
+					GoalAchieverInfo infos = goalInfos.get(goal);
 					goalAchieverChoose.addGoal(goal, infos);
 					if (infos.isGathering()) {
 						artifactGoalAchieverInfo.setGathering(infos.getBotResourceSkill(),
@@ -339,15 +342,15 @@ public final class ArtifactGoalFactory implements GoalFactory {
 
 				// Pour l'instant on ne fait rien pour les monstres (level, ...)
 				goalsMap.put(entry.getKey(), goalAchieverChoose);
-				this.goals.add(goalAchieverChoose);
+				goals.add(goalAchieverChoose);
 				// On les supprime des buts et des infos
-				this.goals.removeAll(value);
+				goals.removeAll(value);
 				value.stream().forEach(goalInfos::remove);
 			}
 		}
-		createUnequipGoal(goalsMap);
-		createCraftGoal(goalsMap, chooseBehaviorSelector);
-		return this.goals;
+		createUnequipGoal(goalsMap, goals, goalInfos);
+		createCraftGoal(goalsMap, chooseBehaviorSelector, goals, goalInfos);
+		return goalInfos.values();
 	}
 
 	@Override
@@ -377,55 +380,47 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	}
 
 	@Override
-	public List<ArtifactGoalAchiever> getDropItemGoal() {
-		Map<String, List<ArtifactGoalAchiever>> monsterGoalsMap = new HashMap<>();
-		createResourceMonsterGoal(monsterGoalsMap);//TODO ici
+	public List<GoalAchieverInfo> getDropItemGoal() {
 		List<String> noResourceItemCode = itemDao.getItems().stream()
 				.filter(bid -> !BotItemType.RESOURCE.equals(bid.getType()) && !bid.getEffects().isEmpty())
 				.map(bid -> bid.getCode()).toList();
-		// TODO ne fonctionne plus voir pour créer INFO pour les monstres
-		return this.goals.stream().filter(
-				aga -> aga instanceof ItemMonsterGoalAchiever imga && noResourceItemCode.contains(imga.getCode()))
-				.<ArtifactGoalAchiever>map(
-						aga -> registerDropItemInfo(factoryCreator.createGoalAchieverLoop(aga, 1, false),
-								((ItemMonsterGoalAchiever) aga).getCode()))
+		Map<String, List<ArtifactGoalAchiever>> goalsMap = new HashMap<>();
+		List<ArtifactGoalAchiever> goals = new ArrayList<>();
+		Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos = new HashMap<>();
+		createResourceMonsterGoal(goalsMap, goals, goalInfos);
+		return goalInfos.values().stream()
+				.filter(aga -> noResourceItemCode.contains(aga.getItemCode()))
+				.<GoalAchieverInfo>map(aga -> new SimpleGoalAchieverInfo(aga.getItemCode(), itemDao.getItem(aga.getItemCode()).getType(),
+						factoryCreator.createGoalAchieverLoop(aga.getGoal(), 1, false)))
 				.toList();
 	}
 
-	private void createUnequipGoal(Map<String, ArtifactGoalAchiever> goalsMap) {
+	private void createUnequipGoal(Map<String, ArtifactGoalAchiever> goalsMap, List<ArtifactGoalAchiever> goals,
+			Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos) {
 		ResourceGoalAchiever goalArchiever = factoryCreator.createUnequipFirstWeaponGoalAchiever(
 				() -> characterDao.getCharacter().getWeaponSlot(), BotCharacterInventorySlot.WEAPON);
-		this.goals.add(goalArchiever);
-		getGoalInfo(goalArchiever, new SimpleGoalAchieverInfo(GameConstants.FIRST_WEAPON, BotItemType.WEAPON));
+		goals.add(goalArchiever);
+		getGoalInfo(goalInfos, goalArchiever,
+				new SimpleGoalAchieverInfo(GameConstants.FIRST_WEAPON, BotItemType.WEAPON, goalArchiever));
 		goalsMap.put(goalArchiever.getCode(), goalArchiever);
 	}
 
-	private ArtifactGoalAchiever registerDropItemInfo(ArtifactGoalAchiever artifactGoalAchiever, String code) {
-		getGoalInfo(artifactGoalAchiever, new SimpleGoalAchieverInfo(code, itemDao.getItem(code).getType()));
-		return artifactGoalAchiever;
-	}
-
 	@SuppressWarnings("unchecked")
-	private <T extends GoalAchieverInfo> T getGoalInfo(ArtifactGoalAchiever artifactGoalAchiever,
-			T artifactGoalAchieverInfo) {
+	private <T extends GoalAchieverInfo> T getGoalInfo(Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos,
+			ArtifactGoalAchiever artifactGoalAchiever, T artifactGoalAchieverInfo) {
 		return (T) goalInfos.computeIfAbsent(artifactGoalAchiever, aga -> artifactGoalAchieverInfo);
 	}
 
 	@Override
-	public GoalAchieverInfo getInfos(ArtifactGoalAchiever goal) {
-		return goalInfos.get(goal);
-	}
-
-	@Override
-	public GoalAchiever addItemRecycleGoalAchiever(ArtifactGoalAchiever goalAchiever, int minPreserve) {
-		String code = getInfos(goalAchiever).getItemCode();
+	public GoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve) {
+		String code = goalAchiever.getItemCode();
 		ItemGetBankGoalAchiever itemGetBankGoalAchiever = factoryCreator.createItemGetBankGoalAchieverForceNoRoot(code);
 		itemGetBankGoalAchiever.setQuantity(characterService.getFreeInventorySpace());
 		GoalAchiever itemRecycleGoalAchiever = factoryCreator.createItemRecycleGoalAchiever(code,
-				getInfos(goalAchiever).getBotCraftSkill(), minPreserve);
+				goalAchiever.getBotCraftSkill(), minPreserve);
 		GoalAchiever goalAchieverTwoStep = factoryCreator.createGoalAchieverTwoStep(itemGetBankGoalAchiever,
 				itemRecycleGoalAchiever, true, false);
-		return factoryCreator.createGoalAchieverTwoStep(goalAchieverTwoStep, goalAchiever, true, false);
+		return factoryCreator.createGoalAchieverTwoStep(goalAchieverTwoStep, goalAchiever.getGoal(), true, false);
 	}
 
 	@Override

@@ -1,7 +1,6 @@
 package hydra;
 
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import strategy.BalanceTimeStrategy;
@@ -18,6 +17,7 @@ import strategy.achiever.factory.ItemTaskFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.util.MonsterEquipementService;
 import strategy.util.MonsterEquipementServiceImpl;
 import strategy.util.fight.FightService;
@@ -51,7 +51,7 @@ public final class SolarBot extends Bot {
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING).stream()
-				.collect(Collectors.toMap(aga -> goalFactory.getInfos(aga).getItemCode(), Function.identity()));
+				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
 		ItemTaskFactory itemTaskFactory = new DefaultItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
 				characterService);
 		goalParameter.setItemTaskFactory(itemTaskFactory);

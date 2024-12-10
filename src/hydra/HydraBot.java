@@ -1,7 +1,6 @@
 package hydra;
 
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import strategy.OptimisedTimeStrategy;
@@ -18,6 +17,7 @@ import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.achiever.factory.OptimizedItemTaskFactory;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.MonsterEquipementService;
@@ -53,7 +53,7 @@ public final class HydraBot extends Bot {
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING).stream()
-				.collect(Collectors.toMap(aga -> goalFactory.getInfos(aga).getItemCode(), Function.identity()));
+				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
 		GoalAverageOptimizer goalAverageOptimizer = new GoalAverageOptimizerImpl(characterDao);
 		ItemTaskFactory itemTaskFactory = new OptimizedItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
 				characterService, goalAverageOptimizer);

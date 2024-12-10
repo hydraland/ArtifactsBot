@@ -8,6 +8,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.util.Bornes;
 
 public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
@@ -19,10 +20,10 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	private final List<Integer> gatheringLevels;
 	private BotCraftSkill botCraftSkill;
 	private BotResourceSkill botResourceSkill;
-	private final ArrayList<String> boxCodes;
+	private final List<String> boxCodes;
 
-	public MultiGoalAchieverInfo(String code, BotItemType type) {
-		super(code, type);
+	public MultiGoalAchieverInfo(String code, BotItemType type, ArtifactGoalAchiever goalAchiever) {
+		super(code, type, goalAchiever);
 		needTaskMasterResource = false;
 		needRareResource = false;
 		craftLevels = new ArrayList<>();
@@ -118,7 +119,7 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 			throw new IllegalArgumentException(String.format(EXCEPTION_MESSAGE, infoType));
 		}
 	}
-	
+
 	@Override
 	public final boolean isMatchBoxCode(String aBoxCode) {
 		return boxCodes.contains(aBoxCode);

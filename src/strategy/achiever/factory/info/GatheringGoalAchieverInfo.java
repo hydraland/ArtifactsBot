@@ -4,6 +4,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.util.Bornes;
 
 public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
@@ -12,8 +13,9 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	private final int level;
 	private final String boxCode;
 
-	public GatheringGoalAchieverInfo(String code, BotItemType type, BotResourceSkill resourceSkill, int level, String boxCode) {
-		super(code, type);
+	public GatheringGoalAchieverInfo(String code, BotItemType type, BotResourceSkill resourceSkill, int level,
+			String boxCode, ArtifactGoalAchiever goalAchiever) {
+		super(code, type, goalAchiever);
 		this.resourceSkill = resourceSkill;
 		this.level = level;
 		this.boxCode = boxCode;
@@ -31,8 +33,8 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 
 	@Override
 	public boolean isLevelInBorne(Bornes borne, INFO_TYPE infoType) {
-		return INFO_TYPE.GATHERING.equals(infoType)
-				&& (level < borne.max() && level >= borne.min()) || (level == 1 && borne.max() == 1);
+		return INFO_TYPE.GATHERING.equals(infoType) && (level < borne.max() && level >= borne.min())
+				|| (level == 1 && borne.max() == 1);
 	}
 
 	@Override
@@ -44,12 +46,12 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	public int getLevel() {
 		return level;
 	}
-	
+
 	@Override
 	public final boolean isMatchBoxCode(String aBoxCode) {
 		return boxCode.equals(aBoxCode);
 	}
-	
+
 	public final String getBoxCode() {
 		return boxCode;
 	}

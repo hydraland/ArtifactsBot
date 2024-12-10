@@ -30,6 +30,7 @@ import strategy.achiever.factory.MonsterTaskUseSimulatorFactory;
 import strategy.achiever.factory.OptimizedItemTaskFactory;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
@@ -85,9 +86,9 @@ public final class PhenixBot extends Bot {
 				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()).stream()
 						.collect(Collectors.toMap(MonsterGoalAchiever::getMonsterCode, Function.identity())),
 				goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING).stream()
-						.filter(aga -> BotCraftSkill.COOKING.equals(goalFactory.getInfos(aga).getBotCraftSkill())
-								|| BotCraftSkill.ALCHEMY.equals(goalFactory.getInfos(aga).getBotCraftSkill()))
-						.collect(Collectors.toMap(aga -> goalFactory.getInfos(aga).getItemCode(), Function.identity())),
+						.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())
+								|| BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
+						.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal)),
 				bankDao, characterDao, goalFactoryCreator, characterService, simulator, strategySimulatorListener,
 				simulatedFactory, TASK_MONSTER_COOK_OR_POTION_CREATE);
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
@@ -106,7 +107,7 @@ public final class PhenixBot extends Bot {
 			GoalParameter goalParameter, boolean isForSimu) {
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING).stream()
-				.collect(Collectors.toMap(aga -> goalFactory.getInfos(aga).getItemCode(), Function.identity()));
+				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
 
 		ItemTaskFactory itemTaskFactory = new OptimizedItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
 				characterService, goalAverageOptimizer);
