@@ -103,6 +103,11 @@ public abstract class Bot {
 		eventsDao = new EventsDAOImpl(apiClient);
 		characterService = new CharacterServiceImpl(characterDao, itemDao);
 		moveService = new MoveServiceImpl(characterDao, mapDao, characterService, itemService);
+		
+		//Chargement des caches
+		resourceDAO.getAllResources();
+		monsterDao.getMonsters();
+		itemDao.getItems();
 	}
 
 	protected abstract void run();

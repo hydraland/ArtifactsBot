@@ -136,6 +136,7 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 		builder.append("botResourceSkill", botResourceSkill);
 		builder.append("craftLevels", craftLevels);
 		builder.append("gatheringLevels", gatheringLevels);
+		builder.append("goalAchiever", goalAchiever);
 		return builder.toString();
 	}
 }

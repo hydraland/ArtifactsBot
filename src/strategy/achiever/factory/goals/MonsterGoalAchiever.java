@@ -22,12 +22,12 @@ import strategy.util.fight.FightService;
 public class MonsterGoalAchiever implements GoalAchiever {
 
 	private static final HashMap<String, Integer> EMPTY_RESERVED_ITEMS = new HashMap<>();
-	private List<Coordinate> coordinates;
+	protected List<Coordinate> coordinates;
 	private final CharacterDAO characterDAO;
 	private final BotMonster monster;
 	private boolean finish;
 	private final MonsterEquipementService monsterEquipementService;
-	private final MapDAO mapDao;
+	protected final MapDAO mapDao;
 	private final StopChecker<FightResponse> stopCondition;
 	private final FightService fightService;
 	private final MoveService moveService;
@@ -51,13 +51,7 @@ public class MonsterGoalAchiever implements GoalAchiever {
 	@Override
 	public boolean isRealisable(BotCharacter character) {
 		monsterEquipementService.reset();
-		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS).fightDetails().eval() > 1d
-				&& getCoordinates() != null;
-	}
-
-	private List<Coordinate> getCoordinates() {
-		return this.coordinates != null ? this.coordinates
-				: ResourceGoalAchiever.searchCoordinates(mapDao, monster.getCode(), true);
+		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS).fightDetails().eval() > 1d;
 	}
 
 	@Override
@@ -66,20 +60,11 @@ public class MonsterGoalAchiever implements GoalAchiever {
 			if (!monsterEquipementService.equipBestEquipement(monster, reservedItems)) {
 				return false;
 			}
-			if (coordinates == null) {
-				coordinates = ResourceGoalAchiever.searchCoordinates(mapDao, monster.getCode(), true);
-				if (coordinates == null) {
-					return false;// le monstre n'est plus présent.
-				}
-			}
 			if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 				return false;
 			}
 			if (moveService.moveTo(coordinates)) {
 				FightResponse response = characterDAO.fight();
-				if (response.monsterNotFound()) {
-					this.coordinates = null;
-				}
 				if (response.ok()) {
 					if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 						return false;

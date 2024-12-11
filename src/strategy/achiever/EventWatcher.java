@@ -25,16 +25,19 @@ public final class EventWatcher implements Runnable {
 	@Override
 	public void run() {
 		LOGGER.info("Initialisation EventWatcher");
-		while(true) {
+		while (true) {
 			List<BotActiveEvent> events = eventsDAO.getActiveEvents();
 			List<String> newCurrentEventsName = new ArrayList<>();
 			for (BotActiveEvent botEvent : events) {
-				if(!oldEventsName.contains(botEvent.getName())){
-					//Nouvel évènement on notifie
+				boolean takenIntoAccount = true;
+				if (!oldEventsName.contains(botEvent.getName())) {
+					// Nouvel évènement on notifie
 					BoxContent content = botEvent.getMap().getContent();
-					eNotification.fireEvent(content.getType(), content.getCode());
+					takenIntoAccount = eNotification.fireEvent(content.getType(), content.getCode());
 				}
-				newCurrentEventsName.add(botEvent.getName());
+				if (takenIntoAccount) {
+					newCurrentEventsName.add(botEvent.getName());
+				}
 			}
 			oldEventsName = newCurrentEventsName;
 			Utility.sleep(300);

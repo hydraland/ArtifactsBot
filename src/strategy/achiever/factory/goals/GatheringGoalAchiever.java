@@ -20,14 +20,14 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 
 	private final String resourceCode;
 	private final int rate;
-	private List<Coordinate> coordinates;
+	protected List<Coordinate> coordinates;
 	private final CharacterDAO characterDAO;
 	private final BotResourceSkill skill;
 	private final int level;
 	private boolean finish;
 	private boolean root;
-	private final String boxCode;
-	private final MapDAO mapDao;
+	protected final String boxCode;
+	protected final MapDAO mapDao;
 	private final MoveService moveService;
 	private final CharacterService characterService;
 
@@ -50,12 +50,7 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 	@Override
 	public boolean isRealisable(BotCharacter character) {
 		int skillLevel = characterService.getLevel(skill);
-		return skillLevel >= this.level && getCoordinates() != null;
-	}
-
-	private List<Coordinate> getCoordinates() {
-		return this.coordinates != null ? this.coordinates
-				: ResourceGoalAchiever.searchCoordinates(mapDao, boxCode, false);
+		return skillLevel >= this.level;
 	}
 
 	@Override
@@ -67,17 +62,8 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 				return true;
 			}
 		}
-		if (coordinates == null) {
-			coordinates = ResourceGoalAchiever.searchCoordinates(mapDao, boxCode, false);
-			if (coordinates == null) {
-				return false;// la ressource n'est plus présente.
-			}
-		}
 		if (moveService.moveTo(coordinates)) {
 			GatheringResponse response = characterDAO.collect();
-			if (response.resourceNotFound()) {
-				this.coordinates = null;
-			}
 			if (response.ok()) {
 				List<? extends BotItemReader> items = response.botDetails().getItems();
 				for (BotItemReader botItem : items) {

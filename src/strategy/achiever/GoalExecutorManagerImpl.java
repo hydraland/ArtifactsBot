@@ -98,12 +98,17 @@ public class GoalExecutorManagerImpl implements EventNotification, GoalExecutoMa
 	}
 
 	@Override
-	public void fireEvent(String type, String code) {
+	public boolean fireEvent(String type, String code) {
 		LOGGER.info("New Event " + type + "," + code);
-		if (interruptAvalaible.get() && strategy.isAcceptEvent(type, code)) {
-			LOGGER.info("Prise en compte de l'Event");
-			strategy.initializeGoal(type, code);
-			interruptor.interrupt();
+		if (strategy.isAcceptEvent(type, code)) {
+			if (interruptAvalaible.get()) {
+				LOGGER.info("Prise en compte de l'Event");
+				strategy.initializeGoal(type, code);
+				interruptor.interrupt();
+			} else {
+				return false;
+			}
 		}
+		return true;
 	}
 }

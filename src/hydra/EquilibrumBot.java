@@ -11,6 +11,7 @@ import strategy.achiever.factory.ArtifactGoalFactory;
 import strategy.achiever.factory.DefaultItemTaskFactory;
 import strategy.achiever.factory.DefaultMonsterTaskFactory;
 import strategy.achiever.factory.GoalFactory;
+import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.GoalFactoryCreator;
 import strategy.achiever.factory.GoalFactoryCreatorImpl;
 import strategy.achiever.factory.ItemTaskFactory;
@@ -45,12 +46,12 @@ public final class EquilibrumBot extends Bot {
 				grandExchangeDAO, taskDao, mapDao, moveService, characterService, itemService, fightService,
 				monsterEquipementService, goalParameter);
 		GoalFactory goalFactory = new ArtifactGoalFactory(resourceDAO, monsterDao, mapDao, itemDao, characterDao,
-				goalParameter, characterService, goalFactoryCreator);
+				eventsDao, goalParameter, characterService, goalFactoryCreator);
 		MonsterTaskFactory monsterTaskFactory = new DefaultMonsterTaskFactory(
-				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), goalFactoryCreator);
+				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL), goalFactoryCreator);
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
-				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING).stream()
+				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL).stream()
 				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
 		ItemTaskFactory itemTaskFactory = new DefaultItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
 				characterService);

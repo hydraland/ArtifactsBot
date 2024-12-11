@@ -17,6 +17,7 @@ import hydra.dao.ResourceDAO;
 import hydra.dao.TaskDAO;
 import hydra.model.BotCharacter;
 import hydra.model.BotItemReader;
+import strategy.GenericSimulatorListener;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.ArtifactGoalFactory;
 import strategy.achiever.factory.GoalFactory;
@@ -47,8 +48,10 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	private ItemService itemService;
 	private FightService fightService;
 	private GoalFactoryCreator goalFactoryCreator;
+	private GenericSimulatorListener simulatorListener;
 
-	public SimulatorManagerImpl(SimulatorListener simulatorListener, ActiveEventsSimulator activeEventsSimulator) {
+	public SimulatorManagerImpl(ActiveEventsSimulator activeEventsSimulator) {
+		simulatorListener = new GenericSimulatorListener();
 		FilteredInnerCallSimulatorListener filteredInnerCallSimulatorListener = new FilteredInnerCallSimulatorListener(
 				simulatorListener);
 		eventsDAOSimulator = new EventsDAOSimulator(filteredInnerCallSimulatorListener, activeEventsSimulator);
@@ -120,7 +123,8 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 				grandExchangeDAOSimulator, taskDAOSimulator, mapDAOSimulator, moveService,
 				getCharacterServiceSimulator(), itemService, fightService, monsterEquipementService, goalParameter);
 		return new ArtifactGoalFactory(resourceDAOSimulator, monsterDAOSimulator, mapDAOSimulator, itemDAOSimulator,
-				characterDAOSimulator, goalParameter, getCharacterServiceSimulator(), goalFactoryCreator);
+				characterDAOSimulator, eventsDAOSimulator, goalParameter, getCharacterServiceSimulator(),
+				goalFactoryCreator);
 	}
 
 	@Override
@@ -202,6 +206,11 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 	@Override
 	public final GoalFactoryCreator getGoalFactoryCreator() {
 		return goalFactoryCreator;
+	}
+
+	@Override
+	public final GenericSimulatorListener getSimulatorListener() {
+		return simulatorListener;
 	}
 
 	private HashMap<String, Integer> bankItemsToMap(List<? extends BotItemReader> bankItems) {

@@ -15,6 +15,7 @@ import strategy.achiever.factory.GoalFactoryCreatorImpl;
 import strategy.achiever.factory.ItemTaskFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.achiever.factory.OptimizedItemTaskFactory;
+import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.info.GoalAchieverInfo;
@@ -47,12 +48,12 @@ public final class HydraBot extends Bot {
 				grandExchangeDAO, taskDao, mapDao, moveService, characterService, itemService, fightService,
 				monsterEquipementService, goalParameter);
 		GoalFactory goalFactory = new ArtifactGoalFactory(resourceDAO, monsterDao, mapDao, itemDao, characterDao,
-				goalParameter, characterService, goalFactoryCreator);
+				eventsDao, goalParameter, characterService, goalFactoryCreator);
 		MonsterTaskFactory monsterTaskFactory = new DefaultMonsterTaskFactory(
-				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), goalFactoryCreator);
+				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL), goalFactoryCreator);
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
-				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING).stream()
+				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL).stream()
 				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
 		GoalAverageOptimizer goalAverageOptimizer = new GoalAverageOptimizerImpl(characterDao);
 		ItemTaskFactory itemTaskFactory = new OptimizedItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,

@@ -12,7 +12,7 @@ public class SimpleGoalAchieverInfo implements GoalAchieverInfo {
 
 	protected final String code;
 	protected final BotItemType type;
-	private final ArtifactGoalAchiever goalAchiever;
+	protected final ArtifactGoalAchiever goalAchiever;
 
 	public SimpleGoalAchieverInfo(String code, BotItemType type, ArtifactGoalAchiever goalAchiever) {
 		this.code = code;
@@ -80,6 +80,7 @@ public class SimpleGoalAchieverInfo implements GoalAchieverInfo {
 		ToStringBuilder builder = new ToStringBuilder(this);
 		builder.append("code", code);
 		builder.append("type", type);
+		builder.append("goalAchiever", goalAchiever);
 		return builder.toString();
 	}
 

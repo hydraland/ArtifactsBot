@@ -13,9 +13,9 @@ import strategy.achiever.factory.util.StopChecker;
 
 public interface GoalFactory {
 
-	List<MonsterGoalAchiever> createMonstersGoals(StopChecker<FightResponse> stopCondition);
+	List<MonsterGoalAchiever> createMonstersGoals(StopChecker<FightResponse> stopCondition, GoalFilter filter);
 
-	Collection<GoalAchieverInfo> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector);
+	Collection<GoalAchieverInfo> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector, GoalFilter filter);
 
 	List<GoalAchiever> createManagedInventoryCustomGoal();
 
@@ -27,4 +27,9 @@ public interface GoalFactory {
 
 	List<GoalAchiever> createTaskGoals();
 
+	public enum GoalFilter {
+		EVENT, NO_EVENT, ALL
+	}
+
+	GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo goalAchiever);
 }

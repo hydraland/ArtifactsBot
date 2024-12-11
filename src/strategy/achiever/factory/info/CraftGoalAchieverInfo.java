@@ -66,6 +66,7 @@ public class CraftGoalAchieverInfo extends SimpleGoalAchieverInfo {
 		builder.append("craftSkill", craftSkill);
 		builder.append("needRareResource", needRareResource);
 		builder.append("needTaskMasterResource", needTaskMasterResource);
+		builder.append("goalAchiever", goalAchiever);
 		return builder.toString();
 	}
 }

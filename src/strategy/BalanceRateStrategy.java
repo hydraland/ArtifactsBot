@@ -16,6 +16,7 @@ import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalAchieverConditional;
 import strategy.achiever.GoalAchieverConditional.Condition;
 import strategy.achiever.factory.GoalFactory;
+import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
@@ -42,6 +43,7 @@ public final class BalanceRateStrategy implements Strategy {
 	private GoalAchiever eventGoal;
 	private final BankDAO bankDAO;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
+	private final Collection<GoalAchieverInfo> itemGoalsForEvent;
 
 	public BalanceRateStrategy(CharacterDAO characterDAO, GoalFactory goalFactory, CharacterService characterService,
 			BankDAO bankDAO) {
@@ -49,10 +51,11 @@ public final class BalanceRateStrategy implements Strategy {
 		this.goalFactory = goalFactory;
 		this.characterService = characterService;
 		this.bankDAO = bankDAO;
-		itemGoals = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING);
+		itemGoals = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.NO_EVENT);
+		itemGoalsForEvent = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.GATHERING, GoalFilter.EVENT);
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
-		monsterGoals = goalFactory.createMonstersGoals(resp -> resp.fight().getXp() == 0);
-		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false);
+		monsterGoals = goalFactory.createMonstersGoals(resp -> resp.fight().getXp() == 0, GoalFilter.NO_EVENT);
+		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
 		dropItemGoal = goalFactory.getDropItemGoal();
 	}
@@ -168,12 +171,12 @@ public final class BalanceRateStrategy implements Strategy {
 
 	@Override
 	public boolean isAcceptEvent(String type, String code) {
-		return Strategy.isAcceptEvent(characterDAO, type, code, monsterGoalsForEvent, itemGoals);
+		return Strategy.isAcceptEvent(characterDAO, type, code, monsterGoalsForEvent, itemGoalsForEvent);
 	}
 
 	@Override
 	public void initializeGoal(String type, String code) {
-		eventGoal = Strategy.initializeGoal(goalFactory, type, code, monsterGoalsForEvent, itemGoals);
+		eventGoal = Strategy.initializeGoal(goalFactory, type, code, monsterGoalsForEvent, itemGoalsForEvent);
 	}
 
 	@Override

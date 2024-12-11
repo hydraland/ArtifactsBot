@@ -14,6 +14,7 @@ import hydra.dao.ResourceDAO;
 import hydra.dao.TaskDAO;
 import hydra.model.BotCharacter;
 import hydra.model.BotItemReader;
+import strategy.GenericSimulatorListener;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.GoalFactoryCreator;
@@ -63,4 +64,6 @@ public interface SimulatorManager {
 	ItemService getItemService();
 
 	GoalFactoryCreator getGoalFactoryCreator();
+
+	GenericSimulatorListener getSimulatorListener();
 }

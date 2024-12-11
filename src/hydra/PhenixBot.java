@@ -15,7 +15,6 @@ import hydra.dao.simulate.SimulatorManagerImpl;
 import hydra.model.BotCraftSkill;
 import strategy.SimulatorStrategy;
 import strategy.Strategy;
-import strategy.StrategySimulatorListener;
 import strategy.achiever.GoalExecutoManager;
 import strategy.achiever.GoalExecutorManagerImpl;
 import strategy.achiever.GoalParameter;
@@ -28,10 +27,11 @@ import strategy.achiever.factory.ItemTaskFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.achiever.factory.MonsterTaskUseSimulatorFactory;
 import strategy.achiever.factory.OptimizedItemTaskFactory;
+import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
-import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.CharacterService;
@@ -67,10 +67,8 @@ public final class PhenixBot extends Bot {
 				grandExchangeDAO, taskDao, mapDao, moveService, characterService, itemService, fightService,
 				monsterEquipementService, goalParameter);
 		GoalFactory goalFactory = new ArtifactGoalFactory(resourceDAO, monsterDao, mapDao, itemDao, characterDao,
-				goalParameter, characterService, goalFactoryCreator);
-		StrategySimulatorListener strategySimulatorListener = new StrategySimulatorListener();
-		SimulatorManager simulator = new SimulatorManagerImpl(strategySimulatorListener,
-				botEvents -> Collections.emptyList());
+				eventsDao, goalParameter, characterService, goalFactoryCreator);
+		SimulatorManager simulator = new SimulatorManagerImpl(botEvents -> Collections.emptyList());
 		simulator.init(bankDao, characterDao.getCharacter(), eventsDao, itemDao, mapDao, monsterDao, resourceDAO,
 				taskDao, false, new HashMap<>());
 		simulator.save(false);
@@ -83,20 +81,20 @@ public final class PhenixBot extends Bot {
 				MIN_FREE_INVENTORY_SPACE);
 		GoalFactory simulatedFactory = createSimulatorFactory(simulator, simulatorParameter);
 		MonsterTaskFactory monsterTaskFactory = new MonsterTaskUseSimulatorFactory(
-				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()).stream()
+				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL).stream()
 						.collect(Collectors.toMap(MonsterGoalAchiever::getMonsterCode, Function.identity())),
-				goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING).stream()
+				goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING, GoalFilter.ALL).stream()
 						.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())
 								|| BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
 						.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal)),
-				bankDao, characterDao, goalFactoryCreator, characterService, simulator, strategySimulatorListener,
-				simulatedFactory, TASK_MONSTER_COOK_OR_POTION_CREATE);
+				bankDao, characterDao, goalFactoryCreator, characterService, simulator, simulatedFactory,
+				TASK_MONSTER_COOK_OR_POTION_CREATE);
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		HPRecoveryFactory hpRecoveryFactory = new HPRecoveryUseSimulatorFactory(characterDao, itemDao, bankDao,
-				moveService, characterService, strategySimulatorListener, simulator);
+				moveService, characterService, simulator);
 		goalParameter.setHPRecoveryFactory(hpRecoveryFactory);
-		strategy = new SimulatorStrategy(simulator, strategySimulatorListener, characterDao, bankDao, goalFactory,
-				characterService, itemService, simulatedFactory, goalAverageOptimizer);
+		strategy = new SimulatorStrategy(simulator, characterDao, bankDao, goalFactory, characterService, itemService,
+				simulatedFactory, goalAverageOptimizer);
 		goalExecutorManager = new GoalExecutorManagerImpl(strategy, characterDao, eventsDao, characterCache,
 				interruptor);
 	}
@@ -106,7 +104,7 @@ public final class PhenixBot extends Bot {
 			GoalFactoryCreator goalFactoryCreator, MoveService moveService, CharacterService characterService,
 			GoalParameter goalParameter, boolean isForSimu) {
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
-				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING).stream()
+				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL).stream()
 				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
 
 		ItemTaskFactory itemTaskFactory = new OptimizedItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
@@ -117,7 +115,7 @@ public final class PhenixBot extends Bot {
 		if (isForSimu) {
 			goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(characterDao, itemDao, characterService));
 			goalParameter.setMonsterTaskFactory(new DefaultMonsterTaskFactory(
-					goalFactory.createMonstersGoals(resp -> !resp.fight().isWin()), goalFactoryCreator));
+					goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL), goalFactoryCreator));
 		}
 	}
 

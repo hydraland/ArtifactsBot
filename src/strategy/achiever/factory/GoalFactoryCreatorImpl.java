@@ -14,6 +14,8 @@ import hydra.model.BotCraftSkill;
 import hydra.model.BotMonster;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
+import strategy.achiever.GoalAchieverConditional;
+import strategy.achiever.GoalAchieverConditional.Condition;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.custom.DepositGoldInBankGoalAchiever;
 import strategy.achiever.factory.custom.DepositResourceGoalAchiever;
@@ -29,18 +31,22 @@ import strategy.achiever.factory.custom.UselessResourceManagerGoalAchiever;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.DepositNoReservedItemGoalAchiever;
 import strategy.achiever.factory.goals.EquipToolGoalAchiever;
+import strategy.achiever.factory.goals.GatheringEventGoalAchiever;
 import strategy.achiever.factory.goals.GatheringGoalAchiever;
+import strategy.achiever.factory.goals.GenericGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose;
-import strategy.achiever.factory.goals.GoalAchieverList;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.goals.GoalAchieverList;
 import strategy.achiever.factory.goals.GoalAchieverLoop;
 import strategy.achiever.factory.goals.GoalAchieverTwoStep;
 import strategy.achiever.factory.goals.ItemCraftGoalAchiever;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
 import strategy.achiever.factory.goals.ItemGetInventoryOrBankGoalAchiever;
+import strategy.achiever.factory.goals.ItemMonsterEventGoalAchiever;
 import strategy.achiever.factory.goals.ItemMonsterGoalAchiever;
 import strategy.achiever.factory.goals.ItemRecycleGoalAchiever;
 import strategy.achiever.factory.goals.ItemTaskGoalAchiever;
+import strategy.achiever.factory.goals.MonsterEventGoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.goals.MonsterTaskGoalAchiever;
 import strategy.achiever.factory.goals.ResourceGoalAchiever;
@@ -198,23 +204,32 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 
 	@Override
 	public ResourceGoalAchiever createGatheringGoalAchiever(String resourceCode, int rate, List<Coordinate> coordinates,
-			int level, BotResourceSkill skill, String boxCode) {
-		return new GatheringGoalAchiever(characterDAO, characterService, mapDAO, resourceCode, rate, coordinates, level,
-				skill, boxCode, moveService);
+			int level, BotResourceSkill skill, String boxCode, boolean event) {
+		return event
+				? new GatheringEventGoalAchiever(characterDAO, characterService, mapDAO, resourceCode, rate,
+						coordinates, level, skill, boxCode, moveService)
+				: new GatheringGoalAchiever(characterDAO, characterService, mapDAO, resourceCode, rate, coordinates,
+						level, skill, boxCode, moveService);
 	}
 
 	@Override
 	public ResourceGoalAchiever createItemMonsterGoalAchiever(String resourceCode, int rate,
-			List<Coordinate> coordinates, BotMonster monster) {
-		return new ItemMonsterGoalAchiever(characterDAO, mapDAO, resourceCode, rate, coordinates, monster,
-				monsterEquipementService, fightService, moveService, characterService, parameter);
+			List<Coordinate> coordinates, BotMonster monster, boolean event) {
+		return event
+				? new ItemMonsterEventGoalAchiever(characterDAO, mapDAO, resourceCode, rate, coordinates, monster,
+						monsterEquipementService, fightService, moveService, characterService, parameter)
+				: new ItemMonsterGoalAchiever(characterDAO, mapDAO, resourceCode, rate, coordinates, monster,
+						monsterEquipementService, fightService, moveService, characterService, parameter);
 	}
 
 	@Override
 	public MonsterGoalAchiever createMonsterGoalAchiever(List<Coordinate> coordinates, BotMonster monster,
-			StopChecker<FightResponse> stopCondition) {
-		return new MonsterGoalAchiever(characterDAO, mapDAO, coordinates, monster, monsterEquipementService,
-				stopCondition, fightService, moveService, parameter);
+			StopChecker<FightResponse> stopCondition, boolean event) {
+		return event
+				? new MonsterEventGoalAchiever(characterDAO, mapDAO, coordinates, monster, monsterEquipementService,
+						stopCondition, fightService, moveService, parameter)
+				: new MonsterGoalAchiever(characterDAO, mapDAO, coordinates, monster, monsterEquipementService,
+						stopCondition, fightService, moveService, parameter);
 	}
 
 	@Override
@@ -251,9 +266,19 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 			BotCharacterInventorySlot slot) {
 		return new UnequipFirstWeaponGoalAchiever(characterDAO, method, slot);
 	}
-	
+
 	@Override
 	public GoalAchieverList createGoalAchieverList() {
 		return new GoalAchieverList();
+	}
+
+	@Override
+	public GenericGoalAchiever createGenericGoalAchiever() {
+		return new GenericGoalAchiever(character -> false, reservedItems -> false);
+	}
+
+	@Override
+	public GoalAchiever createGoalAchieverConditional(GoalAchiever subGoal, Condition condition, boolean virtualRoot) {
+		return new GoalAchieverConditional(subGoal, condition, virtualRoot);
 	}
 }

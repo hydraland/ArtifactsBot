@@ -64,6 +64,7 @@ public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
 		builder.append("level", level);
 		builder.append("resourceSkill", resourceSkill);
 		builder.append("boxCode", boxCode);
+		builder.append("goalAchiever", goalAchiever);
 		return builder.toString();
 	}
 }

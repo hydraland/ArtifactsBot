@@ -28,17 +28,17 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 	private final ResourceGraph resourceGraph;
 	private final Map<String, Map<BotCraftSkill, Integer>> cache;
 	private final CharacterDAO characterDAO;
-	private final List<String> resourceItems;
+	private final List<String> rareResourceItems;
 	private final BankDAO bankDAO;
 	private final MoveService moveService;
 
 	public UselessResourceManagerGoalAchiever(CharacterDAO characterDAO, BankDAO bankDAO, ItemDAO itemDAO,
-			CharacterService characterService, MoveService moveService, List<String> resourceItems) {
+			CharacterService characterService, MoveService moveService, List<String> rareResourceItems) {
 		super(characterService);
 		this.characterDAO = characterDAO;
 		this.bankDAO = bankDAO;
 		this.moveService = moveService;
-		this.resourceItems = resourceItems;
+		this.rareResourceItems = rareResourceItems;
 		resourceGraph = new ResourceGraph(itemDAO);
 		cache = new HashMap<>();
 		oldCall = 0;
@@ -54,7 +54,7 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 	public boolean execute() {
 		List<BotItemReader> uselessItems = new ArrayList<>();
 		List<? extends BotItemReader> resourceInBank = bankDAO.viewItems().stream()
-				.filter(bi -> resourceItems.contains(bi.getCode())).toList();
+				.filter(bi -> !rareResourceItems.contains(bi.getCode())).toList();
 		for (BotItemReader botItem : resourceInBank) {
 			Map<BotCraftSkill, Integer> result = cache.computeIfAbsent(botItem.getCode(),
 					code -> resourceGraph.process(code, new SkillLevelProcessor()));

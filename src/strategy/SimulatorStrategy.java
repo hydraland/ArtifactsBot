@@ -21,6 +21,7 @@ import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.GoalFactory;
+import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.GoalAchieverLoop;
@@ -42,22 +43,21 @@ public class SimulatorStrategy implements Strategy {
 	private final BankDAO bankDAO;
 	private final CharacterService characterService;
 	private final Collection<GoalAchieverInfo> itemGoals;
+	private final Collection<GoalAchieverInfo> itemGoalsForEvent;
 	private final List<GoalAchiever> inventoryGoals;
 	private final List<GoalAchiever> taskGoals;
 	private final List<GoalAchieverInfo> dropItemGoal;
 	private GoalAchiever eventGoal;
 	private final Collection<GoalAchieverInfo> itemSimulatedGoals;
 	private final GoalFactory simulatedGoalFactory;
-	private final StrategySimulatorListener simulatorListener;
 	private final ItemService itemService;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
 	private final GoalAverageOptimizer goalAverageOptimizer;
 
-	public SimulatorStrategy(SimulatorManager simulatorManager, StrategySimulatorListener simulatorListener,
-			CharacterDAO characterDAO, BankDAO bankDAO, GoalFactory goalFactory, CharacterService characterService,
-			ItemService itemService, GoalFactory simulatedGoalFactory, GoalAverageOptimizer goalAverageOptimizer) {
+	public SimulatorStrategy(SimulatorManager simulatorManager, CharacterDAO characterDAO, BankDAO bankDAO,
+			GoalFactory goalFactory, CharacterService characterService, ItemService itemService,
+			GoalFactory simulatedGoalFactory, GoalAverageOptimizer goalAverageOptimizer) {
 		this.simulatorManager = simulatorManager;
-		this.simulatorListener = simulatorListener;
 		this.characterDAO = characterDAO;
 		this.bankDAO = bankDAO;
 		this.goalFactory = goalFactory;
@@ -66,10 +66,13 @@ public class SimulatorStrategy implements Strategy {
 		this.goalAverageOptimizer = goalAverageOptimizer;
 		this.simulatedGoalFactory = simulatedGoalFactory;
 
-		itemGoals = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING);
-		itemSimulatedGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING);
+		itemGoals = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING,
+				GoalFilter.NO_EVENT);
+		itemGoalsForEvent = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.GATHERING, GoalFilter.EVENT);
+		itemSimulatedGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING,
+				GoalFilter.NO_EVENT);
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
-		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false);
+		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
 		dropItemGoal = goalFactory.getDropItemGoal();
 	}
@@ -206,7 +209,7 @@ public class SimulatorStrategy implements Strategy {
 		List<GoalAchieverInfo> simGoals = allSimulateGoals.stream().filter(simulatedPredicate).toList();
 		List<? extends BotItemReader> bankItems = bankDAO.viewItems();
 		SumAccumulator accumulator = new SumAccumulator();
-		simulatorListener
+		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
 		for (GoalAchieverInfo simGoal : simGoals) {
 			boolean success = true;
@@ -318,12 +321,12 @@ public class SimulatorStrategy implements Strategy {
 
 	@Override
 	public boolean isAcceptEvent(String type, String code) {
-		return Strategy.isAcceptEvent(characterDAO, type, code, monsterGoalsForEvent, itemGoals);
+		return Strategy.isAcceptEvent(characterDAO, type, code, monsterGoalsForEvent, itemGoalsForEvent);
 	}
 
 	@Override
 	public void initializeGoal(String type, String code) {
-		eventGoal = Strategy.initializeGoal(goalFactory, type, code, monsterGoalsForEvent, itemGoals);
+		eventGoal = Strategy.initializeGoal(goalFactory, type, code, monsterGoalsForEvent, itemGoalsForEvent);
 
 	}
 

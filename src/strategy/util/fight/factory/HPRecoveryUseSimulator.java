@@ -12,7 +12,6 @@ import hydra.model.BotCharacter;
 import hydra.model.BotEffect;
 import hydra.model.BotItem;
 import hydra.model.BotItemReader;
-import strategy.StrategySimulatorListener;
 import strategy.SumAccumulator;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
@@ -27,17 +26,14 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 	private final SumAccumulator accumulator;
 	private final BankDAO bankDAO;
 	private final MoveService moveService;
-	private final StrategySimulatorListener simulatorListener;
 
 	public HPRecoveryUseSimulator(CharacterDAO characterDao, ItemDAO itemDAO, BankDAO bankDAO, MoveService moveService,
-			CharacterService characterService, StrategySimulatorListener simulatorListener,
-			SimulatorManager simulatorManager) {
+			CharacterService characterService, SimulatorManager simulatorManager) {
 		this.characterDao = characterDao;
 		this.itemDAO = itemDAO;
 		this.bankDAO = bankDAO;
 		this.moveService = moveService;
 		this.characterService = characterService;
-		this.simulatorListener = simulatorListener;
 		this.simulatorManager = simulatorManager;
 		accumulator = new SumAccumulator();
 	}
@@ -79,7 +75,7 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 	}
 
 	private int moveInBankIfMoreFast(int hpToHeal, Map<String, Integer> reservedItems) {
-		simulatorListener
+		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
 		simulatorManager.setValue(characterDao.getCharacter(), bankDAO.viewItems());
 		accumulator.reset();

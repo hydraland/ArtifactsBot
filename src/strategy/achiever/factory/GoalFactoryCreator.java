@@ -8,7 +8,9 @@ import hydra.model.BotCraftSkill;
 import hydra.model.BotMonster;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
+import strategy.achiever.GoalAchieverConditional.Condition;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.GenericGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.GoalAchieverList;
@@ -59,14 +61,14 @@ public interface GoalFactoryCreator {
 			boolean checkBeforeExecuteOptional);
 
 	ResourceGoalAchiever createGatheringGoalAchiever(String resourceCode, int rate, List<Coordinate> coordinates,
-			int level, BotResourceSkill skill, String boxCode);
+			int level, BotResourceSkill skill, String boxCode, boolean event);
 
 	ResourceGoalAchiever createItemMonsterGoalAchiever(
 			String resourceCode, int rate, List<Coordinate> coordinates,
-			BotMonster monster);
+			BotMonster monster, boolean event);
 
 	MonsterGoalAchiever createMonsterGoalAchiever(List<Coordinate> coordinates, BotMonster monster,
-			StopChecker<FightResponse> stopCondition);
+			StopChecker<FightResponse> stopCondition, boolean event);
 
 	GoalAchiever createMonsterTaskGoalAchiever(List<Coordinate> coordinates);
 
@@ -85,5 +87,9 @@ public interface GoalFactoryCreator {
 	ResourceGoalAchiever createUnequipFirstWeaponGoalAchiever(SlotMethod method, BotCharacterInventorySlot slot);
 
 	GoalAchieverList createGoalAchieverList();
+
+	GenericGoalAchiever createGenericGoalAchiever();
+
+	GoalAchiever createGoalAchieverConditional(GoalAchiever subGoal, Condition condition, boolean virtualRoot);
 
 }

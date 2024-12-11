@@ -4,7 +4,6 @@ import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
 import hydra.dao.ItemDAO;
 import hydra.dao.simulate.SimulatorManager;
-import strategy.StrategySimulatorListener;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 import strategy.util.fight.HPRecovery;
@@ -16,19 +15,16 @@ public class HPRecoveryUseSimulatorFactory implements HPRecoveryFactory {
 	private final CharacterService characterService;
 	private final BankDAO bankDAO;
 	private final MoveService moveService;
-	private final StrategySimulatorListener simulatorListener;
 	private final SimulatorManager simulatorManager;
 	private HPRecovery hpRecovery;
 
 	public HPRecoveryUseSimulatorFactory(CharacterDAO characterDao, ItemDAO itemDAO, BankDAO bankDAO,
-			MoveService moveService, CharacterService characterService, StrategySimulatorListener simulatorListener,
-			SimulatorManager simulatorManager) {
+			MoveService moveService, CharacterService characterService, SimulatorManager simulatorManager) {
 		this.characterDao = characterDao;
 		this.itemDAO = itemDAO;
 		this.bankDAO = bankDAO;
 		this.moveService = moveService;
 		this.characterService = characterService;
-		this.simulatorListener = simulatorListener;
 		this.simulatorManager = simulatorManager;
 	}
 
@@ -36,7 +32,7 @@ public class HPRecoveryUseSimulatorFactory implements HPRecoveryFactory {
 	public HPRecovery createHPRecovery() {
 		if (hpRecovery == null) {
 			hpRecovery = new HPRecoveryUseSimulator(characterDao, itemDAO, bankDAO, moveService, characterService,
-					simulatorListener, simulatorManager);
+					simulatorManager);
 		}
 		return hpRecovery;
 	}
