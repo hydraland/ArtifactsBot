@@ -15,6 +15,7 @@ import hydra.dao.CharacterDAO;
 import hydra.dao.ItemDAO;
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
+import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemReader;
 import strategy.util.CharacterService;
@@ -66,10 +67,13 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 		if (!uselessItems.isEmpty()) {
 			if (moveService.moveToBank()) {
 				for (BotItemReader uselessItem : uselessItems) {
-					if (!bankDAO.withdraw(uselessItem)) {
+					BotItem itemToRemove = new BotItem();
+					itemToRemove.setCode(uselessItem.getCode());
+					itemToRemove.setQuantity(Math.min(uselessItem.getQuantity(), characterService.getFreeInventorySpace()));
+					if (!bankDAO.withdraw(itemToRemove)) {
 						return false;
 					}
-					if (characterDAO.deleteItem(uselessItem).ok()) {
+					if (characterDAO.deleteItem(itemToRemove).ok()) {
 						return false;
 					}
 				}
