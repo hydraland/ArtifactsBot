@@ -1,6 +1,7 @@
 package strategy.achiever.factory.custom;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -32,12 +33,15 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 	private final List<String> rareResourceItems;
 	private final BankDAO bankDAO;
 	private final MoveService moveService;
+	private static final List<String> SEARCH_SUB_TYPE = Arrays.asList("mining", "mob", "bar", "plank", "woodcutting");
+	private final ItemDAO itemDAO;
 
 	public UselessResourceManagerGoalAchiever(CharacterDAO characterDAO, BankDAO bankDAO, ItemDAO itemDAO,
 			CharacterService characterService, MoveService moveService, List<String> rareResourceItems) {
 		super(characterService);
 		this.characterDAO = characterDAO;
 		this.bankDAO = bankDAO;
+		this.itemDAO = itemDAO;
 		this.moveService = moveService;
 		this.rareResourceItems = rareResourceItems;
 		resourceGraph = new ResourceGraph(itemDAO);
@@ -55,7 +59,9 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 	public boolean execute() {
 		List<BotItemReader> uselessItems = new ArrayList<>();
 		List<? extends BotItemReader> resourceInBank = bankDAO.viewItems().stream()
-				.filter(bi -> !rareResourceItems.contains(bi.getCode())).toList();
+				.filter(bi -> SEARCH_SUB_TYPE.contains(itemDAO.getItem(bi.getCode()).getSubtype())
+						&& !rareResourceItems.contains(bi.getCode()))
+				.toList();
 		for (BotItemReader botItem : resourceInBank) {
 			Map<BotCraftSkill, Integer> result = cache.computeIfAbsent(botItem.getCode(),
 					code -> resourceGraph.process(code, new SkillLevelProcessor()));
@@ -69,7 +75,8 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 				for (BotItemReader uselessItem : uselessItems) {
 					BotItem itemToRemove = new BotItem();
 					itemToRemove.setCode(uselessItem.getCode());
-					itemToRemove.setQuantity(Math.min(uselessItem.getQuantity(), characterService.getFreeInventorySpace()));
+					itemToRemove
+							.setQuantity(Math.min(uselessItem.getQuantity(), characterService.getFreeInventorySpace()));
 					if (!bankDAO.withdraw(itemToRemove)) {
 						return false;
 					}
