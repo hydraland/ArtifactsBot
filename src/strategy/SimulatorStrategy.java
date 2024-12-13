@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
 
 import hydra.GameConstants;
 import hydra.dao.BankDAO;
@@ -79,7 +77,6 @@ public class SimulatorStrategy implements Strategy {
 
 	@Override
 	public Iterable<GoalAchiever> getGoalAchievers() {
-		LogManager.getLogManager().getLogger("").setLevel(Level.SEVERE);
 		BotCharacter character = this.characterDAO.getCharacter();
 		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
 		List<GoalAchieverInfo> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
@@ -117,7 +114,6 @@ public class SimulatorStrategy implements Strategy {
 		goalAchievers.addAll(taskGoals);
 		addMiningAndWoodcuttingGoals(goalAchievers, searchMiningGoalAchiever, searchWoodcuttingGoalAchiever);
 		goalAchievers.addAll(Strategy.filterDropItemGoals(dropItemGoal, characterService, bankDAO));
-		LogManager.getLogManager().getLogger("").setLevel(Level.INFO);
 		return goalAchievers;
 	}
 

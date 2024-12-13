@@ -57,18 +57,19 @@ public class TestSimulation {
 		/*List<GoalAchieverInfo> dropItemGoal = simulatedGoalFactory.getDropItemGoal();
 		System.out.println(dropItemGoal);
 		Collection<GoalAchieverInfo> itemsGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL);
-		System.out.println(itemsGoals);
-		Collection<GoalAchieverInfo> itemsGoals2 = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.GATHERING, GoalFilter.EVENT);
+		System.out.println(itemsGoals);*/
+		/*Collection<GoalAchieverInfo> itemsGoals2 = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.GATHERING, GoalFilter.EVENT);
 		System.out.println(itemsGoals2);
-		Collection<GoalAchieverInfo> itemsGoals3 = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.NO_EVENT);
+		boolean result = Strategy.isAcceptEvent(simulatorManager.getCharacterDAOSimulator(), "resource", "magic_tree", Collections.emptyList(), itemsGoals2);*/
+		/*Collection<GoalAchieverInfo> itemsGoals3 = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.NO_EVENT);
 		System.out.println(itemsGoals3);*/
 		
 		/*
 		 * character.setX(0); character.setY(-2);
 		 * simulatorManager.getCharacterDAOSimulator().fight();
 		 */
-		simulateCrafting(simulatorManager, character, simulatedGoalFactory);
-		simulateFight(simulatorManager, character, simulatedGoalFactory);
+		//simulateCrafting(simulatorManager, character, simulatedGoalFactory);
+		//simulateFight(simulatorManager, character, simulatedGoalFactory);
 
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter);
 	}

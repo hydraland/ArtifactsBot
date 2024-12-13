@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
 import hydra.dao.BankDAO;
@@ -138,7 +136,6 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 
 	private String[] simulate(List<GoalAchieverInfo> testGoals, BotCharacter botCharacter,
 			List<? extends BotItemReader> botItems) {
-		LogManager.getLogManager().getLogger("").setLevel(Level.SEVERE);
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
@@ -223,7 +220,6 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 				}
 			}
 		}
-		LogManager.getLogManager().getLogger("").setLevel(Level.INFO);
 		return foundGoalCode;
 	}
 

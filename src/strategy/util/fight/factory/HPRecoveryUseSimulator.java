@@ -9,17 +9,14 @@ import hydra.dao.ItemDAO;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.dao.simulate.StopSimulationException;
 import hydra.model.BotCharacter;
-import hydra.model.BotEffect;
 import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 import strategy.SumAccumulator;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
-import strategy.util.fight.HPRecovery;
 import strategy.util.fight.RestoreStruct;
 
-public class HPRecoveryUseSimulator implements HPRecovery {
-	private final CharacterDAO characterDao;
+public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 	private final CharacterService characterService;
 	private final ItemDAO itemDAO;
 	private final SimulatorManager simulatorManager;
@@ -29,7 +26,7 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 
 	public HPRecoveryUseSimulator(CharacterDAO characterDao, ItemDAO itemDAO, BankDAO bankDAO, MoveService moveService,
 			CharacterService characterService, SimulatorManager simulatorManager) {
-		this.characterDao = characterDao;
+		super(characterDao);
 		this.itemDAO = itemDAO;
 		this.bankDAO = bankDAO;
 		this.moveService = moveService;
@@ -39,33 +36,12 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 	}
 
 	@Override
-	public boolean restoreHP(Map<String, Integer> reservedItems) {
-		BotCharacter character = characterDao.getCharacter();
-		int hpToHeal = character.getMaxHp() - character.getHp();
-		if (hpToHeal == 0) {
+	protected boolean restoreHP(int hpToHeal, Map<String, Integer> reservedItems, BotCharacter character) {
+		int hpToHealAfterInventoryFood = restoreHPWithFoodInInventory(hpToHeal, character, reservedItems, itemDAO,
+				characterService);
+		if (hpToHealAfterInventoryFood <= 0) {
 			return true;
 		}
-		// Utilisation de la nourriture si possible en ignorant la nourriture réservée
-		List<RestoreStruct> healItems = getHealItems(reservedItems, bankDAO, character.getLevel(), itemDAO,
-				characterService.getInventoryIgnoreEmpty());
-
-		for (RestoreStruct healItem : healItems) {
-			int singleHeal = getHealValue(healItem);
-			int quantity;
-			if (singleHeal * healItem.quantity() <= hpToHeal) {
-				quantity = healItem.quantity();
-			} else {
-				quantity = hpToHeal / singleHeal + 1;
-			}
-			if (!characterDao.use(healItem.itemDetails().getCode(), quantity).ok()) {
-				return false;
-			}
-			hpToHeal -= singleHeal * quantity;
-			if (hpToHeal <= 0) {
-				return true;
-			}
-		}
-
 		hpToHeal = moveInBankIfMoreFast(hpToHeal, reservedItems);
 
 		if (hpToHeal > 0) {
@@ -101,8 +77,8 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 	private static int useRestoreBankItem(int hpToHeal, Map<String, Integer> reservedItems, MoveService moveService,
 			BankDAO bankDAO, CharacterDAO characterDAO, ItemDAO itemDAO) {
 		moveService.moveToBank();
-		List<RestoreStruct> healItems = getHealItems(reservedItems, bankDAO, characterDAO.getCharacter().getLevel(),
-				itemDAO, bankDAO.viewItems());
+		List<RestoreStruct> healItems = getHealItems(reservedItems, characterDAO.getCharacter().getLevel(), itemDAO,
+				bankDAO.viewItems());
 
 		for (RestoreStruct healItem : healItems) {
 			int singleHeal = getHealValue(healItem);
@@ -122,21 +98,6 @@ public class HPRecoveryUseSimulator implements HPRecovery {
 			}
 		}
 		return hpToHeal;
-	}
-
-	private static List<RestoreStruct> getHealItems(Map<String, Integer> reservedItems, BankDAO bankDAO,
-			int characterLevel, ItemDAO itemDAO, List<? extends BotItemReader> sourceItems) {
-		return sourceItems.stream()
-				.filter(bii -> !reservedItems.containsKey(bii.getCode())
-						&& characterLevel >= itemDAO.getItem(bii.getCode()).getLevel())
-				.map(bii -> new RestoreStruct(itemDAO.getItem(bii.getCode()), bii.getQuantity())).filter(bid -> bid
-						.itemDetails().getEffects().stream().anyMatch(bie -> BotEffect.HEAL.equals(bie.getName())))
-				.toList();
-	}
-
-	private static int getHealValue(RestoreStruct healItem) {
-		return healItem.itemDetails().getEffects().stream().filter(bie -> BotEffect.HEAL.equals(bie.getName()))
-				.findFirst().get().getValue();
 	}
 
 	private static BotItemReader restoreStructToBotItem(RestoreStruct itemStruct, int quantity) {
