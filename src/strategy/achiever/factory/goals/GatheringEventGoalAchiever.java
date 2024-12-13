@@ -26,13 +26,13 @@ public class GatheringEventGoalAchiever extends GatheringGoalAchiever {
 
 	private List<Coordinate> getCoordinates() {
 		return this.coordinates != null ? this.coordinates
-				: ResourceGoalAchiever.searchCoordinates(mapDao, boxCode, true);
+				: ResourceGoalAchiever.searchCoordinates(mapDao, boxCode, false);
 	}
 
 	@Override
 	public boolean execute(Map<String, Integer> reservedItems) {
 		if (coordinates == null) {
-			coordinates = ResourceGoalAchiever.searchCoordinates(mapDao, boxCode, true);
+			coordinates = ResourceGoalAchiever.searchCoordinates(mapDao, boxCode, false);
 			if (coordinates == null) {
 				return false;// la ressource n'est plus présente.
 			}
