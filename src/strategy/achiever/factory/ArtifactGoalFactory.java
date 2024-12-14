@@ -31,7 +31,6 @@ import strategy.achiever.EventNotification;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
-import strategy.achiever.factory.goals.GenericGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.GoalAchieverList;
@@ -481,17 +480,8 @@ public final class ArtifactGoalFactory implements GoalFactory {
 
 	@Override
 	public GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo goalAchiever) {
-		GoalAchiever goalAchieverIntermediate;
-		GenericGoalAchiever genericGoalAchiever = factoryCreator.createGenericGoalAchiever();
-		genericGoalAchiever.setCheckRealisableGoalAchiever(c -> true);
-		genericGoalAchiever.setExecutableGoalAchiever(ri -> {
-			ri.clear();
-			return true;
-		});
-		goalAchieverIntermediate = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, goalAchiever.getGoal(),
-				true, true);
-		goalAchieverIntermediate = factoryCreator.createGoalAchieverConditional(goalAchieverIntermediate, () -> false,
-				true);
+		GoalAchiever goalAchieverIntermediate = factoryCreator.createGoalAchieverConditional(goalAchiever.getGoal(),
+				() -> false, true);
 		return factoryCreator.createGoalAchieverTwoStep(
 				factoryCreator.createEquipToolGoalAchiever(goalAchiever.getBotResourceSkill()),
 				goalAchieverIntermediate, true, true);

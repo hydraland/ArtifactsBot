@@ -39,7 +39,8 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 
 	public ItemMonsterGoalAchiever(CharacterDAO characterDAO, MapDAO mapDao, String resourceCode, int rate,
 			List<Coordinate> coordinates, BotMonster monster, MonsterEquipementService monsterEquipementService,
-			FightService fightService, MoveService moveService, CharacterService characterService, GoalParameter goalParameter) {
+			FightService fightService, MoveService moveService, CharacterService characterService,
+			GoalParameter goalParameter) {
 		this.mapDao = mapDao;
 		this.resourceCode = resourceCode;
 		this.rate = rate;
@@ -83,7 +84,9 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 				for (BotDropReceived botDrop : drops) {
 					String dropCode = botDrop.getCode();
 					if (dropCode.equals(this.resourceCode)) {
-						ResourceGoalAchiever.reserveItem(dropCode, reservedItems, 1);
+						if (!root) {
+							ResourceGoalAchiever.reserveItem(dropCode, reservedItems, 1);
+						}
 						this.finish = true;
 					}
 				}

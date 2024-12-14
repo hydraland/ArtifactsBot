@@ -69,7 +69,9 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 				for (BotItemReader botItem : items) {
 					String itemCode = botItem.getCode();
 					if (itemCode.equals(this.resourceCode)) {
-						ResourceGoalAchiever.reserveItem(itemCode, reservedItems, 1);
+						if (!root) {
+							ResourceGoalAchiever.reserveItem(itemCode, reservedItems, 1);
+						}
 						this.finish = true;
 					}
 				}
