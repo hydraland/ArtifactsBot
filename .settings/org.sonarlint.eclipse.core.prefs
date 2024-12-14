@@ -1,4 +1,5 @@
 autoEnabled=true
 bindingSuggestionsDisabled=false
 eclipse.preferences.version=1
-fileExclusions=DIRECTORY\:generate
+fileExclusions=DIRECTORY\:generate\r\nFILE\:src/hydra/dao/simulate/TestSimulation.java
+indexingBasedOnEclipsePlugIns=true

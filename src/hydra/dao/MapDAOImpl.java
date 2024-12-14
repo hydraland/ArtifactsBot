@@ -83,7 +83,6 @@ public class MapDAOImpl extends AbstractDAO implements MapDAO {
 	}
 
 	private List<BotBox> getBox(String type, boolean cache) {
-		// TODO mettre les caches à false dans un cache temporel?
 		if (cacheManager.contains(type)) {
 			return cacheManager.get(type);
 		}

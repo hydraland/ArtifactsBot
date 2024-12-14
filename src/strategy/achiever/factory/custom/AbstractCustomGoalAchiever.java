@@ -75,7 +75,7 @@ public abstract class AbstractCustomGoalAchiever implements GoalAchiever {
 	}
 
 	protected final boolean isDeposit(CustomCondition customCondition) {
-		return characterService.getInventoryIgnoreEmpty().stream().anyMatch(bii -> customCondition.accept(bii));
+		return characterService.getInventoryIgnoreEmpty().stream().anyMatch(customCondition::accept);
 	}
 
 }

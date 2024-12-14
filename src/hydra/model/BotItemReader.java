@@ -1,6 +1,8 @@
 package hydra.model;
 
-public interface BotItemReader {
+import java.io.Serializable;
+
+public interface BotItemReader extends Serializable {
 
 	String getCode();
 

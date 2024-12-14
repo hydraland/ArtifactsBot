@@ -377,7 +377,7 @@ public final class CharacterServiceImpl implements CharacterService {
 	@Override
 	public int getInventoryItemNumber() {
 		BotCharacter character = characterDao.getCharacter();
-		return character.getInventory().stream().collect(Collectors.summingInt(item -> item.getQuantity()));
+		return character.getInventory().stream().collect(Collectors.summingInt(BotItemReader::getQuantity));
 	}
 
 	@Override
