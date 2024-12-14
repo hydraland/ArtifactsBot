@@ -46,9 +46,8 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 	private final Collection<GoalAchieverInfo> cookAndAlchemySimulateGoals;
 	private final GenericGoalAchiever genericGoalAchiever;
 	private ArtifactGoalAchiever simGoalAchiever;
-	private final GoalFactory simulatedGoalFactory;
 	private final GoalAverageOptimizer goalAverageOptimizer;
-	private final int maxCookOrPotionTask;
+	private final float maxCookOrPotionTaskPercent;
 	private final GoalAchiever depositNoReservedItemGoalAchiever;
 	private final GoalAverageOptimizer simulateGoalAverageOptimizer;
 	private final GoalFactoryCreator factoryCreator;
@@ -56,11 +55,11 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 	public MonsterTaskUseSimulatorFactory(Map<String, MonsterGoalAchiever> monsterGoals,
 			Map<String, ArtifactGoalAchiever> cookAndAlchemyGoals, BankDAO bankDAO, CharacterDAO characterDAO,
 			GoalFactoryCreator factoryCreator, CharacterService characterService, SimulatorManager simulatorManager,
-			GoalFactory simulatedGoalFactory, int maxCookOrPotionTask) {
+			GoalFactory simulatedGoalFactory, float maxCookOrPotionTaskPercent) {
 		this.factoryCreator = factoryCreator;
 		this.goalAverageOptimizer = new GoalAverageOptimizerImpl(characterDAO);
 		this.simulateGoalAverageOptimizer = new GoalAverageOptimizerImpl(simulatorManager.getCharacterDAOSimulator());
-		this.maxCookOrPotionTask = maxCookOrPotionTask;
+		this.maxCookOrPotionTaskPercent = maxCookOrPotionTaskPercent;
 		this.cookAndAlchemyGoals = cookAndAlchemyGoals;
 		this.simulatorManager = simulatorManager;
 		this.monsterGoals = monsterGoals;
@@ -68,25 +67,27 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 		this.characterDAO = characterDAO;
 		this.characterService = characterService;
 		genericGoalAchiever = factoryCreator.createGenericGoalAchiever();
-		this.simulatedGoalFactory = simulatedGoalFactory;
-		simulatedmonstersGoals = simulatedGoalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL).stream()
-				.collect(Collectors.toMap(MonsterGoalAchiever::getMonsterCode, Function.identity()));
-		cookAndAlchemySimulateGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING, GoalFilter.ALL);
+		simulatedmonstersGoals = simulatedGoalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL)
+				.stream().collect(Collectors.toMap(MonsterGoalAchiever::getMonsterCode, Function.identity()));
+		cookAndAlchemySimulateGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING,
+				GoalFilter.ALL);
 		depositNoReservedItemGoalAchiever = factoryCreator.createDepositNoReservedItemGoalAchiever();
 	}
 
 	@Override
 	public GoalAchiever createTaskGoalAchiever(String code, int total) {
 		if (monsterGoals.containsKey(code)) {
-			List<GoalAchieverInfo> testGoals = initSimulation(code, total, characterDAO.getCharacter());
+			BotCharacter botCharacter = characterDAO.getCharacter();
+			List<GoalAchieverInfo> testGoals = initSimulation(code, total, botCharacter);
 
-			String[] simCodeFound = simulate(testGoals, characterDAO.getCharacter(), bankDAO.viewItems());
+			String[] simCodeFound = simulate(testGoals, botCharacter, bankDAO.viewItems());
 			GoalAchiever subGoal = monsterGoals.get(code);
 			if (simCodeFound.length == 1) {
 				subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, subGoal, true, true);
-				genericGoalAchiever.setCheckRealisableGoalAchiever(
-						character -> !characterService.isPossessOnSelf(simCodeFound[0]));
+				genericGoalAchiever
+						.setCheckRealisableGoalAchiever(c -> !characterService.isPossessOnSelf(simCodeFound[0]));
 				ArtifactGoalAchiever artifactGoalAchiever = cookAndAlchemyGoals.get(simCodeFound[0]);
+				int maxCookOrPotionTask = Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems());
 				goalAverageOptimizer.optimize(artifactGoalAchiever, maxCookOrPotionTask, 0.9f);
 				genericGoalAchiever.setExecutableGoalAchiever(reservedItems -> {
 					artifactGoalAchiever.clear();
@@ -95,7 +96,9 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 					return result;
 				});
 			} else if (simCodeFound.length > 1) {
-				updateGenericGoal(simCodeFound, characterService, goalAverageOptimizer);
+				int maxCookOrPotionTask = Math
+						.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);
+				updateGenericGoal(simCodeFound, characterService, goalAverageOptimizer, maxCookOrPotionTask);
 				subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
 						new ForceExecuteGoalAchiever(subGoal), true, true);
 			}
@@ -156,6 +159,8 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 					genericGoalAchiever.setCheckRealisableGoalAchiever(character -> !simulatorManager
 							.getCharacterServiceSimulator().isPossessOnSelf(artifactGoalAchiever.getItemCode()));
 					ArtifactGoalAchiever goal = artifactGoalAchiever.getGoal();
+					int maxCookOrPotionTask = Math
+							.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems());
 					simulateGoalAverageOptimizer.optimize(goal, maxCookOrPotionTask, 0.9f);
 					genericGoalAchiever.setExecutableGoalAchiever(ri -> {
 						goal.clear();
@@ -200,8 +205,10 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 
 				simulatorManager.setValue(botCharacter, botItems);
 				accumulator.setMax(Integer.MAX_VALUE); // Pour ne pas planter dans l'optimisation
+				int maxCookOrPotionTask = Math
+						.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);
 				GoalAchiever testGoal = createGoals(artifactGA, simulatorManager.getCharacterServiceSimulator(),
-						simulateGoalAverageOptimizer, simulatedGoalFactory);
+						simulateGoalAverageOptimizer, maxCookOrPotionTask);
 				accumulator.reset();
 				accumulator.setMax(minTime);
 				try {
@@ -224,12 +231,11 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 	}
 
 	private GoalAchiever createGoals(GoalAchieverInfo[] artifactGA, CharacterService aCharacterService,
-			GoalAverageOptimizer aGoalAverageOptimizer, GoalFactory factory) {
+			GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(character -> Arrays.stream(artifactGA)
 				.<Boolean>map(aga -> !aCharacterService.isPossessOnSelf(aga.getItemCode()))
 				.reduce(false, (v1, v2) -> v1 || v2));
-		Arrays.stream(artifactGA)
-				.forEach(aga -> aGoalAverageOptimizer.optimize(aga.getGoal(), maxCookOrPotionTask, 0.9f));
+		Arrays.stream(artifactGA).forEach(aga -> aGoalAverageOptimizer.optimize(aga.getGoal(), optimizeValue, 0.9f));
 		genericGoalAchiever.setExecutableGoalAchiever(ri -> {
 			boolean resultExec = Arrays.stream(artifactGA).filter(aga -> {
 				aga.getGoal().clear();
@@ -243,11 +249,11 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 	}
 
 	private void updateGenericGoal(String[] simCodeFound, CharacterService aCharacterService,
-			GoalAverageOptimizer aGoalAverageOptimizer) {
+			GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(character -> Arrays.stream(simCodeFound)
 				.<Boolean>map(code -> !aCharacterService.isPossessOnSelf(code)).reduce(false, (v1, v2) -> v1 || v2));
-		Arrays.stream(simCodeFound).forEach(
-				code -> aGoalAverageOptimizer.optimize(cookAndAlchemyGoals.get(code), maxCookOrPotionTask, 0.9f));
+		Arrays.stream(simCodeFound)
+				.forEach(code -> aGoalAverageOptimizer.optimize(cookAndAlchemyGoals.get(code), optimizeValue, 0.9f));
 		genericGoalAchiever.setExecutableGoalAchiever(ri -> {
 			boolean resultExec = Arrays.stream(simCodeFound).filter(code -> {
 				ArtifactGoalAchiever aga = cookAndAlchemyGoals.get(code);
