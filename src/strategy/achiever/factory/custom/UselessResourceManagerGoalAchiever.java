@@ -26,7 +26,7 @@ import strategy.util.ResourceGraph;
 
 public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiever {
 	private long oldCall;
-	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
+	private static final long ONE_DAY = 1000 * 60 * 60 * 24l;
 	private final ResourceGraph resourceGraph;
 	private final Map<String, Map<BotCraftSkill, Integer>> cache;
 	private final CharacterDAO characterDAO;
@@ -34,6 +34,7 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 	private final BankDAO bankDAO;
 	private final MoveService moveService;
 	private static final List<String> SEARCH_SUB_TYPE = Arrays.asList("mining", "mob", "bar", "plank", "woodcutting");
+	private static final float MIN_FREE_SPACE_PER_CENT = 0.2f;
 	private final ItemDAO itemDAO;
 
 	public UselessResourceManagerGoalAchiever(CharacterDAO characterDAO, BankDAO bankDAO, ItemDAO itemDAO,
@@ -51,8 +52,10 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 
 	@Override
 	public boolean isRealisable(BotCharacter character) {
+		int maxSlot = bankDAO.getBankDetail().getSlots();
+		int freeBankSpace = maxSlot - bankDAO.viewItems().size();
 		return maxSkillLevel() > GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP
-				&& System.currentTimeMillis() - oldCall > ONE_DAY;
+				&& System.currentTimeMillis() - oldCall > ONE_DAY && freeBankSpace <= Math.round(maxSlot*MIN_FREE_SPACE_PER_CENT);
 	}
 
 	@Override

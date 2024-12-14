@@ -34,8 +34,9 @@ import strategy.util.OptimizeResult;
 import strategy.util.fight.FightService;
 
 public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoalAchiever {
+	private static final float MIN_FREE_SPACE_PER_CENT = 0.1f;
 	private long oldCall;
-	private static final long ONE_DAY = 1000 * 60 * 60 * 24;
+	private static final long ONE_DAY = 1000 * 60 * 60 * 24l;
 	private static final int SELL_MIN_CHARACTER_GOLD = 1000;
 	private final FightService fightService;
 	private final CharacterDAO characterDAO;
@@ -65,7 +66,9 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 	// craft
 	@Override
 	public boolean isRealisable(BotCharacter character) {
-		return System.currentTimeMillis() - oldCall > ONE_DAY;
+		int maxSlot = bankDAO.getBankDetail().getSlots();
+		int freeBankSpace = maxSlot - bankDAO.viewItems().size();
+		return System.currentTimeMillis() - oldCall > ONE_DAY && freeBankSpace <= Math.round(maxSlot*MIN_FREE_SPACE_PER_CENT);
 	}
 
 	@Override
