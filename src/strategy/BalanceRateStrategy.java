@@ -2,6 +2,8 @@ package strategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -61,7 +63,7 @@ public final class BalanceRateStrategy implements Strategy {
 	}
 
 	@Override
-	public Iterable<GoalAchiever> getGoalAchievers() {
+	public Deque<GoalAchiever> getGoalAchievers() {
 		BotCharacter character = this.characterDAO.getCharacter();
 		int[] skillLevels = new int[] { character.getFishingLevel(), character.getCookingLevel(),
 				character.getWoodcuttingLevel(), character.getGearcraftingLevel(), character.getMiningLevel(),
@@ -70,6 +72,7 @@ public final class BalanceRateStrategy implements Strategy {
 		// search min skill
 		int index = StrategySkillUtils.getMinSkillIndex(skillLevels);
 		int charLevel = character.getLevel();
+		Deque<GoalAchiever> goalAchievers = new LinkedList<>();
 		if (skillLevels[index] < GameConstants.MAX_SKILL_LEVEL || charLevel < GameConstants.MAX_LEVEL) {
 
 			if (skillLevels[index] <= charLevel) {
@@ -82,7 +85,6 @@ public final class BalanceRateStrategy implements Strategy {
 				List<GoalAchieverInfo> searchGoalAchievers = allGoals.stream().filter(filterPredicate.get(index))
 						.sorted((c1, c2) -> Double.compare(c1.getGoal().getRate(), c2.getGoal().getRate())).toList()
 						.reversed();
-				ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 				Optional<GoalAchieverInfo> goalAchiever = searchGoalAchievers.stream()
 						.filter(ga -> ga.getGoal().isRealisableAfterSetRoot(character)).findFirst();
 				if (goalAchiever.isPresent()) {
@@ -109,7 +111,6 @@ public final class BalanceRateStrategy implements Strategy {
 				goalAchievers.addAll(taskGoals);
 				return goalAchievers;
 			} else {
-				ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 				// recherche monstres
 				List<MonsterGoalAchiever> monstersGoal = monsterGoals.stream()
 						.filter(mga -> mga.getMonsterLevel() <= charLevel)
@@ -126,7 +127,6 @@ public final class BalanceRateStrategy implements Strategy {
 		}
 
 		// On craft que du niveau max
-		ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 		goalAchievers.addAll(allGoals.stream()
 				.filter(ga -> ga.isCraft() && ga.isLevel(GameConstants.MAX_SKILL_LEVEL, INFO_TYPE.CRAFTING))
 				.map(GoalAchieverInfo::getGoal).toList());

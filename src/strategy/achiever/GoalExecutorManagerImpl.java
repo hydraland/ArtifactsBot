@@ -1,6 +1,7 @@
 package strategy.achiever;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,7 +36,9 @@ public class GoalExecutorManagerImpl implements EventNotification, GoalExecutoMa
 	@Override
 	public void execute() {
 		interruptAvalaible.set(true);
-		for (GoalAchiever goalArchieved : strategy.getGoalAchievers()) {
+		Deque<GoalAchiever> goalAchievers = strategy.getGoalAchievers();
+		while (!goalAchievers.isEmpty()) {
+			GoalAchiever goalArchieved = goalAchievers.removeFirst();
 			LOGGER.info("Exécution du but");
 			LOGGER.info(goalArchieved.toString());
 			BotCharacter character = characterDao.getCharacter();
@@ -47,8 +50,20 @@ public class GoalExecutorManagerImpl implements EventNotification, GoalExecutoMa
 				if (!result) {
 					if (interruptor.isInterrupted()) {
 						LOGGER.info("But interrompu");
-						// On sort de la boucle
-						break;
+						goalAchievers.addFirst(goalArchieved);
+						interruptAvalaible.set(false);
+						interruptor.reset();
+						LOGGER.info("Exécution du Event Goal");
+						GoalAchiever eventGoalArchieved = strategy.getEventGoalAchiever();
+						LOGGER.info(eventGoalArchieved.toString());
+						character = characterDao.getCharacter();
+						if (eventGoalArchieved.isRealisableAfterSetRoot(character)) {
+							LOGGER.info("Event Goal réalisable");
+							eventGoalArchieved.clear();
+							eventGoalArchieved.execute(new HashMap<>());
+							characterCache.reset();
+						}
+						interruptAvalaible.set(true);
 					} else {
 						LOGGER.info("Echec du but");
 						characterCache.reset();// On force le rechargement
@@ -56,21 +71,6 @@ public class GoalExecutorManagerImpl implements EventNotification, GoalExecutoMa
 				} else {
 					LOGGER.info("Succès du but");
 				}
-				manageInventory(strategy);
-			}
-		}
-		if (interruptor.isInterrupted()) {
-			interruptAvalaible.set(false);
-			interruptor.reset();
-			LOGGER.info("Exécution du Event Goal");
-			GoalAchiever eventGoalArchieved = strategy.getEventGoalAchiever();
-			LOGGER.info(eventGoalArchieved.toString());
-			BotCharacter character = characterDao.getCharacter();
-			if (eventGoalArchieved.isRealisableAfterSetRoot(character)) {
-				LOGGER.info("Event Goal réalisable");
-				eventGoalArchieved.clear();
-				eventGoalArchieved.execute(new HashMap<>());
-				characterCache.reset();
 				manageInventory(strategy);
 			}
 		}

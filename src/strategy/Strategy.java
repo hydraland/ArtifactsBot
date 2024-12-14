@@ -1,6 +1,7 @@
 package strategy;
 
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +31,7 @@ public interface Strategy {
 	static final int[] JEWELRYCRAFTING_LEVELS = new int[] { 1, 5, 10, 15, 20, 25, 30, 35, 40 };
 	static final int[] ALCHEMY_LEVELS = new int[] { 1, 5, 10, 20, 30, 35, 40 };
 
-	public Iterable<GoalAchiever> getGoalAchievers();
+	public Deque<GoalAchiever> getGoalAchievers();
 
 	public Iterable<GoalAchiever> getManagedInventoryCustomGoal();
 

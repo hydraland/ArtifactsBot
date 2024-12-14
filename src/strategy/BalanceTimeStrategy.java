@@ -2,7 +2,9 @@ package strategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,9 +65,8 @@ public final class BalanceTimeStrategy implements Strategy {
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
 		timeGoalAchieverMap = new HashMap<>();
-		itemGoals.stream().forEach(ga -> {
-			timeGoalAchieverMap.put(ga.getItemCode(), new AverageTimeXpCalculator(AVERAGE_TIME_XP_CALCULATOR_MAX_SIZE));
-		});
+		itemGoals.stream().forEach(ga -> timeGoalAchieverMap.put(ga.getItemCode(),
+				new AverageTimeXpCalculator(AVERAGE_TIME_XP_CALCULATOR_MAX_SIZE)));
 		monsterGoals.stream().forEach(ga -> timeGoalAchieverMap.put(ga.getMonsterCode(),
 				new AverageTimeXpCalculator(AVERAGE_TIME_XP_CALCULATOR_MAX_SIZE)));
 		currentCall = 1;
@@ -82,7 +83,7 @@ public final class BalanceTimeStrategy implements Strategy {
 	}
 
 	@Override
-	public Iterable<GoalAchiever> getGoalAchievers() {
+	public Deque<GoalAchiever> getGoalAchievers() {
 		BotCharacter character = this.characterDAO.getCharacter();
 		int[] skillLevels = new int[] { character.getFishingLevel(), character.getCookingLevel(),
 				character.getWoodcuttingLevel(), character.getGearcraftingLevel(), character.getMiningLevel(),
@@ -90,6 +91,7 @@ public final class BalanceTimeStrategy implements Strategy {
 		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
 		// search min skill
 		int index = StrategySkillUtils.getMinSkillIndex(skillLevels);
+		Deque<GoalAchiever> goalAchievers = new LinkedList<>();
 		if (skillLevels[index] < GameConstants.MAX_SKILL_LEVEL) {
 			// recherche tous les buts pour augmenter le skillMin
 			Bornes bornes = StrategySkillUtils.getBorneLevel(skillLevels[index], SKILL_LEVEL_LIST[index]);
@@ -100,7 +102,6 @@ public final class BalanceTimeStrategy implements Strategy {
 					.sorted((c1, c2) -> Double.compare(timeGoalAchieverMap.get(c1.getItemCode()).getAverage(),
 							timeGoalAchieverMap.get(c2.getItemCode()).getAverage()))
 					.toList().reversed();
-			ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 			Optional<GoalAchieverInfo> goalAchiever = searchGoalAchievers.stream()
 					.filter(ga -> ga.getGoal().isRealisableAfterSetRoot(character)).findFirst();
 			float nbGoalNeedTask = searchGoalAchievers.stream()
@@ -131,7 +132,6 @@ public final class BalanceTimeStrategy implements Strategy {
 		}
 
 		// On craft que du niveau max
-		ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 		goalAchievers.addAll(allGoals.stream()
 				.filter(ga -> ga.isCraft() && ga.isLevel(GameConstants.MAX_SKILL_LEVEL, INFO_TYPE.CRAFTING))
 				.map(GoalAchieverInfo::getGoal).toList());

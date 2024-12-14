@@ -2,7 +2,9 @@ package strategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,7 +76,7 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 			AverageTimeXpCalculator averageTimeXpCalculator;
 			String code = ga.getItemCode();
 			if (itemWithHasteEffectListCode.contains(code)) {
-				averageTimeXpCalculator = new AverageTimeXpCalculator(ITEM_INITIAL_AVERAGE_TIME_VALUE + 1,
+				averageTimeXpCalculator = new AverageTimeXpCalculator(ITEM_INITIAL_AVERAGE_TIME_VALUE + 1d,
 						AVERAGE_TIME_XP_CALCULATOR_MAX_SIZE);
 			} else {
 				averageTimeXpCalculator = new AverageTimeXpCalculator(ITEM_INITIAL_AVERAGE_TIME_VALUE,
@@ -94,13 +96,14 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 	}
 
 	@Override
-	public Iterable<GoalAchiever> getGoalAchievers() {
+	public Deque<GoalAchiever> getGoalAchievers() {
 		BotCharacter character = this.characterDAO.getCharacter();
 		int[] skillLevels = new int[] { character.getGearcraftingLevel(), character.getWeaponcraftingLevel(),
 				character.getJewelrycraftingLevel(), character.getWoodcuttingLevel(), character.getMiningLevel() };
 		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
 		// search min skill
 		int index = StrategySkillUtils.getMinSkillIndex(skillLevels);
+		Deque<GoalAchiever> goalAchievers = new LinkedList<>();
 		if (skillLevels[index] < GameConstants.MAX_SKILL_LEVEL) {
 			// recherche tous les buts pour augmenter le skillMin
 			int minSkillLevel = Math.max(1, skillLevels[index] - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP + 1);
@@ -111,7 +114,6 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 					.sorted((c1, c2) -> Double.compare(timeGoalAchieverMap.get(c1.getItemCode()).getAverage(),
 							timeGoalAchieverMap.get(c2.getItemCode()).getAverage()))
 					.toList().reversed();
-			ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 			Optional<GoalAchieverInfo> goalAchiever = searchGoalAchievers.stream()
 					.filter(ga -> ga.getGoal().isRealisableAfterSetRoot(character)).findFirst();
 			float nbGoalNeedTask = searchGoalAchievers.stream()
@@ -143,7 +145,6 @@ public final class OptimisedTimeStrategyV2 implements Strategy {
 		}
 
 		// On craft que du niveau max
-		ArrayList<GoalAchiever> goalAchievers = new ArrayList<>();
 		goalAchievers.addAll(allGoals.stream()
 				.filter(ga -> ga.isCraft() && ga.isLevel(GameConstants.MAX_SKILL_LEVEL, INFO_TYPE.CRAFTING))
 				.map(GoalAchieverInfo::getGoal).toList());

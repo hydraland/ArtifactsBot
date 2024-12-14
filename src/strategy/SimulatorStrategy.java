@@ -2,7 +2,9 @@ package strategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -47,7 +49,6 @@ public class SimulatorStrategy implements Strategy {
 	private final List<GoalAchieverInfo> dropItemGoal;
 	private GoalAchiever eventGoal;
 	private final Collection<GoalAchieverInfo> itemSimulatedGoals;
-	private final GoalFactory simulatedGoalFactory;
 	private final ItemService itemService;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
 	private final GoalAverageOptimizer goalAverageOptimizer;
@@ -62,7 +63,6 @@ public class SimulatorStrategy implements Strategy {
 		this.characterService = characterService;
 		this.itemService = itemService;
 		this.goalAverageOptimizer = goalAverageOptimizer;
-		this.simulatedGoalFactory = simulatedGoalFactory;
 
 		itemGoals = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING,
 				GoalFilter.NO_EVENT);
@@ -76,13 +76,13 @@ public class SimulatorStrategy implements Strategy {
 	}
 
 	@Override
-	public Iterable<GoalAchiever> getGoalAchievers() {
+	public Deque<GoalAchiever> getGoalAchievers() {
 		BotCharacter character = this.characterDAO.getCharacter();
 		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
 		List<GoalAchieverInfo> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
 				simulatorManager.getCharacterServiceSimulator(), simulatorManager.getBankDAOSimulator());
 
-		List<GoalAchiever> goalAchievers = new ArrayList<>();
+		Deque<GoalAchiever> goalAchievers = new LinkedList<>();
 		ArtifactGoalAchiever searchMiningGoalAchiever = searchMiningGoal(character, allGoals);
 		ArtifactGoalAchiever searchWoodcuttingGoalAchiever = searchWoodcuttingGoal(character, allGoals);
 		addMiningAndWoodcuttingGoals(goalAchievers, searchMiningGoalAchiever, searchWoodcuttingGoalAchiever);
@@ -117,7 +117,7 @@ public class SimulatorStrategy implements Strategy {
 		return goalAchievers;
 	}
 
-	private void addMiningAndWoodcuttingGoals(List<GoalAchiever> goalAchievers,
+	private void addMiningAndWoodcuttingGoals(Deque<GoalAchiever> goalAchievers,
 			ArtifactGoalAchiever searchMiningGoalAchiever, ArtifactGoalAchiever searchWoodcuttingGoalAchiever) {
 		if (searchMiningGoalAchiever != null) {
 			goalAchievers.add(searchMiningGoalAchiever);
@@ -141,7 +141,7 @@ public class SimulatorStrategy implements Strategy {
 		Predicate<GoalAchieverInfo> predicate = StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.COOKING,
 				bornes);
 		List<GoalAchieverInfo> cookingResult = allGoals.stream().filter(predicate).toList();
-		cookingResult.forEach(aga -> optimize(aga, goalFactory));
+		cookingResult.forEach(this::optimize);
 		return cookingResult.stream().map(GoalAchieverInfo::getGoal).toList();
 	}
 
@@ -162,18 +162,16 @@ public class SimulatorStrategy implements Strategy {
 			List<GoalAchieverInfo> allSimulateGoals, int maxLevel) {
 		int craftingLevel = character.getGearcraftingLevel();
 		BotCraftSkill craftSkill = BotCraftSkill.GEARCRAFTING;
-		return searchGoal(character, allGoals, allSimulateGoals, craftingLevel, craftSkill, infos -> {
-			return !characterService.isPossess(infos.getItemCode(), bankDAO);
-		}, maxLevel);
+		return searchGoal(character, allGoals, allSimulateGoals, craftingLevel, craftSkill,
+				infos -> !characterService.isPossess(infos.getItemCode(), bankDAO), maxLevel);
 	}
 
 	private List<ArtifactGoalAchiever> searchWeaponGoal(BotCharacter character, List<GoalAchieverInfo> allGoals,
 			List<GoalAchieverInfo> allSimulateGoals, int maxLevel) {
 		int craftingLevel = character.getWeaponcraftingLevel();
 		BotCraftSkill craftSkill = BotCraftSkill.WEAPONCRAFTING;
-		return searchGoal(character, allGoals, allSimulateGoals, craftingLevel, craftSkill, infos -> {
-			return !characterService.isPossess(infos.getItemCode(), bankDAO);
-		}, maxLevel);
+		return searchGoal(character, allGoals, allSimulateGoals, craftingLevel, craftSkill,
+				infos -> !characterService.isPossess(infos.getItemCode(), bankDAO), maxLevel);
 	}
 
 	private List<ArtifactGoalAchiever> searchGoal(BotCharacter character, List<GoalAchieverInfo> allGoals,
@@ -209,7 +207,7 @@ public class SimulatorStrategy implements Strategy {
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
 		for (GoalAchieverInfo simGoal : simGoals) {
 			boolean success = true;
-			optimize(simGoal, simulatedGoalFactory);
+			optimize(simGoal);
 			accumulator.reset();
 			try {
 				for (int i = 0; i < NUMBER_OF_SIMULATE; i++) {
@@ -238,7 +236,7 @@ public class SimulatorStrategy implements Strategy {
 				.filter(aga -> aga.getItemCode().equals(goalCodeFound)).findFirst();
 		List<ArtifactGoalAchiever> result = new ArrayList<>();
 		if (searchRealGoal.isPresent()) {
-			optimize(searchRealGoal.get(), goalFactory);
+			optimize(searchRealGoal.get());
 			ArtifactGoalAchiever itemRecycleGoalAchiever = goalFactory.addItemRecycleGoalAchiever(searchRealGoal.get(),
 					Strategy.calculMinItemPreserve(searchRealGoal.get()));
 			result.add(itemRecycleGoalAchiever);
@@ -261,7 +259,7 @@ public class SimulatorStrategy implements Strategy {
 			if (resultGoal.isPresent()) {
 				GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get().getGoal(), 10, true);
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.FISHING), bankDAO)) {
-					optimize(returnGoal, goalFactory);
+					optimize(returnGoal);
 				}
 				return returnGoal;
 			}
@@ -281,7 +279,7 @@ public class SimulatorStrategy implements Strategy {
 			if (resultGoal.isPresent()) {
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.WOODCUTTING), bankDAO)) {
 					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get().getGoal(), 5, true);
-					optimize(returnGoal, goalFactory);
+					optimize(returnGoal);
 					return returnGoal;
 				}
 				return resultGoal.get().getGoal();
@@ -301,7 +299,7 @@ public class SimulatorStrategy implements Strategy {
 			if (resultGoal.isPresent()) {
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.MINING), bankDAO)) {
 					GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get().getGoal(), 5, true);
-					optimize(returnGoal, goalFactory);
+					optimize(returnGoal);
 					return returnGoal;
 				}
 				return resultGoal.get().getGoal();
@@ -331,15 +329,15 @@ public class SimulatorStrategy implements Strategy {
 		return eventGoal;
 	}
 
-	private void optimize(GoalAchieverInfo goalAchiever, GoalFactory goalFactory) {
+	private void optimize(GoalAchieverInfo goalAchiever) {
 		if (!goalAchiever.isNeedTaskMasterResource() && !goalAchiever.isNeedRareResource()) {
-			optimize(goalAchiever.getGoal(), goalFactory);
+			optimize(goalAchiever.getGoal());
 		} else {
 			goalAverageOptimizer.optimize(goalAchiever.getGoal(), 1, 1f);
 		}
 	}
 
-	private void optimize(ArtifactGoalAchiever goalAchiever, GoalFactory goalFactory) {
+	private void optimize(ArtifactGoalAchiever goalAchiever) {
 		goalAverageOptimizer.optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT, 0.9f);
 	}
 }
