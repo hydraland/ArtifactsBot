@@ -588,27 +588,33 @@ public final class FightServiceImpl implements FightService {
 	// TOD voir pour algo qui soit plus optimal
 	private boolean equipedRings(BotItemInfo[] bestEqts, String[] equipedEqt) {
 		EquipResponse response;
-		for (int i = 7; i < 9; i++) {
-			if (!"".equals(equipedEqt[i])) {
-				response = characterDao.unequip(SLOTS[i], 1);
-				if (!response.ok()) {
-					return false;
-				}
-			}
-		}
-		for (int i = 7; i < 9; i++) {
-			if (bestEqts[i] != null) {
-				if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
-					BotItem botItem = new BotItem();
-					botItem.setCode(bestEqts[i].botItemDetails().getCode());
-					botItem.setQuantity(1);
-					if (!bankDao.withdraw(botItem)) {
+		boolean notUpdate = (bestEqts[7] == null && "".equals(equipedEqt[7]))
+				|| (bestEqts[7] != null && bestEqts[7].botItemDetails().getCode().equals(equipedEqt[7]))
+						&& (bestEqts[8] == null && "".equals(equipedEqt[8]))
+				|| (bestEqts[8] != null && bestEqts[8].botItemDetails().getCode().equals(equipedEqt[8]));
+		if (!notUpdate) {
+			for (int i = 7; i < 9; i++) {
+				if (!"".equals(equipedEqt[i])) {
+					response = characterDao.unequip(SLOTS[i], 1);
+					if (!response.ok()) {
 						return false;
 					}
 				}
-				response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[i], 1);
-				if (!response.ok()) {
-					return false;
+			}
+			for (int i = 7; i < 9; i++) {
+				if (bestEqts[i] != null) {
+					if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
+						BotItem botItem = new BotItem();
+						botItem.setCode(bestEqts[i].botItemDetails().getCode());
+						botItem.setQuantity(1);
+						if (!bankDao.withdraw(botItem)) {
+							return false;
+						}
+					}
+					response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[i], 1);
+					if (!response.ok()) {
+						return false;
+					}
 				}
 			}
 		}
