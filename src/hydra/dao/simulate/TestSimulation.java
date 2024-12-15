@@ -54,24 +54,36 @@ public class TestSimulation {
 		GoalFactory simulatedGoalFactory = simulatorManager.createFactory(goalParameter);
 		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
-		/*List<GoalAchieverInfo> dropItemGoal = simulatedGoalFactory.getDropItemGoal();
-		System.out.println(dropItemGoal);
-		Collection<GoalAchieverInfo> itemsGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL);
-		System.out.println(itemsGoals);*/
-		/*Collection<GoalAchieverInfo> itemsGoals2 = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.GATHERING, GoalFilter.EVENT);
-		System.out.println(itemsGoals2);
-		boolean result = Strategy.isAcceptEvent(simulatorManager.getCharacterDAOSimulator(), "resource", "magic_tree", Collections.emptyList(), itemsGoals2);*/
-		/*Collection<GoalAchieverInfo> itemsGoals3 = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.NO_EVENT);
-		System.out.println(itemsGoals3);*/
-		
+		/*
+		 * List<GoalAchieverInfo> dropItemGoal = simulatedGoalFactory.getDropItemGoal();
+		 * System.out.println(dropItemGoal); Collection<GoalAchieverInfo> itemsGoals =
+		 * simulatedGoalFactory.createItemsGoals(() ->
+		 * ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL);
+		 * System.out.println(itemsGoals);
+		 */
+		/*
+		 * Collection<GoalAchieverInfo> itemsGoals2 =
+		 * simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.GATHERING,
+		 * GoalFilter.EVENT); System.out.println(itemsGoals2); boolean result =
+		 * Strategy.isAcceptEvent(simulatorManager.getCharacterDAOSimulator(),
+		 * "resource", "magic_tree", Collections.emptyList(), itemsGoals2);
+		 */
+		/*
+		 * Collection<GoalAchieverInfo> itemsGoals3 =
+		 * simulatedGoalFactory.createItemsGoals(() ->
+		 * ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.NO_EVENT);
+		 * System.out.println(itemsGoals3);
+		 */
+
 		/*
 		 * character.setX(0); character.setY(-2);
 		 * simulatorManager.getCharacterDAOSimulator().fight();
 		 */
-		//simulateCrafting(simulatorManager, character, simulatedGoalFactory);
-		//simulateFight(simulatorManager, character, simulatedGoalFactory);
+		simulateCrafting(simulatorManager, character, simulatedGoalFactory);
+		simulateFight(simulatorManager, character, simulatedGoalFactory);
 
-		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter);
+		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory,
+		goalParameter);
 	}
 
 	private static void simulateCookingAndFight(SimulatorManagerImpl simulatorManager, BotCharacter character,
@@ -95,8 +107,8 @@ public class TestSimulation {
 				secondSimulatorManager.getCharacterServiceSimulator()));
 		GoalFactory secondSimulatedGoalFactory = secondSimulatorManager.createFactory(simulateGoalParameter);
 
-		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory
-				.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL);
+		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory.createMonstersGoals(resp -> !resp.fight().isWin(),
+				GoalFilter.ALL);
 
 		Collection<GoalAchieverInfo> itemSimulatedGoals = simulatedGoalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING, GoalFilter.ALL);
@@ -133,8 +145,8 @@ public class TestSimulation {
 
 	private static void simulateFight(SimulatorManagerImpl simulatorManager, BotCharacter character,
 			GoalFactory simulatedGoalFactory) {
-		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory
-				.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL);
+		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory.createMonstersGoals(resp -> !resp.fight().isWin(),
+				GoalFilter.ALL);
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));

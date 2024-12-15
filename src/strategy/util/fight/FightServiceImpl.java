@@ -61,18 +61,20 @@ public final class FightServiceImpl implements FightService {
 
 	@Override
 	public OptimizeResult optimizeEquipementsInInventory(BotMonster monster, Map<String, Integer> reservedItems) {
+		boolean useUtility = useUtilityMap.get(monster.getCode()) == null
+				|| useUtilityMap.get(monster.getCode()).utilityUsed();
 		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = characterService
-				.getEquipableCharacterEquipement(reservedItems, useUtilityMap.get(monster.getCode()) == null
-						|| useUtilityMap.get(monster.getCode()).utilityUsed());
-		return optimizeEquipements(monster, equipableCharacterEquipement);
+				.getEquipableCharacterEquipement(reservedItems, useUtility);
+		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility);
 	}
 
 	@Override
 	public OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems) {
+		boolean useUtility = useUtilityMap.get(monster.getCode()) == null || useUtilityMap.get(monster.getCode()).utilityUsed();
 		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(
 				reservedItems,
-				useUtilityMap.get(monster.getCode()) == null || useUtilityMap.get(monster.getCode()).utilityUsed());
-		return optimizeEquipements(monster, equipableCharacterEquipement);
+				useUtility);
+		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility);
 	}
 
 	@Override
@@ -82,7 +84,7 @@ public final class FightServiceImpl implements FightService {
 				reservedItems, true);
 		Map<String, OptimizeResult> result = new HashMap<>();
 		for (BotMonster monster : monsters) {
-			result.computeIfAbsent(monster.getCode(), c -> optimizeEquipements(monster, equipableCharacterEquipement));
+			result.computeIfAbsent(monster.getCode(), c -> optimizeEquipements(monster, equipableCharacterEquipement, true));
 		}
 		return result;
 	}
@@ -137,7 +139,7 @@ public final class FightServiceImpl implements FightService {
 
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement) {
+			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility) {
 		String key = createKey(monster.getCode(), equipableCharacterEquipement);
 		if (optimizeCacheManager.contains(key)) {
 			return optimizeCacheManager.get(key);
@@ -189,10 +191,10 @@ public final class FightServiceImpl implements FightService {
 		combinator.set(12, artifact2Character);
 		combinator.set(13, artifact3Character);
 
-		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter());
+		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter(), useUtility);
 		int characterHp = characterService.getCharacterHPWihtoutEquipment();
 		FightDetails maxFightDetails = initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
-				characterHp);
+				characterHp, useUtility);
 
 		Map<BotEffect, Float> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
@@ -223,7 +225,8 @@ public final class FightServiceImpl implements FightService {
 
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
 		optimizeCacheManager.add(key, result);
-		useUtilityMap.put(monster.getCode(), new UtilityStruct(maxFightDetails.eval(), bestEquipements[9] != null || bestEquipements[10] != null));
+		useUtilityMap.put(monster.getCode(),
+				new UtilityStruct(maxFightDetails.eval(), bestEquipements[9] != null || bestEquipements[10] != null));
 		return result;
 	}
 
@@ -236,17 +239,19 @@ public final class FightServiceImpl implements FightService {
 	@Override
 	public FightDetails calculateFightResult(BotMonster monster) {
 		int characterHp = characterService.getCharacterHPWihtoutEquipment();
-		return initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp);
+		return initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp, true);
 	}
 
-	private BotItemInfo[] initBestEquipments(BotCharacter character) {
+	private BotItemInfo[] initBestEquipments(BotCharacter character, boolean useUtility) {
 		return new BotItemInfo[] { initBestEquipement(character.getWeaponSlot(), 1),
 				initBestEquipement(character.getBodyArmorSlot(), 1), initBestEquipement(character.getBootsSlot(), 1),
 				initBestEquipement(character.getHelmetSlot(), 1), initBestEquipement(character.getShieldSlot(), 1),
 				initBestEquipement(character.getLegArmorSlot(), 1), initBestEquipement(character.getAmuletSlot(), 1),
 				initBestEquipement(character.getRing1Slot(), 1), initBestEquipement(character.getRing2Slot(), 1),
-				initBestEquipement(character.getUtility1Slot(), character.getUtility1SlotQuantity()),
-				initBestEquipement(character.getUtility2Slot(), character.getUtility2SlotQuantity()),
+				useUtility ? initBestEquipement(character.getUtility1Slot(), character.getUtility1SlotQuantity())
+						: null,
+				useUtility ? initBestEquipement(character.getUtility2Slot(), character.getUtility2SlotQuantity())
+						: null,
 				initBestEquipement(character.getArtifact1Slot(), 1),
 				initBestEquipement(character.getArtifact2Slot(), 1),
 				initBestEquipement(character.getArtifact3Slot(), 1) };
@@ -256,8 +261,8 @@ public final class FightServiceImpl implements FightService {
 		return "".equals(slot) ? null : new BotItemInfo(itemDAO.getItem(slot), quantity, ItemOrigin.ON_SELF);
 	}
 
-	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster,
-			int characterHp) {
+	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster, int characterHp,
+			boolean useUtility) {
 		Map<BotEffect, Float> effectMap = resetEffectMap();
 
 		updateEffectInMapForEquipedEqt(character.getWeaponSlot(), effectMap, 1);
@@ -269,8 +274,10 @@ public final class FightServiceImpl implements FightService {
 		updateEffectInMapForEquipedEqt(character.getAmuletSlot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getRing1Slot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getRing2Slot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getUtility1Slot(), effectMap, character.getUtility1SlotQuantity());
-		updateEffectInMapForEquipedEqt(character.getUtility2Slot(), effectMap, character.getUtility2SlotQuantity());
+		if (useUtility) {
+			updateEffectInMapForEquipedEqt(character.getUtility1Slot(), effectMap, character.getUtility1SlotQuantity());
+			updateEffectInMapForEquipedEqt(character.getUtility2Slot(), effectMap, character.getUtility2SlotQuantity());
+		}
 		updateEffectInMapForEquipedEqt(character.getArtifact1Slot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getArtifact2Slot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getArtifact3Slot(), effectMap, 1);

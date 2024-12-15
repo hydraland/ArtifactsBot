@@ -40,7 +40,15 @@ public class CharacterAnalyser {
 	}
 
 	public static void main(String[] args) throws IOException {
-		CharacterAnalyser characterAnalyser = new CharacterAnalyser(args[0], args[1]);
+		CharacterAnalyser characterAnalyser = new CharacterAnalyser("equilibrum", args[0]);
+		characterAnalyser.generateCSV();
+		characterAnalyser = new CharacterAnalyser("hydra", args[0]);
+		characterAnalyser.generateCSV();
+		characterAnalyser = new CharacterAnalyser("lunar", args[0]);
+		characterAnalyser.generateCSV();
+		characterAnalyser = new CharacterAnalyser("phenix", args[0]);
+		characterAnalyser.generateCSV();
+		characterAnalyser = new CharacterAnalyser("solar", args[0]);
 		characterAnalyser.generateCSV();
 	}
 }
