@@ -70,10 +70,10 @@ public final class FightServiceImpl implements FightService {
 
 	@Override
 	public OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems) {
-		boolean useUtility = useUtilityMap.get(monster.getCode()) == null || useUtilityMap.get(monster.getCode()).utilityUsed();
+		boolean useUtility = useUtilityMap.get(monster.getCode()) == null
+				|| useUtilityMap.get(monster.getCode()).utilityUsed();
 		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(
-				reservedItems,
-				useUtility);
+				reservedItems, useUtility);
 		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility);
 	}
 
@@ -84,7 +84,8 @@ public final class FightServiceImpl implements FightService {
 				reservedItems, true);
 		Map<String, OptimizeResult> result = new HashMap<>();
 		for (BotMonster monster : monsters) {
-			result.computeIfAbsent(monster.getCode(), c -> optimizeEquipements(monster, equipableCharacterEquipement, true));
+			result.computeIfAbsent(monster.getCode(),
+					c -> optimizeEquipements(monster, equipableCharacterEquipement, true));
 		}
 		return result;
 	}
@@ -384,7 +385,7 @@ public final class FightServiceImpl implements FightService {
 
 		EquipResponse response = null;
 		// Traitement équipement ne posant pas de problème d'unicité
-		for (int i = 0; i < 9; i++) {
+		for (int i = 0; i < 7; i++) {
 			if (bestEqts[i] != null) {
 				if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
 					BotItem botItem = new BotItem();
@@ -412,13 +413,18 @@ public final class FightServiceImpl implements FightService {
 			}
 		}
 
+		// Traitement des rings
+		if (!equipedRings(bestEqts, equipedEqt)) {
+			return false;
+		}
+
 		// Traitement des artéfacts
-		if (!equipedArtefacts(bestEqts, equipedEqt, SLOTS)) {
+		if (!equipedArtefacts(bestEqts, equipedEqt)) {
 			return false;
 		}
 
 		// Traitement des consommables
-		return equipedConsomable(bestEqts, equipedEqt, SLOTS);
+		return equipedConsomable(bestEqts, equipedEqt);
 	}
 
 	private boolean containtsItemBankOrigin(BotItemInfo[] bestEqts) {
@@ -431,7 +437,7 @@ public final class FightServiceImpl implements FightService {
 		return false;
 	}
 
-	private boolean equipedConsomable(BotItemInfo[] bestEqts, String[] equipedEqt, BotCharacterInventorySlot[] slots) {
+	private boolean equipedConsomable(BotItemInfo[] bestEqts, String[] equipedEqt) {
 		EquipResponse response;
 		List<String> bestConsomableToEquip = new ArrayList<>();
 		for (int i = 9; i <= 10; i++) {
@@ -455,12 +461,12 @@ public final class FightServiceImpl implements FightService {
 						// search equiped slot
 						int indexEquiped = bestEqtCode.equals(equipedEqt[9]) ? 9 : 10;
 						BotItemInfo itemInfo = new BotItemInfo(bestEqts[i].botItemDetails(),
-								bestEqts[i].quantity() - characterService.getUtilitySlotQuantity(slots[indexEquiped]),
+								bestEqts[i].quantity() - characterService.getUtilitySlotQuantity(SLOTS[indexEquiped]),
 								bestEqts[i].origin());
 						int quantityToEquip = characterService.getQuantityEquipableForUtility(itemInfo,
-								slots[indexEquiped]);
+								SLOTS[indexEquiped]);
 						if (quantityToEquip > 0) {
-							response = characterDao.equip(bestEqts[i].botItemDetails(), slots[indexEquiped],
+							response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[indexEquiped],
 									quantityToEquip);
 							if (!response.ok()) {
 								return false;
@@ -471,7 +477,7 @@ public final class FightServiceImpl implements FightService {
 						boolean findInsertPlace = false;
 						for (int j = firstInsertPlace; j <= 10; j++) {
 							int consumableSlotQuantity = characterService
-									.getUtilitySlotQuantity(slots[firstInsertPlace]);
+									.getUtilitySlotQuantity(SLOTS[firstInsertPlace]);
 							if (!bestConsomableToEquip.contains(equipedEqt[j]) && ("".equals(equipedEqt[j])
 									|| consumableSlotQuantity < characterService.getFreeInventorySpace())) {
 								firstInsertPlace = j;
@@ -484,7 +490,7 @@ public final class FightServiceImpl implements FightService {
 							return true;
 						}
 						int quantityToEquip = characterService.getQuantityEquipableForUtility(bestEqts[i],
-								slots[firstInsertPlace]);
+								SLOTS[firstInsertPlace]);
 						if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
 							BotItem botItem = new BotItem();
 							botItem.setCode(bestEqts[i].botItemDetails().getCode());
@@ -494,23 +500,23 @@ public final class FightServiceImpl implements FightService {
 							}
 						}
 						if ("".equals(equipedEqt[firstInsertPlace])) {
-							response = characterDao.equip(bestEqts[i].botItemDetails(), slots[firstInsertPlace],
+							response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace],
 									quantityToEquip);
 							if (!response.ok()) {
 								return false;
 							}
 						} else {
 							int consumableSlotQuantity = characterService
-									.getUtilitySlotQuantity(slots[firstInsertPlace]);
+									.getUtilitySlotQuantity(SLOTS[firstInsertPlace]);
 							if (consumableSlotQuantity > characterService.getFreeInventorySpace()) {
 								// Pas assez d'espace libre
 								return true;
 							}
-							response = characterDao.unequip(slots[firstInsertPlace], consumableSlotQuantity);
+							response = characterDao.unequip(SLOTS[firstInsertPlace], consumableSlotQuantity);
 							if (!response.ok()) {
 								return false;
 							}
-							response = characterDao.equip(bestEqts[i].botItemDetails(), slots[firstInsertPlace],
+							response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace],
 									quantityToEquip);
 							if (!response.ok()) {
 								return false;
@@ -524,7 +530,7 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	private boolean equipedArtefacts(BotItemInfo[] bestEqts, String[] equipedEqt, BotCharacterInventorySlot[] slots) {
+	private boolean equipedArtefacts(BotItemInfo[] bestEqts, String[] equipedEqt) {
 		EquipResponse response;
 		List<String> bestArtefactToEquip = new ArrayList<>();
 		for (int i = 11; i < bestEqts.length; i++) {
@@ -559,20 +565,42 @@ public final class FightServiceImpl implements FightService {
 						}
 					}
 					if ("".equals(equipedEqt[firstInsertPlace])) {
-						response = characterDao.equip(bestEqts[i].botItemDetails(), slots[firstInsertPlace], 1);
+						response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace], 1);
 						if (!response.ok()) {
 							return false;
 						}
 					} else {
-						response = characterDao.unequip(slots[firstInsertPlace], 1);
+						response = characterDao.unequip(SLOTS[firstInsertPlace], 1);
 						if (!response.ok()) {
 							return false;
 						}
-						response = characterDao.equip(bestEqts[i].botItemDetails(), slots[firstInsertPlace], 1);
+						response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace], 1);
 						if (!response.ok()) {
 							return false;
 						}
 					}
+				}
+			}
+		}
+		return true;
+	}
+
+	//TOD voir pour algo qui soit plus optimal
+	private boolean equipedRings(BotItemInfo[] bestEqts, String[] equipedEqt) {
+		EquipResponse response;
+		for (int i = 7; i < 9; i++) {
+			if (!"".equals(equipedEqt[i])) {
+				response = characterDao.unequip(SLOTS[i], 1);
+				if (!response.ok()) {
+					return false;
+				}
+			}
+		}
+		for (int i = 7; i < 9; i++) {
+			if (bestEqts[i] != null) {
+				response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[i], 1);
+				if (!response.ok()) {
+					return false;
 				}
 			}
 		}
