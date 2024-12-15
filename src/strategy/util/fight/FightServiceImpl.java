@@ -585,7 +585,7 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	//TOD voir pour algo qui soit plus optimal
+	// TOD voir pour algo qui soit plus optimal
 	private boolean equipedRings(BotItemInfo[] bestEqts, String[] equipedEqt) {
 		EquipResponse response;
 		for (int i = 7; i < 9; i++) {
@@ -598,6 +598,14 @@ public final class FightServiceImpl implements FightService {
 		}
 		for (int i = 7; i < 9; i++) {
 			if (bestEqts[i] != null) {
+				if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
+					BotItem botItem = new BotItem();
+					botItem.setCode(bestEqts[i].botItemDetails().getCode());
+					botItem.setQuantity(1);
+					if (!bankDao.withdraw(botItem)) {
+						return false;
+					}
+				}
 				response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[i], 1);
 				if (!response.ok()) {
 					return false;
