@@ -12,7 +12,8 @@ public final record BotItemInfo(BotItemDetails botItemDetails, int quantity, Ite
 	@Override
 	public final int hashCode() {
 		// Sert à l'optimisation
-		return Objects.hash(botItemDetails.getCode(), getQuantityTakingIntoAccount(quantity, botItemDetails.getType()));
+		return Objects.hash(botItemDetails.getCode(), getQuantityTakingIntoAccount(quantity, botItemDetails.getType()),
+				origin);
 	}
 
 	private int getQuantityTakingIntoAccount(int initialQuantity, BotItemType type) {
