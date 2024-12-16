@@ -31,7 +31,6 @@ import util.Combinator;
 import util.LimitedTimeCacheManager;
 
 public final class FightServiceImpl implements FightService {
-
 	private final CharacterDAO characterDao;
 	private final CharacterService characterService;
 	private static final BotCharacterInventorySlot[] SLOTS = new BotCharacterInventorySlot[] {
@@ -414,12 +413,12 @@ public final class FightServiceImpl implements FightService {
 		}
 
 		// Traitement des rings
-		if (!equipedRings(bestEqts, equipedEqt)) {
+		if (!equipedRingOrArtefact(bestEqts, equipedEqt, 7, 9)) {
 			return false;
 		}
 
 		// Traitement des artéfacts
-		if (!equipedArtefacts(bestEqts, equipedEqt)) {
+		if (!equipedRingOrArtefact(bestEqts, equipedEqt, 11, bestEqts.length)) {
 			return false;
 		}
 
@@ -530,94 +529,59 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	private boolean equipedArtefacts(BotItemInfo[] bestEqts, String[] equipedEqt) {
+	@SuppressWarnings("unlikely-arg-type")
+	private boolean equipedRingOrArtefact(BotItemInfo[] bestEqts, String[] equipedEqt, int minRange,
+			int maxExcludeRange) {
 		EquipResponse response;
-		List<String> bestArtefactToEquip = new ArrayList<>();
-		for (int i = 11; i < bestEqts.length; i++) {
-			if (bestEqts[i] != null) {
-				bestArtefactToEquip.add(bestEqts[i].botItemDetails().getCode());
+		List<DiffStruct<Integer>> equipedEqtDiff = new ArrayList<>();
+		for (int i = minRange; i < maxExcludeRange; i++) {
+			equipedEqtDiff.add(new DiffStruct<Integer>(equipedEqt[i], i));
+		}
+
+		List<DiffStruct<ItemOrigin>> bestEqtDiff = new ArrayList<>();
+		for (int i = minRange; i < maxExcludeRange; i++) {
+			ItemOrigin origin = bestEqts[i] == null ? ItemOrigin.ON_SELF : bestEqts[i].origin();
+			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
+			if (ItemOrigin.BANK.equals(origin) || !equipedEqtDiff.remove(new SearchDiffStruct(code))) {
+				bestEqtDiff.add(new DiffStruct<ItemOrigin>(code, origin));
 			}
 		}
-		if (!bestArtefactToEquip.isEmpty()) {
-			List<String> equipedArtefact = new ArrayList<>();
-			for (int i = 11; i < equipedEqt.length; i++) {
-				if (!"".equals(equipedEqt[i])) {
-					equipedArtefact.add(equipedEqt[i]);
+
+		for (DiffStruct<Integer> equipedStruct : equipedEqtDiff) {
+			DiffStruct<ItemOrigin> bestStruct = bestEqtDiff.removeFirst();
+			if (bestStruct.value().equals(ItemOrigin.BANK)) {
+				BotItem botItem = new BotItem();
+				botItem.setCode(bestStruct.code());
+				botItem.setQuantity(1);
+				if (!bankDao.withdraw(botItem)) {
+					return false;
 				}
 			}
 
-			int firstInsertPlace = 11;
-			for (int i = 11; i < bestEqts.length; i++) {
-				if (bestEqts[i] != null && !equipedArtefact.contains(bestEqts[i].botItemDetails().getCode())) {
-					// search insert place
-					for (int j = firstInsertPlace; j < equipedEqt.length; j++) {
-						if (!bestArtefactToEquip.contains(equipedEqt[j])) {
-							firstInsertPlace = j;
-							break;
-						}
-					}
-					if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
-						BotItem botItem = new BotItem();
-						botItem.setCode(bestEqts[i].botItemDetails().getCode());
-						botItem.setQuantity(1);
-						if (!bankDao.withdraw(botItem)) {
-							return false;
-						}
-					}
-					if ("".equals(equipedEqt[firstInsertPlace])) {
-						response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace], 1);
-						if (!response.ok()) {
-							return false;
-						}
-					} else {
-						response = characterDao.unequip(SLOTS[firstInsertPlace], 1);
-						if (!response.ok()) {
-							return false;
-						}
-						response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace], 1);
-						if (!response.ok()) {
-							return false;
-						}
-					}
+			if (!"".equals(equipedStruct.code())) {
+				response = characterDao.unequip(SLOTS[equipedStruct.value()], 1);
+				if (!response.ok()) {
+					return false;
 				}
+			}
+			response = characterDao.equip(bestStruct.code(), SLOTS[equipedStruct.value()], 1);
+			if (!response.ok()) {
+				return false;
 			}
 		}
 		return true;
 	}
 
-	// TOD voir pour algo qui soit plus optimal
-	private boolean equipedRings(BotItemInfo[] bestEqts, String[] equipedEqt) {
-		EquipResponse response;
-		boolean notUpdate = (bestEqts[7] == null && "".equals(equipedEqt[7]))
-				|| (bestEqts[7] != null && bestEqts[7].botItemDetails().getCode().equals(equipedEqt[7]))
-						&& (bestEqts[8] == null && "".equals(equipedEqt[8]))
-				|| (bestEqts[8] != null && bestEqts[8].botItemDetails().getCode().equals(equipedEqt[8]));
-		if (!notUpdate) {
-			for (int i = 7; i < 9; i++) {
-				if (!"".equals(equipedEqt[i])) {
-					response = characterDao.unequip(SLOTS[i], 1);
-					if (!response.ok()) {
-						return false;
-					}
-				}
+	private static final record DiffStruct<T>(String code, T value) {
+	}
+
+	private static final record SearchDiffStruct(String code) {
+		@Override
+		public final boolean equals(Object obj) {
+			if (obj instanceof DiffStruct<?> ds) {
+				return code.equals(ds.code());
 			}
-			for (int i = 7; i < 9; i++) {
-				if (bestEqts[i] != null) {
-					if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
-						BotItem botItem = new BotItem();
-						botItem.setCode(bestEqts[i].botItemDetails().getCode());
-						botItem.setQuantity(1);
-						if (!bankDao.withdraw(botItem)) {
-							return false;
-						}
-					}
-					response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[i], 1);
-					if (!response.ok()) {
-						return false;
-					}
-				}
-			}
+			return false;
 		}
-		return true;
 	}
 }
