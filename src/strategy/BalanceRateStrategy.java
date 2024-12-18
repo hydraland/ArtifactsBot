@@ -59,7 +59,7 @@ public final class BalanceRateStrategy implements Strategy {
 		monsterGoals = goalFactory.createMonstersGoals(resp -> resp.fight().getXp() == 0, GoalFilter.NO_EVENT);
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
-		dropItemGoal = goalFactory.getDropItemGoal();
+		dropItemGoal = goalFactory.createDropItemGoal();
 	}
 
 	@Override

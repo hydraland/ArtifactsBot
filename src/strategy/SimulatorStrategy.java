@@ -72,7 +72,7 @@ public class SimulatorStrategy implements Strategy {
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
-		dropItemGoal = goalFactory.getDropItemGoal();
+		dropItemGoal = goalFactory.createDropItemGoal();
 	}
 
 	@Override

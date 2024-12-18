@@ -70,7 +70,7 @@ public final class BalanceTimeStrategy implements Strategy {
 		monsterGoals.stream().forEach(ga -> timeGoalAchieverMap.put(ga.getMonsterCode(),
 				new AverageTimeXpCalculator(AVERAGE_TIME_XP_CALCULATOR_MAX_SIZE)));
 		currentCall = 1;
-		dropItemGoal = goalFactory.getDropItemGoal();
+		dropItemGoal = goalFactory.createDropItemGoal();
 		xpGetters = new ArrayList<>(SKILL_LEVEL_LIST.length);
 		xpGetters.add(() -> characterDAO.getCharacter().getFishingXp());
 		xpGetters.add(() -> characterDAO.getCharacter().getCookingXp());

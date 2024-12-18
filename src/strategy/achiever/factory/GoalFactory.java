@@ -19,7 +19,7 @@ public interface GoalFactory {
 
 	List<GoalAchiever> createManagedInventoryCustomGoal();
 
-	List<GoalAchieverInfo> getDropItemGoal();
+	List<GoalAchieverInfo> createDropItemGoal();
 
 	ArtifactGoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve);
 

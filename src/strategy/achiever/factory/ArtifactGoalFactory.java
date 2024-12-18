@@ -427,7 +427,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	}
 
 	@Override
-	public List<GoalAchieverInfo> getDropItemGoal() {
+	public List<GoalAchieverInfo> createDropItemGoal() {
 		List<String> noResourceItemCode = itemDao.getItems().stream()
 				.filter(bid -> !BotItemType.RESOURCE.equals(bid.getType()) && !bid.getEffects().isEmpty())
 				.map(bid -> bid.getCode()).toList();

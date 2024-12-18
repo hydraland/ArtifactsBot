@@ -69,7 +69,7 @@ public final class OptimisedTimeStrategy implements Strategy {
 		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
 		timeGoalAchieverMap = new HashMap<>();
-		dropItemGoal = goalFactory.getDropItemGoal();
+		dropItemGoal = goalFactory.createDropItemGoal();
 		List<String> itemWithHasteEffectListCode = itemDao.getItems().stream()
 				.filter(bid -> bid.getEffects().stream().anyMatch(bie -> BotEffect.HASTE.equals(bie.getName())))
 				.map(bid -> bid.getCode()).toList();
