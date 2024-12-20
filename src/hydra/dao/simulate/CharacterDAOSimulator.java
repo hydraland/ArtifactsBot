@@ -143,7 +143,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		String monsterCode = searchBoxMonster.get().getContent().getCode();
 		simulatorListener.startInnerCall();
 		BotMonster monster = monsterDAO.getMonster(monsterCode);
-		int hpBeforeFight = botCharacter.getHp();
+		//On prend comme hypothèse que les HP du perso sont full, ce qui est théoriquement le cas
 		FightDetails calculateFightResult = fightService.calculateFightResult(monster);
 		simulatorListener.stopInnerCall();
 		BotFight botFight = new BotFight();
@@ -169,7 +169,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 					(botCharacter.getLevel() - monster.getLevel()) > GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP ? 0 : 9);
 			botFight.setGold(random.nextInt(monster.getMinGold(), monster.getMaxGold() + 1));
 			botCharacter.setGold(botFight.getGold());
-			botCharacter.setHp((int) calculateFightResult.characterHP());
+			botCharacter.setHp(calculateFightResult.characterHP());
 			if (monsterCode.equals(botCharacter.getTask())
 					&& botCharacter.getTaskProgress() < botCharacter.getTaskTotal()) {
 				botCharacter.setTaskProgress(botCharacter.getTaskProgress() + 1);
@@ -183,32 +183,30 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		long turn = calculateFightResult.nbTurn() * 2;
 		int cooldown = Math.max(Math.round(turn - (botCharacter.getHaste() * 0.01f * turn)), 5);
 		// update potion number
-		updateUtility(BotCharacterInventorySlot.UTILITY1, calculateFightResult, hpBeforeFight);
-		updateUtility(BotCharacterInventorySlot.UTILITY2, calculateFightResult, hpBeforeFight);
+		updateUtility(BotCharacterInventorySlot.UTILITY1, calculateFightResult);
+		updateUtility(BotCharacterInventorySlot.UTILITY2, calculateFightResult);
 
 		simulatorListener.call(CLASS_NAME, FIGHT, cooldown, false);
 		return new FightResponse(true, botFight, false);
 	}
 
-	private void updateUtility(BotCharacterInventorySlot slot, FightDetails calculateFightResult, int hpBeforeFight) {
+	private void updateUtility(BotCharacterInventorySlot slot, FightDetails calculateFightResult) {
 		int utilityQuantity = characterService.getUtilitySlotQuantity(slot);
 		if (utilityQuantity > 0) {
 			BotItemDetails item = itemDAO.getItem(CharacterService.getSlotValue(botCharacter, slot));
 			final Optional<BotItemEffect> effectRestore = item.getEffects().stream()
 					.filter(bie -> BotEffect.RESTORE.equals(bie.getName())).findAny();
-			int quantity;
+			final Optional<BotItemEffect> effectTeleport = item.getEffects().stream()
+					.filter(bie -> BotEffect.TELEPORT_X.equals(bie.getName())).findAny();
+			int quantity = 0;
 			if (effectRestore.isPresent()) {
-				double halfHp = botCharacter.getMaxHp() / 2;
-				quantity = calculateFightResult.characterHP() > halfHp ? 0
-						: Math.min(utilityQuantity, (int) (calculateFightResult.nbTurn()
-								* (halfHp - calculateFightResult.characterHP()) / hpBeforeFight));
-				if (calculateFightResult.eval() > 1) {
-					botCharacter.setHp(botCharacter.getHp() + quantity * effectRestore.get().getValue());
-				}
-			} else {
+				quantity = Math.min(utilityQuantity, calculateFightResult.restoreTurn());
+			} else if(effectTeleport.isEmpty()) {
 				quantity = 1;
 			}
-			setSlotValue(slot, CharacterService.getSlotValue(botCharacter, slot), quantity, x -> -x);
+			if(quantity > 0) {
+				setSlotValue(slot, CharacterService.getSlotValue(botCharacter, slot), quantity, x -> -x);
+			}
 		}
 	}
 

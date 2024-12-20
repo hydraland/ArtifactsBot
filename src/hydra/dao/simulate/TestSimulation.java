@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
@@ -79,15 +78,16 @@ public class TestSimulation {
 		 * character.setX(0); character.setY(-2);
 		 * simulatorManager.getCharacterDAOSimulator().fight();
 		 */
-		simulateCrafting(simulatorManager, character, simulatedGoalFactory);
-		simulateFight(simulatorManager, character, simulatedGoalFactory);
+		List<BotItemReader> viewItems = new ArrayList<>(simulatorManager.getBankDAOSimulator().viewItems());
+		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
+		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
 
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory,
-		goalParameter);
+		goalParameter, viewItems);
 	}
 
 	private static void simulateCookingAndFight(SimulatorManagerImpl simulatorManager, BotCharacter character,
-			GoalFactory simulatedGoalFactory, GoalParameter goalParameter) {
+			GoalFactory simulatedGoalFactory, GoalParameter goalParameter, List<BotItemReader> viewItems) {
 
 		SimulatorManager secondSimulatorManager = new SimulatorManagerImpl(botEvents -> new ArrayList<>());
 		secondSimulatorManager.getSimulatorListener()
@@ -127,7 +127,6 @@ public class TestSimulation {
 				secondSimulatorManager, secondSimulatedGoalFactory, 0.3f);
 
 		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("pig", 100);
-		List<? extends BotItemReader> viewItems = simulatorManager.getBankDAOSimulator().viewItems();
 		simulatorManager.setValue(character, viewItems);
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener().setInnerListener((className, methodName, cooldown, error) -> {
@@ -144,14 +143,21 @@ public class TestSimulation {
 	}
 
 	private static void simulateFight(SimulatorManagerImpl simulatorManager, BotCharacter character,
-			GoalFactory simulatedGoalFactory) {
+			GoalFactory simulatedGoalFactory, List<BotItemReader> viewItems) {
 		List<MonsterGoalAchiever> monsterGoals = simulatedGoalFactory.createMonstersGoals(resp -> !resp.fight().isWin(),
 				GoalFilter.ALL);
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
 		long begin = System.currentTimeMillis();
-		List<? extends BotItemReader> viewItems = simulatorManager.getBankDAOSimulator().viewItems();
+		BotItem potion1 = new BotItem();
+		potion1.setCode("small_health_potion");
+		potion1.setQuantity(100);
+		viewItems.add(potion1);
+		BotItem potion2 = new BotItem();
+		potion2.setCode("minor_health_potion");
+		potion2.setQuantity(100);
+		viewItems.add(potion2);
 		for (MonsterGoalAchiever simGoal : monsterGoals) {
 			simulatorManager.setValue(character, viewItems);
 			accumulator.reset();
@@ -171,7 +177,7 @@ public class TestSimulation {
 	}
 
 	private static void simulateCrafting(SimulatorManagerImpl simulatorManager, BotCharacter character,
-			GoalFactory simulatedGoalFactory) {
+			GoalFactory simulatedGoalFactory, List<BotItemReader> viewItems) {
 		Collection<GoalAchieverInfo> itemSimulatedGoals = simulatedGoalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL);
 		List<GoalAchieverInfo> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
@@ -179,7 +185,6 @@ public class TestSimulation {
 
 		long begin = System.currentTimeMillis();
 		BotCraftSkill craftSkill = BotCraftSkill.GEARCRAFTING;
-		List<BotItem> viewItems = Collections.emptyList();
 		testStrategy(simulatorManager, character, viewItems, simulatedGoalFactory, allSimulateGoals, craftSkill);
 		craftSkill = BotCraftSkill.WEAPONCRAFTING;
 		testStrategy(simulatorManager, character, viewItems, simulatedGoalFactory, allSimulateGoals, craftSkill);
@@ -190,7 +195,7 @@ public class TestSimulation {
 	}
 
 	private static void testStrategy(SimulatorManagerImpl simulatorManager, BotCharacter character,
-			List<BotItem> viewItems, GoalFactory simulatedGoalFactory, List<GoalAchieverInfo> allSimulateGoals,
+			List<BotItemReader> viewItems, GoalFactory simulatedGoalFactory, List<GoalAchieverInfo> allSimulateGoals,
 			BotCraftSkill craftSkill) {
 		Bornes bornes = new Bornes(1, 1, 41);
 		Predicate<GoalAchieverInfo> simulatedPredicate = StrategySkillUtils.createFilterCraftPredicate(craftSkill,

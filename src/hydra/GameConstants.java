@@ -20,4 +20,5 @@ public interface GameConstants {
 	public static final long MIN_COOLDOWN_IN_SECOND = 3;
 	public static final int EVENT_RESOURCE_LEVEL = 35;
 	public static final int STEP_LEVEL = 5;
+	public static final int MAX_FIGHT_TURN = 100;
 }

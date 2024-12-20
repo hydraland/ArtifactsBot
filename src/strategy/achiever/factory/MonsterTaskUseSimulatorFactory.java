@@ -220,7 +220,6 @@ public class MonsterTaskUseSimulatorFactory implements MonsterTaskFactory {
 							foundGoalCode = new String[] { artifactGA[0].getItemCode(), artifactGA[1].getItemCode(),
 									artifactGA[2].getItemCode() };
 						}
-
 					}
 				} catch (StopSimulationException sse) {
 					// On ne fait rien c'est normal

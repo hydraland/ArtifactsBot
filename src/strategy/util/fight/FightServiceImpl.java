@@ -1,7 +1,6 @@
 package strategy.util.fight;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import hydra.GameConstants;
 import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
 import hydra.dao.ItemDAO;
@@ -129,9 +129,10 @@ public final class FightServiceImpl implements FightService {
 		toolsCode.stream().forEach(tc -> ignoreItems.put(tc, 0));
 	}
 
-	private String createKey(String code,
+	private String createKey(Integer characterHp, String code,
 			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement) {
-		StringBuilder builder = new StringBuilder(code);
+		StringBuilder builder = new StringBuilder(characterHp);
+		builder.append(code);
 		equipableCharacterEquipement.entrySet().stream()
 				.forEach(entry -> builder.append(entry.getKey()).append(Objects.hash(entry.getValue().toArray())));
 		return builder.toString();
@@ -140,7 +141,10 @@ public final class FightServiceImpl implements FightService {
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
 			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility) {
-		String key = createKey(monster.getCode(), equipableCharacterEquipement);
+		// TODO Voir si tenir compte du vrai HP du perso (Peut être cela ne sert pas à
+		// grand chose)??
+		int characterHp = characterService.getCharacterHPWihtoutEquipment();
+		String key = createKey(characterHp, monster.getCode(), equipableCharacterEquipement);
 		if (optimizeCacheManager.contains(key)) {
 			return optimizeCacheManager.get(key);
 		}
@@ -159,16 +163,12 @@ public final class FightServiceImpl implements FightService {
 		List<BotItemInfo> artifact2Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT2);
 		List<BotItemInfo> artifact3Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT3);
 
-		// On ajoute null au cas ou un item serait mauvais et pour les items multiples
-		addNullValueIfAbsent(weaponCharacter);
-		addNullValueIfAbsent(bodyArmorCharacter);
-		addNullValueIfAbsent(bootsCharacter);
-		addNullValueIfAbsent(helmetCharacter);
-		addNullValueIfAbsent(shieldCharacter);
-		addNullValueIfAbsent(legArmorCharacter);
-		addNullValueIfAbsent(amulerCharacter);
-		addNullValueIfAbsent(ring1Character);
-		addNullValueIfAbsent(ring2Character);
+		// On ajoute null pour les items multiples, à faire sur les autres si la notion
+		// d'item mauvais apparait
+		if (ring1Character.size() == 1 && ring1Character.getFirst().quantity() == 1) {
+			addNullValueIfAbsent(ring1Character);
+			addNullValueIfAbsent(ring2Character);
+		}
 		addNullValueIfAbsent(utility1Character);
 		addNullValueIfAbsent(utility2Character);
 		addNullValueIfAbsent(artifact1Character);
@@ -191,12 +191,10 @@ public final class FightServiceImpl implements FightService {
 		combinator.set(12, artifact2Character);
 		combinator.set(13, artifact3Character);
 
-		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter(), useUtility);
-		int characterHp = characterService.getCharacterHPWihtoutEquipment();
+		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter());
 		FightDetails maxFightDetails = initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
-				characterHp, useUtility);
-
-		Map<BotEffect, Float> effectMap = resetEffectMap();
+				characterHp);
+		Map<String, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
 			if (validCombinaison(botItemInfos)) {
 				for (BotItemInfo botItemInfo : botItemInfos) {
@@ -206,7 +204,8 @@ public final class FightServiceImpl implements FightService {
 				}
 
 				// Evaluation
-				FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHp);
+				FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHp,
+						maxFightDetails.characterTurn());
 				if (currentFightDetails.eval() > maxFightDetails.eval()) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
@@ -220,7 +219,7 @@ public final class FightServiceImpl implements FightService {
 			bestEquipements = new BotItemInfo[14];
 
 			// Evaluation
-			maxFightDetails = new FightDetails(0, 1, 0, 0);
+			maxFightDetails = new FightDetails(0, 1, 0, 0, 0);
 		}
 
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
@@ -239,19 +238,17 @@ public final class FightServiceImpl implements FightService {
 	@Override
 	public FightDetails calculateFightResult(BotMonster monster) {
 		int characterHp = characterService.getCharacterHPWihtoutEquipment();
-		return initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp, true);
+		return initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp);
 	}
 
-	private BotItemInfo[] initBestEquipments(BotCharacter character, boolean useUtility) {
+	private BotItemInfo[] initBestEquipments(BotCharacter character) {
 		return new BotItemInfo[] { initBestEquipement(character.getWeaponSlot(), 1),
 				initBestEquipement(character.getBodyArmorSlot(), 1), initBestEquipement(character.getBootsSlot(), 1),
 				initBestEquipement(character.getHelmetSlot(), 1), initBestEquipement(character.getShieldSlot(), 1),
 				initBestEquipement(character.getLegArmorSlot(), 1), initBestEquipement(character.getAmuletSlot(), 1),
 				initBestEquipement(character.getRing1Slot(), 1), initBestEquipement(character.getRing2Slot(), 1),
-				useUtility ? initBestEquipement(character.getUtility1Slot(), character.getUtility1SlotQuantity())
-						: null,
-				useUtility ? initBestEquipement(character.getUtility2Slot(), character.getUtility2SlotQuantity())
-						: null,
+				initBestEquipement(character.getUtility1Slot(), character.getUtility1SlotQuantity()),
+				initBestEquipement(character.getUtility2Slot(), character.getUtility2SlotQuantity()),
 				initBestEquipement(character.getArtifact1Slot(), 1),
 				initBestEquipement(character.getArtifact2Slot(), 1),
 				initBestEquipement(character.getArtifact3Slot(), 1) };
@@ -261,9 +258,9 @@ public final class FightServiceImpl implements FightService {
 		return "".equals(slot) ? null : new BotItemInfo(itemDAO.getItem(slot), quantity, ItemOrigin.ON_SELF);
 	}
 
-	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster, int characterHp,
-			boolean useUtility) {
-		Map<BotEffect, Float> effectMap = resetEffectMap();
+	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster,
+			int characterHp) {
+		Map<String, Integer> effectMap = resetEffectMap();
 
 		updateEffectInMapForEquipedEqt(character.getWeaponSlot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getBodyArmorSlot(), effectMap, 1);
@@ -274,18 +271,16 @@ public final class FightServiceImpl implements FightService {
 		updateEffectInMapForEquipedEqt(character.getAmuletSlot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getRing1Slot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getRing2Slot(), effectMap, 1);
-		if (useUtility) {
-			updateEffectInMapForEquipedEqt(character.getUtility1Slot(), effectMap, character.getUtility1SlotQuantity());
-			updateEffectInMapForEquipedEqt(character.getUtility2Slot(), effectMap, character.getUtility2SlotQuantity());
-		}
+		updateEffectInMapForEquipedEqt(character.getUtility1Slot(), effectMap, character.getUtility1SlotQuantity());
+		updateEffectInMapForEquipedEqt(character.getUtility2Slot(), effectMap, character.getUtility2SlotQuantity());
 		updateEffectInMapForEquipedEqt(character.getArtifact1Slot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getArtifact2Slot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getArtifact3Slot(), effectMap, 1);
 
-		return optimizeVictory(effectMap, monster, characterHp);
+		return optimizeVictory(effectMap, monster, characterHp, GameConstants.MAX_FIGHT_TURN);
 	}
 
-	private void updateEffectInMapForEquipedEqt(String slot, Map<BotEffect, Float> effectMap, int quantity) {
+	private void updateEffectInMapForEquipedEqt(String slot, Map<String, Integer> effectMap, int quantity) {
 		if (!"".equals(slot)) {
 			updateEffectInMap(effectMap, itemDAO.getItem(slot), quantity);
 		}
@@ -312,55 +307,142 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	// TODO voir gestion restore correctement (et non a minima) et les blocks
-	private FightDetails optimizeVictory(Map<BotEffect, Float> effectMap, BotMonster monster, int characterHp) {
-		double characterTurn = monster.getHp() / calculCharacterDamage(effectMap, monster);
-		double monsterTurn = (characterHp + effectMap.get(BotEffect.HP) + effectMap.get(BotEffect.BOOST_HP)
-				+ effectMap.get(BotEffect.RESTORE)) / calculMonsterDamage(effectMap, monster);
-		long nbTurn = Math.round(Math.min(characterTurn, monsterTurn));
-		return new FightDetails(monsterTurn / characterTurn, nbTurn,
-				(long) Math.min(characterHp + effectMap.get(BotEffect.HP),
-						(characterHp + effectMap.get(BotEffect.HP) + effectMap.get(BotEffect.BOOST_HP))
-								- Math.round(nbTurn * calculMonsterDamage(effectMap, monster))),
-				monster.getHp() - Math.round(nbTurn * calculCharacterDamage(effectMap, monster)));
+	private void updateEffectInMap(Map<String, Integer> effectMap, BotItemDetails botItemDetail, int quantity) {
+		botItemDetail.getEffects().stream().forEach(effect -> {
+			if (BotEffect.RESTORE.equals(effect.getName())) {
+				addRestore(effectMap, effect.getValue(), quantity);
+			} else {
+				effectMap.put(effect.getName().name(), effect.getValue() + effectMap.get(effect.getName().name()));
+			}
+		});
 	}
 
-	private void updateEffectInMap(Map<BotEffect, Float> effectMap, BotItemDetails botItemDetail, int quantity) {
-		// On donne un petit boost au restore
-		botItemDetail.getEffects().stream()
-				.forEach(effect -> effectMap.put(effect.getName(), effect.getValue() + effectMap.get(effect.getName())
-						+ (BotEffect.RESTORE.equals(effect.getName()) ? quantity / 100f : 0)));
+	// On ignore les blocks
+	private FightDetails optimizeVictory(Map<String, Integer> effectMap, BotMonster monster, int characterHp,
+			int maxCharacterTurn) {
+		int characterDmg = calculCharacterDamage(effectMap, monster);
+		int characterTurn = calculTurns(monster.getHp(), characterDmg);
+		if (characterTurn >= GameConstants.MAX_FIGHT_TURN) {
+			// l'hypothèse c'est que l'on ne doit pas se retrouver dans ce cas, d'ou hp
+			// character à -1
+			return new FightDetails(0d, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, -1, 0);
+		}
+		if (characterTurn > maxCharacterTurn) {
+			// IL y a mieux donc on envoi un résultat par défaut
+			return new FightDetails(0d, characterTurn, characterTurn, -1, 0);
+		}
+
+		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, effectMap, monster, characterTurn,
+				characterDmg);
+		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
+		return new FightDetails(((double) monsterResult.monsterTurn()) / characterTurn, nbTurn, characterTurn,
+				monsterResult.characterHP(), monsterResult.restoreTurn());
 	}
 
-	private Map<BotEffect, Float> resetEffectMap() {
-		Map<BotEffect, Float> effectMap = new EnumMap<>(BotEffect.class);
+	private List<RestoreStruct> getRestoreValue(Map<String, Integer> effectMap) {
+		List<RestoreStruct> result = new ArrayList<>();
+		String prefixKey = BotEffect.RESTORE.name();
+		int index = 0;
+		String key = prefixKey + index;
+		while (effectMap.containsKey(key)) {
+			result.add(new RestoreStruct(effectMap.get(key), effectMap.get(key + "Q")));
+			index++;
+			key = prefixKey + index;
+		}
+		return result;
+	}
+
+	private void addRestore(Map<String, Integer> effectMap, int value, int quantity) {
+		String prefixKey = BotEffect.RESTORE.name();
+		int index = 0;
+		String key = prefixKey + index;
+		while (effectMap.containsKey(key)) {
+			index++;
+			key = prefixKey + index;
+		}
+		effectMap.put(key, value);
+		effectMap.put(key + "Q", quantity);
+	}
+
+	private int calculTurns(int hp, int dmg) {
+		return dmg == 0 ? GameConstants.MAX_FIGHT_TURN : hp / dmg + (hp % dmg == 0 ? 0 : 1);
+	}
+
+	private MonsterCalculStruct calculMonsterTurns(int characterHp, Map<String, Integer> effectMap, BotMonster monster,
+			int maxCharacterTurn, int characterDmg) {
+		List<RestoreStruct> restoreValues = getRestoreValue(effectMap);
+		int monsterDmg = calculMonsterDamage(effectMap, monster);
+		int characterMaxHp = characterHp + effectMap.get(BotEffect.HP.name());
+		int characterMaxHpWithBoost = characterMaxHp + effectMap.get(BotEffect.BOOST_HP.name());
+		int halfCharacterMaxHpWithBoost = characterMaxHpWithBoost / 2;
+		if (restoreValues.size() == 0) {
+			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
+
+			int minTurn = monsterTurn > maxCharacterTurn ? maxCharacterTurn : monsterTurn;
+			return new MonsterCalculStruct(monsterTurn, 0,
+					Math.min(characterMaxHp, characterMaxHpWithBoost - minTurn * monsterDmg));
+		}
+		int halfMonsterTurn = calculTurns(halfCharacterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
+		if (halfMonsterTurn >= maxCharacterTurn) {
+			return new MonsterCalculStruct(halfMonsterTurn * 2, 0,
+					Math.min(characterMaxHp, characterMaxHpWithBoost - maxCharacterTurn * monsterDmg));
+		}
+		int monsterTurn = halfMonsterTurn;
+		int characterHP = characterMaxHpWithBoost - halfMonsterTurn * monsterDmg;
+		int monsterHP = monster.getHp() - halfMonsterTurn * characterDmg;
+		int restoreTurn = 0;
+		while (characterHP >= 0 && monsterHP >= 0) {
+			if (characterHP < halfCharacterMaxHpWithBoost) {
+				restoreTurn++;
+				characterHP += getRestoreValue(restoreValues, restoreTurn);
+			}
+			monsterTurn++;
+			monsterHP -= characterDmg;
+			if (monsterHP > 0) {
+				characterHP -= monsterDmg;
+			}
+		}
+		return new MonsterCalculStruct(monsterTurn, restoreTurn, characterHP);
+	}
+
+	private int getRestoreValue(List<RestoreStruct> restoreValues, int restoreTurn) {
+		return restoreValues.stream().filter(rs -> rs.quantity() >= restoreTurn).map(RestoreStruct::value).reduce(0,
+				(a, b) -> a + b);
+	}
+
+	private Map<String, Integer> resetEffectMap() {
+		Map<String, Integer> effectMap = new HashMap<>();
 		for (BotEffect botEffect : BotEffect.values()) {
-			effectMap.put(botEffect, 0f);
+			effectMap.put(botEffect.name(), 0);
 		}
 		return effectMap;
 	}
 
-	private double calculMonsterDamage(Map<BotEffect, Float> effectMap, BotMonster monster) {
-		double monsterEartDmg = monster.getAttackEarth()
-				* (1d - (effectMap.get(BotEffect.RES_EARTH) + effectMap.get(BotEffect.BOOST_RES_EARTH)) / 100d);
-		double monsterAirDmg = monster.getAttackAir()
-				* (1d - (effectMap.get(BotEffect.RES_AIR) + effectMap.get(BotEffect.BOOST_RES_AIR)) / 100d);
-		double monsterWaterDmg = monster.getAttackWater()
-				* (1d - (effectMap.get(BotEffect.RES_WATER) + effectMap.get(BotEffect.BOOST_RES_WATER)) / 100d);
-		double monsterFireDmg = monster.getAttackFire()
-				* (1d - (effectMap.get(BotEffect.RES_FIRE) + effectMap.get(BotEffect.BOOST_RES_FIRE)) / 100d);
+	private int calculMonsterDamage(Map<String, Integer> effectMap, BotMonster monster) {
+		int monsterEartDmg = monster.getAttackEarth() * Math.round(1
+				- (effectMap.get(BotEffect.RES_EARTH.name()) + effectMap.get(BotEffect.BOOST_RES_EARTH.name())) / 100f);
+		int monsterAirDmg = monster.getAttackAir() * Math.round(
+				1 - (effectMap.get(BotEffect.RES_AIR.name()) + effectMap.get(BotEffect.BOOST_RES_AIR.name())) / 100f);
+		int monsterWaterDmg = monster.getAttackWater() * Math.round(1
+				- (effectMap.get(BotEffect.RES_WATER.name()) + effectMap.get(BotEffect.BOOST_RES_WATER.name())) / 100f);
+		int monsterFireDmg = monster.getAttackFire() * Math.round(
+				1 - (effectMap.get(BotEffect.RES_FIRE.name()) + effectMap.get(BotEffect.BOOST_RES_FIRE.name())) / 100f);
 		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
 	}
 
-	private double calculCharacterDamage(Map<BotEffect, Float> effectMap, BotMonster monster) {
-		int characterEartDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_EARTH),
-				effectMap.get(BotEffect.DMG_EARTH), effectMap.get(BotEffect.BOOST_DMG_EARTH), monster.getResEarth());
-		int characterAirDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_AIR), effectMap.get(BotEffect.DMG_AIR),
-				effectMap.get(BotEffect.BOOST_DMG_AIR), monster.getResAir());
-		int characterWaterDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_WATER),
-				effectMap.get(BotEffect.DMG_WATER), effectMap.get(BotEffect.BOOST_DMG_WATER), monster.getResWater());
-		int characterFireDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_FIRE),
-				effectMap.get(BotEffect.DMG_FIRE), effectMap.get(BotEffect.BOOST_DMG_FIRE), monster.getResFire());
+	private int calculCharacterDamage(Map<String, Integer> effectMap, BotMonster monster) {
+		int characterEartDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_EARTH.name()),
+				effectMap.get(BotEffect.DMG_EARTH.name()), effectMap.get(BotEffect.BOOST_DMG_EARTH.name()),
+				monster.getResEarth());
+		int characterAirDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_AIR.name()),
+				effectMap.get(BotEffect.DMG_AIR.name()), effectMap.get(BotEffect.BOOST_DMG_AIR.name()),
+				monster.getResAir());
+		int characterWaterDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_WATER.name()),
+				effectMap.get(BotEffect.DMG_WATER.name()), effectMap.get(BotEffect.BOOST_DMG_WATER.name()),
+				monster.getResWater());
+		int characterFireDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_FIRE.name()),
+				effectMap.get(BotEffect.DMG_FIRE.name()), effectMap.get(BotEffect.BOOST_DMG_FIRE.name()),
+				monster.getResFire());
 		return characterEartDmg + characterAirDmg + characterWaterDmg + characterFireDmg;
 	}
 
@@ -583,5 +665,11 @@ public final class FightServiceImpl implements FightService {
 			}
 			return false;
 		}
+	}
+
+	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterHP) {
+	}
+
+	private static final record RestoreStruct(int value, int quantity) {
 	}
 }
