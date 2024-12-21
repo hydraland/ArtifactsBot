@@ -26,6 +26,7 @@ import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.GoalAchieverLoop;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.MonsterItemDropGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.achiever.factory.util.ItemService;
@@ -42,13 +43,13 @@ public class SimulatorStrategy implements Strategy {
 	private final GoalFactory goalFactory;
 	private final BankDAO bankDAO;
 	private final CharacterService characterService;
-	private final Collection<GoalAchieverInfo> itemGoals;
-	private final Collection<GoalAchieverInfo> itemGoalsForEvent;
+	private final Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemGoals;
+	private final Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemGoalsForEvent;
 	private final List<GoalAchiever> inventoryGoals;
 	private final List<GoalAchiever> taskGoals;
-	private final List<GoalAchieverInfo> dropItemGoal;
+	private final List<GoalAchieverInfo<MonsterItemDropGoalAchiever>> dropItemGoal;
 	private GoalAchiever eventGoal;
-	private final Collection<GoalAchieverInfo> itemSimulatedGoals;
+	private final Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemSimulatedGoals;
 	private final ItemService itemService;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
 	private final GoalAverageOptimizer goalAverageOptimizer;
@@ -78,8 +79,8 @@ public class SimulatorStrategy implements Strategy {
 	@Override
 	public Deque<GoalAchiever> getGoalAchievers() {
 		BotCharacter character = this.characterDAO.getCharacter();
-		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
-		List<GoalAchieverInfo> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
+		List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
+		List<GoalAchieverInfo<ArtifactGoalAchiever>> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
 				simulatorManager.getCharacterServiceSimulator(), simulatorManager.getBankDAOSimulator());
 
 		Deque<GoalAchiever> goalAchievers = new LinkedList<>();
@@ -127,26 +128,26 @@ public class SimulatorStrategy implements Strategy {
 		}
 	}
 
-	private List<ArtifactGoalAchiever> searchAlchemyGoal(BotCharacter character, List<GoalAchieverInfo> allGoals) {
+	private List<ArtifactGoalAchiever> searchAlchemyGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals) {
 		int minSkillLevel = Math.max(1, character.getAlchemyLevel() - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP);
 		Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, character.getAlchemyLevel() + 1);
-		Predicate<GoalAchieverInfo> predicate = StrategySkillUtils.createFilterResourceAndCraftPredicate(bornes,
+		Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils.createFilterResourceAndCraftPredicate(bornes,
 				BotResourceSkill.ALCHEMY, BotCraftSkill.ALCHEMY);
 		return allGoals.stream().filter(predicate).map(GoalAchieverInfo::getGoal).toList();
 	}
 
-	private List<ArtifactGoalAchiever> searchCookingGoal(BotCharacter character, List<GoalAchieverInfo> allGoals) {
+	private List<ArtifactGoalAchiever> searchCookingGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals) {
 		int minSkillLevel = Math.max(1, character.getCookingLevel() - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP);
 		Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, character.getCookingLevel() + 1);
-		Predicate<GoalAchieverInfo> predicate = StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.COOKING,
+		Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.COOKING,
 				bornes);
-		List<GoalAchieverInfo> cookingResult = allGoals.stream().filter(predicate).toList();
+		List<GoalAchieverInfo<ArtifactGoalAchiever>> cookingResult = allGoals.stream().filter(predicate).toList();
 		cookingResult.forEach(this::optimize);
 		return cookingResult.stream().map(GoalAchieverInfo::getGoal).toList();
 	}
 
-	private List<ArtifactGoalAchiever> searchJewelryGoal(BotCharacter character, List<GoalAchieverInfo> allGoals,
-			List<GoalAchieverInfo> allSimulateGoals, int maxLevel) {
+	private List<ArtifactGoalAchiever> searchJewelryGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals,
+			List<GoalAchieverInfo<ArtifactGoalAchiever>> allSimulateGoals, int maxLevel) {
 		int craftingLevel = character.getJewelrycraftingLevel();
 		BotCraftSkill craftSkill = BotCraftSkill.JEWELRYCRAFTING;
 		return searchGoal(character, allGoals, allSimulateGoals, craftingLevel, craftSkill, infos -> {
@@ -158,35 +159,35 @@ public class SimulatorStrategy implements Strategy {
 		}, maxLevel);
 	}
 
-	private List<ArtifactGoalAchiever> searchGearGoal(BotCharacter character, List<GoalAchieverInfo> allGoals,
-			List<GoalAchieverInfo> allSimulateGoals, int maxLevel) {
+	private List<ArtifactGoalAchiever> searchGearGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals,
+			List<GoalAchieverInfo<ArtifactGoalAchiever>> allSimulateGoals, int maxLevel) {
 		int craftingLevel = character.getGearcraftingLevel();
 		BotCraftSkill craftSkill = BotCraftSkill.GEARCRAFTING;
 		return searchGoal(character, allGoals, allSimulateGoals, craftingLevel, craftSkill,
 				infos -> !characterService.isPossess(infos.getItemCode(), bankDAO), maxLevel);
 	}
 
-	private List<ArtifactGoalAchiever> searchWeaponGoal(BotCharacter character, List<GoalAchieverInfo> allGoals,
-			List<GoalAchieverInfo> allSimulateGoals, int maxLevel) {
+	private List<ArtifactGoalAchiever> searchWeaponGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals,
+			List<GoalAchieverInfo<ArtifactGoalAchiever>> allSimulateGoals, int maxLevel) {
 		int craftingLevel = character.getWeaponcraftingLevel();
 		BotCraftSkill craftSkill = BotCraftSkill.WEAPONCRAFTING;
 		return searchGoal(character, allGoals, allSimulateGoals, craftingLevel, craftSkill,
 				infos -> !characterService.isPossess(infos.getItemCode(), bankDAO), maxLevel);
 	}
 
-	private List<ArtifactGoalAchiever> searchGoal(BotCharacter character, List<GoalAchieverInfo> allGoals,
-			List<GoalAchieverInfo> allSimulateGoals, int craftingLevel, BotCraftSkill craftSkill,
-			Predicate<GoalAchieverInfo> predicateFilterPossesed, int maxLevel) {
+	private List<ArtifactGoalAchiever> searchGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals,
+			List<GoalAchieverInfo<ArtifactGoalAchiever>> allSimulateGoals, int craftingLevel, BotCraftSkill craftSkill,
+			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicateFilterPossesed, int maxLevel) {
 		if (craftingLevel == GameConstants.MAX_LEVEL) {
 			int minSkillLevel = craftingLevel - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP;
 			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, craftingLevel + 1);
-			Predicate<GoalAchieverInfo> predicate = StrategySkillUtils.createFilterCraftPredicate(craftSkill, bornes);
+			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils.createFilterCraftPredicate(craftSkill, bornes);
 			return allGoals.stream().filter(predicate).filter(predicateFilterPossesed).map(GoalAchieverInfo::getGoal)
 					.toList();
 		}
 		if (craftingLevel % GameConstants.STEP_LEVEL == 0) {
 			Bornes bornes = new Bornes(craftingLevel, craftingLevel, craftingLevel + 1);
-			Predicate<GoalAchieverInfo> predicate = StrategySkillUtils.createFilterCraftPredicate(craftSkill, bornes);
+			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils.createFilterCraftPredicate(craftSkill, bornes);
 			List<ArtifactGoalAchiever> resultList = allGoals.stream().filter(predicate).filter(predicateFilterPossesed)
 					.map(GoalAchieverInfo::getGoal).filter(aga -> aga.isRealisableAfterSetRoot(character)).toList();
 			if (!resultList.isEmpty()) {
@@ -198,14 +199,14 @@ public class SimulatorStrategy implements Strategy {
 		// On filtre le plus rapide??
 		int minTime = Integer.MAX_VALUE;
 		String goalCode = "";
-		Predicate<GoalAchieverInfo> simulatedPredicate = StrategySkillUtils.createFilterCraftPredicate(craftSkill,
+		Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> simulatedPredicate = StrategySkillUtils.createFilterCraftPredicate(craftSkill,
 				bornes);
-		List<GoalAchieverInfo> simGoals = allSimulateGoals.stream().filter(simulatedPredicate).toList();
+		List<GoalAchieverInfo<ArtifactGoalAchiever>> simGoals = allSimulateGoals.stream().filter(simulatedPredicate).toList();
 		List<? extends BotItemReader> bankItems = bankDAO.viewItems();
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
-		for (GoalAchieverInfo simGoal : simGoals) {
+		for (GoalAchieverInfo<ArtifactGoalAchiever> simGoal : simGoals) {
 			boolean success = true;
 			optimize(simGoal);
 			accumulator.reset();
@@ -232,7 +233,7 @@ public class SimulatorStrategy implements Strategy {
 			}
 		}
 		String goalCodeFound = goalCode;
-		Optional<GoalAchieverInfo> searchRealGoal = allGoals.stream()
+		Optional<GoalAchieverInfo<ArtifactGoalAchiever>> searchRealGoal = allGoals.stream()
 				.filter(aga -> aga.getItemCode().equals(goalCodeFound)).findFirst();
 		List<ArtifactGoalAchiever> result = new ArrayList<>();
 		if (searchRealGoal.isPresent()) {
@@ -247,14 +248,14 @@ public class SimulatorStrategy implements Strategy {
 		return result;
 	}
 
-	private ArtifactGoalAchiever searchFishingGoal(BotCharacter character, List<GoalAchieverInfo> allGoals) {
+	private ArtifactGoalAchiever searchFishingGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals) {
 		if (character.getFishingLevel() < GameConstants.MAX_LEVEL) {
 			int minSkillLevel = Math.max(1, character.getFishingLevel() - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP);
 			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, character.getFishingLevel() + 1);
-			Predicate<GoalAchieverInfo> predicate = StrategySkillUtils.createFilterResourcePredicate(bornes,
+			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils.createFilterResourcePredicate(bornes,
 					BotResourceSkill.FISHING);
 
-			Optional<GoalAchieverInfo> resultGoal = allGoals.stream().filter(predicate)
+			Optional<GoalAchieverInfo<ArtifactGoalAchiever>> resultGoal = allGoals.stream().filter(predicate)
 					.max((aga1, aga2) -> Integer.compare(aga1.getLevel(), aga2.getLevel()));
 			if (resultGoal.isPresent()) {
 				GoalAchieverLoop returnGoal = new GoalAchieverLoop(resultGoal.get().getGoal(), 10, true);
@@ -267,14 +268,14 @@ public class SimulatorStrategy implements Strategy {
 		return null;
 	}
 
-	private ArtifactGoalAchiever searchWoodcuttingGoal(BotCharacter character, List<GoalAchieverInfo> allGoals) {
+	private ArtifactGoalAchiever searchWoodcuttingGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals) {
 		if (character.getWoodcuttingLevel() < GameConstants.EVENT_RESOURCE_LEVEL) {
 			int minSkillLevel = Math.max(1,
 					character.getWoodcuttingLevel() - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP);
 			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, character.getWoodcuttingLevel() + 1);
-			Predicate<GoalAchieverInfo> predicate = StrategySkillUtils
+			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils
 					.createFilterCraftPredicate(BotCraftSkill.WOODCUTTING, bornes);
-			Optional<GoalAchieverInfo> resultGoal = allGoals.stream().filter(predicate)
+			Optional<GoalAchieverInfo<ArtifactGoalAchiever>> resultGoal = allGoals.stream().filter(predicate)
 					.max((aga1, aga2) -> Integer.compare(aga1.getLevel(), aga2.getLevel()));
 			if (resultGoal.isPresent()) {
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.WOODCUTTING), bankDAO)) {
@@ -288,13 +289,13 @@ public class SimulatorStrategy implements Strategy {
 		return null;
 	}
 
-	private ArtifactGoalAchiever searchMiningGoal(BotCharacter character, List<GoalAchieverInfo> allGoals) {
+	private ArtifactGoalAchiever searchMiningGoal(BotCharacter character, List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals) {
 		if (character.getMiningLevel() < GameConstants.EVENT_RESOURCE_LEVEL) {
 			int minSkillLevel = Math.max(1, character.getMiningLevel() - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP);
 			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, character.getMiningLevel() + 1);
-			Predicate<GoalAchieverInfo> predicate = StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.MINING,
+			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.MINING,
 					bornes);
-			Optional<GoalAchieverInfo> resultGoal = allGoals.stream().filter(predicate)
+			Optional<GoalAchieverInfo<ArtifactGoalAchiever>> resultGoal = allGoals.stream().filter(predicate)
 					.max((aga1, aga2) -> Integer.compare(aga1.getLevel(), aga2.getLevel()));
 			if (resultGoal.isPresent()) {
 				if (characterService.isPossessAny(itemService.getToolsCode(BotResourceSkill.MINING), bankDAO)) {
@@ -329,7 +330,7 @@ public class SimulatorStrategy implements Strategy {
 		return eventGoal;
 	}
 
-	private void optimize(GoalAchieverInfo goalAchiever) {
+	private void optimize(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever) {
 		if (!goalAchiever.isNeedTaskMasterResource() && !goalAchiever.isNeedRareResource()) {
 			optimize(goalAchiever.getGoal());
 		} else {

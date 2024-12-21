@@ -5,16 +5,15 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.util.Bornes;
 
-public class SimpleGoalAchieverInfo implements GoalAchieverInfo {
+public class SimpleGoalAchieverInfo<T> implements GoalAchieverInfo<T> {
 
 	protected final String code;
 	protected final BotItemType type;
-	protected final ArtifactGoalAchiever goalAchiever;
+	protected final T goalAchiever;
 
-	public SimpleGoalAchieverInfo(String code, BotItemType type, ArtifactGoalAchiever goalAchiever) {
+	public SimpleGoalAchieverInfo(String code, BotItemType type, T goalAchiever) {
 		this.code = code;
 		this.type = type;
 		this.goalAchiever = goalAchiever;
@@ -85,7 +84,12 @@ public class SimpleGoalAchieverInfo implements GoalAchieverInfo {
 	}
 
 	@Override
-	public final ArtifactGoalAchiever getGoal() {
+	public final T getGoal() {
 		return goalAchiever;
+	}
+
+	@Override
+	public String getMonsterCode() {
+		return "";
 	}
 }

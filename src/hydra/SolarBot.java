@@ -9,11 +9,13 @@ import strategy.achiever.GoalExecutorManagerImpl;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.ArtifactGoalFactory;
 import strategy.achiever.factory.DefaultItemTaskFactory;
+import strategy.achiever.factory.DefaultMonsterItemDropFactory;
 import strategy.achiever.factory.DefaultMonsterTaskFactory;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.GoalFactoryCreator;
 import strategy.achiever.factory.GoalFactoryCreatorImpl;
 import strategy.achiever.factory.ItemTaskFactory;
+import strategy.achiever.factory.MonsterItemDropFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
@@ -50,6 +52,8 @@ public final class SolarBot extends Bot {
 		MonsterTaskFactory monsterTaskFactory = new DefaultMonsterTaskFactory(
 				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL), goalFactoryCreator);
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
+		MonsterItemDropFactory monsterItemDropFactory = new DefaultMonsterItemDropFactory(goalFactoryCreator);
+		goalParameter.setMonsterItemDropFactory(monsterItemDropFactory);
 		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL).stream()
 				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));

@@ -6,7 +6,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.GameConstants;
 import hydra.model.BotCharacter;
-import strategy.achiever.CheckRealisableGoalAchiever;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.util.Cumulator;
 import util.BinomialProbability;
@@ -85,14 +84,6 @@ public class GoalAchieverLoop implements ArtifactGoalAchiever {
 				? BinomialProbability.calculateAtLeastN(GameConstants.MAX_TENTATIVE_FOR_RATE_CALCUL, quantity,
 						sg.getRate())
 				: 1;
-	}
-
-	final CheckRealisableGoalAchiever getSubGoal() {
-		return subGoal;
-	}
-
-	final int getQuantity() {
-		return quantity;
 	}
 
 	@Override

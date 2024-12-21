@@ -15,7 +15,7 @@ import strategy.achiever.factory.util.Cumulator;
 import strategy.util.CharacterService;
 
 public final class GoalAchieverChoose implements ArtifactGoalAchiever {
-	private final Map<ArtifactGoalAchiever, GoalAchieverInfo> goalInfos;
+	private final Map<ArtifactGoalAchiever, GoalAchieverInfo<ArtifactGoalAchiever>> goalInfos;
 	private final List<ArtifactGoalAchiever> goalAchievers;
 	private ArtifactGoalAchiever chooseGoalAchievers;
 	private boolean finish;
@@ -55,7 +55,7 @@ public final class GoalAchieverChoose implements ArtifactGoalAchiever {
 		return false;
 	}
 
-	private GoalAchieverInfo getInfo(ArtifactGoalAchiever aga) {
+	private GoalAchieverInfo<ArtifactGoalAchiever> getInfo(ArtifactGoalAchiever aga) {
 		return goalInfos.get(aga);
 	}
 
@@ -135,7 +135,7 @@ public final class GoalAchieverChoose implements ArtifactGoalAchiever {
 		return cumulator.getValue() <= maxItem;
 	}
 
-	public void addGoal(ArtifactGoalAchiever goalToAdd, GoalAchieverInfo infos) {
+	public void addGoal(ArtifactGoalAchiever goalToAdd, GoalAchieverInfo<ArtifactGoalAchiever> infos) {
 		goalAchievers.add(goalToAdd);
 		goalAchievers.sort(this::compareRate);
 		goalInfos.put(goalToAdd, infos);
@@ -148,7 +148,7 @@ public final class GoalAchieverChoose implements ArtifactGoalAchiever {
 		return Integer.compare(info1DistanceLevelValue, info2DistanceLevelValue);
 	}
 
-	private int getDistanceLevel(GoalAchieverInfo info) {
+	private int getDistanceLevel(GoalAchieverInfo<ArtifactGoalAchiever> info) {
 		int distanceLevel = Integer.MAX_VALUE;
 		if (info.isCraft()) {
 			int levelCharacter = characterService.getLevel(info.getBotCraftSkill());
@@ -179,7 +179,7 @@ public final class GoalAchieverChoose implements ArtifactGoalAchiever {
 	}
 
 	public interface ChooseBehavior {
-		boolean accept(GoalAchieverInfo info);
+		boolean accept(GoalAchieverInfo<ArtifactGoalAchiever> info);
 	}
 
 	public interface ChooseBehaviorSelector {

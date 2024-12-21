@@ -8,6 +8,7 @@ import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.MonsterItemDropGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.StopChecker;
 
@@ -15,13 +16,13 @@ public interface GoalFactory {
 
 	List<MonsterGoalAchiever> createMonstersGoals(StopChecker<FightResponse> stopCondition, GoalFilter filter);
 
-	Collection<GoalAchieverInfo> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector, GoalFilter filter);
+	Collection<GoalAchieverInfo<ArtifactGoalAchiever>> createItemsGoals(ChooseBehaviorSelector chooseBehaviorSelector, GoalFilter filter);
 
 	List<GoalAchiever> createManagedInventoryCustomGoal();
 
-	List<GoalAchieverInfo> createDropItemGoal();
+	List<GoalAchieverInfo<MonsterItemDropGoalAchiever>> createDropItemGoal();
 
-	ArtifactGoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo goalAchiever, int minPreserve);
+	ArtifactGoalAchiever addItemRecycleGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever, int minPreserve);
 
 	GoalAchiever addDepositNoReservedItemGoalAchiever(GoalAchiever goalAchiever);
 
@@ -31,5 +32,5 @@ public interface GoalFactory {
 		EVENT, NO_EVENT, ALL
 	}
 
-	GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo goalAchiever);
+	GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever);
 }

@@ -7,6 +7,7 @@ import hydra.dao.ItemDAO;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 
@@ -37,17 +38,17 @@ public interface StrategySkillUtils {
 		return searchIndex;
 	}
 
-	public static Predicate<GoalAchieverInfo> createFilterCraftPredicate(BotCraftSkill skill, Bornes borne) {
+	public static Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> createFilterCraftPredicate(BotCraftSkill skill, Bornes borne) {
 		return p -> p.isCraft() && skill.equals(p.getBotCraftSkill()) && p.isLevelInBorne(borne, INFO_TYPE.CRAFTING);
 	}
 
-	public static Predicate<GoalAchieverInfo> createFilterResourcePredicate(Bornes borne,
+	public static Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> createFilterResourcePredicate(Bornes borne,
 			BotResourceSkill resourceSkill) {
 		return p -> p.isGathering() && resourceSkill.equals(p.getBotResourceSkill())
 				&& p.isLevelInBorne(borne, INFO_TYPE.GATHERING);
 	}
 
-	public static Predicate<GoalAchieverInfo> createFilterResourceAndCraftPredicate(Bornes borne,
+	public static Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> createFilterResourceAndCraftPredicate(Bornes borne,
 			BotResourceSkill resourceSkill, BotCraftSkill craftSkill) {
 		return p -> (p.isGathering() && resourceSkill.equals(p.getBotResourceSkill())
 				&& p.isLevelInBorne(borne, INFO_TYPE.GATHERING))

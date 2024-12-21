@@ -17,12 +17,15 @@ import strategy.achiever.GoalExecutoManager;
 import strategy.achiever.GoalExecutorManagerImpl;
 import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.ArtifactGoalFactory;
+import strategy.achiever.factory.DefaultMonsterItemDropFactory;
 import strategy.achiever.factory.DefaultMonsterTaskFactory;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.GoalFactoryCreator;
 import strategy.achiever.factory.GoalFactoryCreatorImpl;
 import strategy.achiever.factory.ItemTaskFactory;
+import strategy.achiever.factory.MonsterItemDropFactory;
+import strategy.achiever.factory.MonsterItemDropUseSimulatorFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.achiever.factory.MonsterTaskUseSimulatorFactory;
 import strategy.achiever.factory.OptimizedItemTaskFactory;
@@ -77,16 +80,21 @@ public final class PhenixBot extends Bot {
 		GoalParameter simulatorParameter = new GoalParameter(MIN_FREE_SLOT, RARE_ITEM_SEUIL_RATE, RESERVED_COINS,
 				MIN_FREE_INVENTORY_SPACE);
 		GoalFactory simulatedFactory = createSimulatorFactory(simulator, simulatorParameter);
+		Map<String, ArtifactGoalAchiever> cookAndAlchemyGoals = goalFactory
+				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING, GoalFilter.ALL).stream()
+				.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())
+						|| BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
+				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
 		MonsterTaskFactory monsterTaskFactory = new MonsterTaskUseSimulatorFactory(
 				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL).stream()
 						.collect(Collectors.toMap(MonsterGoalAchiever::getMonsterCode, Function.identity())),
-				goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING, GoalFilter.ALL).stream()
-						.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())
-								|| BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
-						.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal)),
+				cookAndAlchemyGoals, bankDao, characterDao, goalFactoryCreator, characterService, simulator,
+				simulatedFactory, TASK_MONSTER_COOK_OR_POTION_CREATE_PER_CENT);
+		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
+		MonsterItemDropFactory monsterItemDropFactory = new MonsterItemDropUseSimulatorFactory(cookAndAlchemyGoals,
 				bankDao, characterDao, goalFactoryCreator, characterService, simulator, simulatedFactory,
 				TASK_MONSTER_COOK_OR_POTION_CREATE_PER_CENT);
-		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
+		goalParameter.setMonsterItemDropFactory(monsterItemDropFactory);
 		HPRecoveryFactory hpRecoveryFactory = new HPRecoveryUseSimulatorFactory(characterDao, itemDao, bankDao,
 				moveService, characterService, simulator);
 		goalParameter.setHPRecoveryFactory(hpRecoveryFactory);
@@ -113,6 +121,7 @@ public final class PhenixBot extends Bot {
 			goalParameter.setMonsterTaskFactory(new DefaultMonsterTaskFactory(
 					goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL),
 					goalFactoryCreator));
+			goalParameter.setMonsterItemDropFactory(new DefaultMonsterItemDropFactory(goalFactoryCreator));
 		}
 	}
 

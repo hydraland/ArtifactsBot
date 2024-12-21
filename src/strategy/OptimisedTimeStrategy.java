@@ -24,7 +24,9 @@ import strategy.achiever.TimeGoalAchiever.XpGetter;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
+import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.MonsterItemDropGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.info.GoalAchieverInfo.INFO_TYPE;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
@@ -39,20 +41,20 @@ public final class OptimisedTimeStrategy implements Strategy {
 	private static final int ITEM_INITIAL_AVERAGE_TIME_VALUE = 1000;
 	private final CharacterDAO characterDAO;
 	private final List<GoalAchiever> inventoryGoals;
-	private final Collection<GoalAchieverInfo> itemGoals;
+	private final Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemGoals;
 	private final List<GoalAchiever> taskGoals;
 	private final Map<String, AverageTimeXpCalculator> timeGoalAchieverMap;
 	private final List<MonsterGoalAchiever> monsterGoals;
 	private int currentCall;
 	private final List<XpGetter> xpGetters;
-	private final List<GoalAchieverInfo> dropItemGoal;
+	private final List<GoalAchieverInfo<MonsterItemDropGoalAchiever>> dropItemGoal;
 	private final CharacterService characterService;
 	private final GoalFactory goalFactory;
 	private GoalAchiever eventGoal;
 	private final BankDAO bankDAO;
 	private final List<MonsterGoalAchiever> monsterGoalsForEvent;
 	private final GoalAverageOptimizer goalAverageOptimizer;
-	private final Collection<GoalAchieverInfo> itemGoalsForEvent;
+	private final Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemGoalsForEvent;
 
 	public OptimisedTimeStrategy(CharacterDAO characterDAO, ItemDAO itemDao, GoalFactory goalFactory,
 			CharacterService characterService, BankDAO bankDAO, GoalAverageOptimizer goalAverageOptimizer) {
@@ -105,7 +107,7 @@ public final class OptimisedTimeStrategy implements Strategy {
 		int[] skillLevels = new int[] { character.getGearcraftingLevel(), character.getWeaponcraftingLevel(),
 				character.getJewelrycraftingLevel(), character.getCookingLevel(), character.getWoodcuttingLevel(),
 				character.getMiningLevel(), character.getAlchemyLevel(), character.getFishingLevel() };
-		List<GoalAchieverInfo> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
+		List<GoalAchieverInfo<ArtifactGoalAchiever>> allGoals = Strategy.filterTaskGoals(itemGoals, characterService, bankDAO);
 		// search min skill
 		int index = StrategySkillUtils.getMinSkillIndex(skillLevels);
 		Deque<GoalAchiever> goalAchievers = new LinkedList<>();
@@ -113,13 +115,13 @@ public final class OptimisedTimeStrategy implements Strategy {
 			// recherche tous les buts pour augmenter le skillMin
 			int minSkillLevel = Math.max(1, skillLevels[index] - GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP);
 			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, skillLevels[index]);
-			List<Predicate<GoalAchieverInfo>> filterPredicate = new ArrayList<>();
+			List<Predicate<GoalAchieverInfo<ArtifactGoalAchiever>>> filterPredicate = new ArrayList<>();
 			filterPredicate.addAll(createFiltersPredicate(bornes));
-			List<GoalAchieverInfo> searchGoalAchievers = allGoals.stream().filter(filterPredicate.get(index))
+			List<GoalAchieverInfo<ArtifactGoalAchiever>> searchGoalAchievers = allGoals.stream().filter(filterPredicate.get(index))
 					.sorted((c1, c2) -> Double.compare(timeGoalAchieverMap.get(c1.getItemCode()).getAverage(),
 							timeGoalAchieverMap.get(c2.getItemCode()).getAverage()))
 					.toList().reversed();
-			Optional<GoalAchieverInfo> goalAchiever = searchGoalAchievers.stream()
+			Optional<GoalAchieverInfo<ArtifactGoalAchiever>> goalAchiever = searchGoalAchievers.stream()
 					.filter(ga -> ga.getGoal().isRealisableAfterSetRoot(character)).findFirst();
 			float nbGoalNeedTask = searchGoalAchievers.stream()
 					.<Float>map(aga -> aga.isNeedTaskMasterResource() ? 1f : 0f).reduce(0f, (a, b) -> a + b);
@@ -158,7 +160,7 @@ public final class OptimisedTimeStrategy implements Strategy {
 		return goalAchievers;
 	}
 
-	private GoalAchiever createGoalAchiever(GoalAchieverInfo goalAchiever, XpGetter xpGetter) {
+	private GoalAchiever createGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever, XpGetter xpGetter) {
 		optimize(goalAchiever);
 		BotCraftSkill botCraftSkill = goalAchiever.getBotCraftSkill();
 		if (goalAchiever.isCraft() && (botCraftSkill.equals(BotCraftSkill.WEAPONCRAFTING)
@@ -174,7 +176,7 @@ public final class OptimisedTimeStrategy implements Strategy {
 		}
 	}
 
-	private void optimize(GoalAchieverInfo goalAchiever) {
+	private void optimize(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever) {
 		if (timeGoalAchieverMap.get(goalAchiever.getItemCode()).getAverage() < ITEM_INITIAL_AVERAGE_TIME_VALUE
 				&& !goalAchiever.isNeedTaskMasterResource() && !goalAchiever.isNeedRareResource()) {
 			goalAverageOptimizer.optimize(goalAchiever.getGoal(), Integer.MAX_VALUE, 0.9f);
@@ -183,8 +185,8 @@ public final class OptimisedTimeStrategy implements Strategy {
 		}
 	}
 
-	static List<Predicate<GoalAchieverInfo>> createFiltersPredicate(Bornes bornes) {
-		ArrayList<Predicate<GoalAchieverInfo>> filterPredicate = new ArrayList<>();
+	static List<Predicate<GoalAchieverInfo<ArtifactGoalAchiever>>> createFiltersPredicate(Bornes bornes) {
+		ArrayList<Predicate<GoalAchieverInfo<ArtifactGoalAchiever>>> filterPredicate = new ArrayList<>();
 		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.GEARCRAFTING, bornes));
 		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.WEAPONCRAFTING, bornes));
 		filterPredicate.add(StrategySkillUtils.createFilterCraftPredicate(BotCraftSkill.JEWELRYCRAFTING, bornes));

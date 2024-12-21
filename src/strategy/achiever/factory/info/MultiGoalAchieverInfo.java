@@ -8,10 +8,9 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.util.Bornes;
 
-public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
+public class MultiGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
 
 	private static final String EXCEPTION_MESSAGE = "Value  %s not authorize";
 	private boolean needTaskMasterResource;
@@ -22,7 +21,7 @@ public class MultiGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	private BotResourceSkill botResourceSkill;
 	private final List<String> boxCodes;
 
-	public MultiGoalAchieverInfo(String code, BotItemType type, ArtifactGoalAchiever goalAchiever) {
+	public MultiGoalAchieverInfo(String code, BotItemType type, T goalAchiever) {
 		super(code, type, goalAchiever);
 		needTaskMasterResource = false;
 		needRareResource = false;

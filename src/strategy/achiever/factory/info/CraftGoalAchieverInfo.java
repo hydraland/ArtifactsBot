@@ -4,10 +4,9 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.util.Bornes;
 
-public class CraftGoalAchieverInfo extends SimpleGoalAchieverInfo {
+public class CraftGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
 
 	private final boolean needTaskMasterResource;
 	private final BotCraftSkill craftSkill;
@@ -15,7 +14,7 @@ public class CraftGoalAchieverInfo extends SimpleGoalAchieverInfo {
 	private final boolean needRareResource;
 
 	public CraftGoalAchieverInfo(String code, BotItemType type, BotCraftSkill craftSkill, int level,
-			boolean needTaskMasterResource, boolean neddRareResource, ArtifactGoalAchiever goalAchiever) {
+			boolean needTaskMasterResource, boolean neddRareResource, T goalAchiever) {
 		super(code, type, goalAchiever);
 		this.craftSkill = craftSkill;
 		this.level = level;

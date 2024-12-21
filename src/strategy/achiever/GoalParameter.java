@@ -3,6 +3,7 @@ package strategy.achiever;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import strategy.achiever.factory.ItemTaskFactory;
+import strategy.achiever.factory.MonsterItemDropFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.util.fight.factory.HPRecoveryFactory;
 
@@ -15,6 +16,7 @@ public class GoalParameter {
 	private MonsterTaskFactory monsterTaskFactory;
 	private ItemTaskFactory itemTaskFactory;
 	private HPRecoveryFactory hPRecoveryFactory;
+	private MonsterItemDropFactory monsterItemDropFactory;
 
 	public GoalParameter(int minFreeSlot, int rareItemSeuil, int coinReserve, int minFreeInventorySpace) {
 		this.minFreeSlot = minFreeSlot;
@@ -87,5 +89,13 @@ public class GoalParameter {
 		builder.append("coinReserve", coinReserve);
 		builder.append("minFreeInventorySpace", minFreeInventorySpace);
 		return builder.toString();
+	}
+
+	public final MonsterItemDropFactory getItemDropFactory() {
+		return this.monsterItemDropFactory;
+	}
+
+	public final void setMonsterItemDropFactory(MonsterItemDropFactory monsterItemDropFactory) {
+		this.monsterItemDropFactory = monsterItemDropFactory;
 	}
 }

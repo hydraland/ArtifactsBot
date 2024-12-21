@@ -2,6 +2,7 @@ package strategy.achiever.factory;
 
 import java.util.List;
 
+import hydra.dao.CharacterDAO;
 import hydra.dao.response.FightResponse;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotCraftSkill;
@@ -9,6 +10,7 @@ import hydra.model.BotMonster;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalAchieverConditional.Condition;
+import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GenericGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverChoose;
@@ -16,7 +18,9 @@ import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector
 import strategy.achiever.factory.goals.GoalAchieverList;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.MonsterItemDropGoalAchiever;
 import strategy.achiever.factory.goals.ResourceGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.SlotMethod;
 import strategy.achiever.factory.util.StopChecker;
@@ -92,4 +96,6 @@ public interface GoalFactoryCreator {
 
 	GoalAchiever createGoalAchieverConditional(GoalAchiever subGoal, Condition condition, boolean virtualRoot);
 
+	MonsterItemDropGoalAchiever createMonsterItemDropGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> goalInfo, CharacterDAO characterDao,
+			GoalParameter parameter);
 }

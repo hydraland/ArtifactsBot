@@ -4,17 +4,16 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
-import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.util.Bornes;
 
-public class GatheringGoalAchieverInfo extends SimpleGoalAchieverInfo {
+public class GatheringGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
 
 	private final BotResourceSkill resourceSkill;
 	private final int level;
 	private final String boxCode;
 
 	public GatheringGoalAchieverInfo(String code, BotItemType type, BotResourceSkill resourceSkill, int level,
-			String boxCode, ArtifactGoalAchiever goalAchiever) {
+			String boxCode, T goalAchiever) {
 		super(code, type, goalAchiever);
 		this.resourceSkill = resourceSkill;
 		this.level = level;

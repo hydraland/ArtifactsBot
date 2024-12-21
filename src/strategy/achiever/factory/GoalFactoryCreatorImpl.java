@@ -48,10 +48,12 @@ import strategy.achiever.factory.goals.ItemRecycleGoalAchiever;
 import strategy.achiever.factory.goals.ItemTaskGoalAchiever;
 import strategy.achiever.factory.goals.MonsterEventGoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.MonsterItemDropGoalAchiever;
 import strategy.achiever.factory.goals.MonsterTaskGoalAchiever;
 import strategy.achiever.factory.goals.ResourceGoalAchiever;
 import strategy.achiever.factory.goals.TradeGoalAchiever;
 import strategy.achiever.factory.goals.UnequipFirstWeaponGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.ItemService;
 import strategy.achiever.factory.util.SlotMethod;
@@ -280,5 +282,11 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 	@Override
 	public GoalAchiever createGoalAchieverConditional(GoalAchiever subGoal, Condition condition, boolean virtualRoot) {
 		return new GoalAchieverConditional(subGoal, condition, virtualRoot);
+	}
+
+	@Override
+	public MonsterItemDropGoalAchiever createMonsterItemDropGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> goalInfo, CharacterDAO characterDao,
+			GoalParameter parameter) {
+		return new MonsterItemDropGoalAchiever(goalInfo, characterDao, parameter);
 	}
 }

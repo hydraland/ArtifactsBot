@@ -17,6 +17,7 @@ import strategy.achiever.GoalAchieverConditional;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
+import strategy.achiever.factory.goals.MonsterItemDropGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.util.CharacterService;
 
@@ -35,15 +36,15 @@ public interface Strategy {
 
 	public Iterable<GoalAchiever> getManagedInventoryCustomGoal();
 
-	public static List<ArtifactGoalAchiever> filterDropItemGoals(List<GoalAchieverInfo> dropItemGoal,
+	public static List<MonsterItemDropGoalAchiever> filterDropItemGoals(List<GoalAchieverInfo<MonsterItemDropGoalAchiever>> dropItemGoal,
 			CharacterService characterService, BankDAO bankDAO) {
 		return dropItemGoal.stream().filter(aga -> !characterService.isPossess(aga.getItemCode(), bankDAO))
 				.map(GoalAchieverInfo::getGoal).toList();
 	}
 
-	public static List<GoalAchieverInfo> filterTaskGoals(Collection<GoalAchieverInfo> itemsGoal,
+	public static List<GoalAchieverInfo<ArtifactGoalAchiever>> filterTaskGoals(Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemsGoal,
 			CharacterService characterService, BankDAO bankDAO) {
-		Predicate<GoalAchieverInfo> predicate = infos -> {
+		Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = infos -> {
 			if (infos.isNeedTaskMasterResource()) {
 				if (BotItemType.RING.equals(infos.getItemType())) {
 					return !characterService.isPossess(infos.getItemCode(), 2, bankDAO);
@@ -56,7 +57,7 @@ public interface Strategy {
 		return itemsGoal.stream().filter(predicate).toList();
 	}
 
-	public static int calculMinItemPreserve(GoalAchieverInfo goalAchiever) {
+	public static int calculMinItemPreserve(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever) {
 		return BotItemType.RING.equals(goalAchiever.getItemType()) ? 2 : 1;
 	}
 
@@ -105,13 +106,13 @@ public interface Strategy {
 	};
 
 	public static boolean isAcceptEvent(CharacterDAO characterDAO, String type, String code,
-			List<MonsterGoalAchiever> monsterGoals, Collection<GoalAchieverInfo> itemGoals) {
+			List<MonsterGoalAchiever> monsterGoals, Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemGoals) {
 		if (EventNotification.MONSTER_EVENT_TYPE.equals(type)) {
 			Optional<MonsterGoalAchiever> goalAchiever = monsterGoals.stream()
 					.filter(mga -> code.equals(mga.getMonsterCode())).findFirst();
 			return goalAchiever.isPresent() && goalAchiever.get().isRealisableAfterSetRoot(characterDAO.getCharacter());
 		} else if (EventNotification.RESOURCE_EVENT_TYPE.equals(type)) {
-			Optional<GoalAchieverInfo> goalAchiever = itemGoals.stream().filter(aga -> aga.isMatchBoxCode(code))
+			Optional<GoalAchieverInfo<ArtifactGoalAchiever>> goalAchiever = itemGoals.stream().filter(aga -> aga.isMatchBoxCode(code))
 					.findFirst();
 			return goalAchiever.isPresent()
 					&& goalAchiever.get().getGoal().isRealisableAfterSetRoot(characterDAO.getCharacter());
@@ -120,13 +121,13 @@ public interface Strategy {
 	}
 
 	public static GoalAchiever initializeGoal(GoalFactory goalFactory, String type, String code,
-			List<MonsterGoalAchiever> monsterGoals, Collection<GoalAchieverInfo> itemGoals) {
+			List<MonsterGoalAchiever> monsterGoals, Collection<GoalAchieverInfo<ArtifactGoalAchiever>> itemGoals) {
 		if (EventNotification.MONSTER_EVENT_TYPE.equals(type)) {
 			MonsterGoalAchiever goalAchiever = monsterGoals.stream().filter(mga -> code.equals(mga.getMonsterCode()))
 					.findFirst().get();
 			return new GoalAchieverConditional(goalAchiever, () -> false, true);
 		} else if (EventNotification.RESOURCE_EVENT_TYPE.equals(type)) {
-			GoalAchieverInfo goalAchiever = itemGoals.stream().filter(aga -> aga.isMatchBoxCode(code)).findFirst()
+			GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever = itemGoals.stream().filter(aga -> aga.isMatchBoxCode(code)).findFirst()
 					.get();
 			return goalFactory.addUsefullGoalToEventGoal(goalAchiever);
 		}
