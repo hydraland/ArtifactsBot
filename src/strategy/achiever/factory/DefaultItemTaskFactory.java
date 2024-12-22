@@ -9,27 +9,29 @@ import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.GoalAchieverList;
 import strategy.achiever.factory.goals.ItemGetBankGoalAchiever;
+import strategy.achiever.factory.info.GoalAchieverInfo;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
 
 public class DefaultItemTaskFactory implements ItemTaskFactory {
 
 	protected final CharacterDAO characterDAO;
-	protected final Map<String, ArtifactGoalAchiever> itemsGoals;
+	protected final Map<String, GoalAchieverInfo<ArtifactGoalAchiever>> itemsGoalsInfo;
 	protected final CharacterService characterService;
 	protected final GoalFactoryCreator factoryCreator;
 
 	public DefaultItemTaskFactory(CharacterDAO characterDAO, GoalFactoryCreator factoryCreator,
-			Map<String, ArtifactGoalAchiever> itemsGoals, CharacterService characterService) {
+			Map<String, GoalAchieverInfo<ArtifactGoalAchiever>> itemsGoalsInfo, CharacterService characterService) {
 		this.characterDAO = characterDAO;
 		this.factoryCreator = factoryCreator;
-		this.itemsGoals = itemsGoals;
+		this.itemsGoalsInfo = itemsGoalsInfo;
 		this.characterService = characterService;
 	}
 
 	@Override
 	public GoalAchiever createTaskGoalAchiever(String code, int total, List<Coordinate> taskMasterCoordinates) {
-		ArtifactGoalAchiever itemsGoal = itemsGoals.get(code);
+		GoalAchieverInfo<ArtifactGoalAchiever> goalAchieverInfo = itemsGoalsInfo.get(code);
+		ArtifactGoalAchiever itemsGoal = goalAchieverInfo == null ? null : goalAchieverInfo.getGoal();
 		if (itemsGoal != null) {
 			GoalAchiever goalAchiever;
 			GoalAchieverList goalAchieverList = factoryCreator.createGoalAchieverList();
@@ -75,8 +77,20 @@ public class DefaultItemTaskFactory implements ItemTaskFactory {
 				goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, total, false));
 				goalAchieverList.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, total));
 			}
+			
+			goalAchiever = processGathering(goalAchieverInfo, goalAchiever);
 			return goalAchiever;
 		}
 		return null;
+	}
+
+	protected final GoalAchiever processGathering(GoalAchieverInfo<ArtifactGoalAchiever> goalAchieverInfo,
+			GoalAchiever goalAchiever) {
+		if(goalAchieverInfo.isGathering()) {
+			goalAchiever = factoryCreator.createGoalAchieverTwoStep(
+					factoryCreator.createEquipToolGoalAchiever(goalAchieverInfo.getBotResourceSkill()),
+					goalAchiever, true, true);
+		}
+		return goalAchiever;
 	}
 }

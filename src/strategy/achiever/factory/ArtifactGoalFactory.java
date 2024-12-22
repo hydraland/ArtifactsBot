@@ -490,11 +490,11 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	}
 
 	@Override
-	public GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever) {
-		GoalAchiever goalAchieverIntermediate = factoryCreator.createGoalAchieverConditional(goalAchiever.getGoal(),
+	public GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo<ArtifactGoalAchiever> goalAchieverInfo) {
+		GoalAchiever goalAchieverIntermediate = factoryCreator.createGoalAchieverConditional(goalAchieverInfo.getGoal(),
 				() -> false, true);
 		return factoryCreator.createGoalAchieverTwoStep(
-				factoryCreator.createEquipToolGoalAchiever(goalAchiever.getBotResourceSkill()),
+				factoryCreator.createEquipToolGoalAchiever(goalAchieverInfo.getBotResourceSkill()),
 				goalAchieverIntermediate, true, true);
 	}
 }

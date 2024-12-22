@@ -23,6 +23,7 @@ import strategy.Strategy;
 import strategy.SumAccumulator;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalParameter;
+import strategy.achiever.factory.DefaultMonsterItemDropFactory;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.MonsterItemDropUseSimulatorFactory;
@@ -57,10 +58,10 @@ public class TestSimulation {
 		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
 		List<BotItemReader> viewItems = new ArrayList<>(simulatorManager.getBankDAOSimulator().viewItems());
-		/*simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
+		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
 		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
 
-		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);*/
+		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 
 		simulateDropItem(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 	}
@@ -100,6 +101,7 @@ public class TestSimulation {
 				simulatorManager.getGoalFactoryCreator(), simulatorManager.getCharacterServiceSimulator(),
 				secondSimulatorManager, secondSimulatedGoalFactory, 0.3f);
 		goalParameter.setMonsterItemDropFactory(factoryMonster);
+		//goalParameter.setMonsterItemDropFactory(new DefaultMonsterItemDropFactory(simulatorManager.getGoalFactoryCreator()));
 
 		List<GoalAchieverInfo<MonsterItemDropGoalAchiever>> dropItemGoal = simulatedGoalFactory.createDropItemGoal();
 

@@ -107,9 +107,9 @@ public final class PhenixBot extends Bot {
 	private static void addFactoryToParameter(GoalFactory goalFactory, GoalAverageOptimizer goalAverageOptimizer,
 			CharacterDAO characterDao, ItemDAO itemDao, GoalFactoryCreator goalFactoryCreator,
 			CharacterService characterService, GoalParameter goalParameter, boolean isForSimu) {
-		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
+		Map<String, GoalAchieverInfo<ArtifactGoalAchiever>> itemGoalsMap = goalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL).stream()
-				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
+				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, Function.identity()));
 
 		ItemTaskFactory itemTaskFactory = new OptimizedItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
 				characterService, goalAverageOptimizer);

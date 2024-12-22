@@ -1,6 +1,7 @@
 package hydra;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import strategy.OptimisedTimeStrategyV2;
@@ -56,9 +57,9 @@ public final class LunarBot extends Bot {
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		MonsterItemDropFactory monsterItemDropFactory = new DefaultMonsterItemDropFactory(goalFactoryCreator);
 		goalParameter.setMonsterItemDropFactory(monsterItemDropFactory);
-		Map<String, ArtifactGoalAchiever> itemGoalsMap = goalFactory
+		Map<String, GoalAchieverInfo<ArtifactGoalAchiever>> itemGoalsMap = goalFactory
 				.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING, GoalFilter.ALL).stream()
-				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal));
+				.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, Function.identity()));
 		GoalAverageOptimizer goalAverageOptimizer = new GoalAverageOptimizerImpl(characterDao);
 		ItemTaskFactory itemTaskFactory = new OptimizedItemTaskFactory(characterDao, goalFactoryCreator, itemGoalsMap,
 				characterService, goalAverageOptimizer);
