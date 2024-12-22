@@ -27,7 +27,7 @@ public class GoalAchieverForLoop implements GoalAchiever {
 	@Override
 	public boolean execute(Map<String, Integer> reservedItems) {
 		try {
-			for(int i = 0; i < quantity; i++) {
+			for (int i = 0; i < quantity; i++) {
 				if (subGoal.execute(reservedItems)) {
 					if (subGoal.isFinish()) {
 						subGoal.clear();
@@ -55,7 +55,7 @@ public class GoalAchieverForLoop implements GoalAchiever {
 
 	@Override
 	public void setRoot() {
-			subGoal.unsetRoot();
+		subGoal.unsetRoot();
 	}
 
 	@Override
@@ -63,7 +63,6 @@ public class GoalAchieverForLoop implements GoalAchiever {
 		subGoal.unsetRoot();
 	}
 
-	
 	final CheckRealisableGoalAchiever getSubGoal() {
 		return subGoal;
 	}

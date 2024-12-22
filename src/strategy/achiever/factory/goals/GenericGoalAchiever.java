@@ -14,12 +14,14 @@ public final class GenericGoalAchiever implements GoalAchiever {
 	private CheckRealisableGoalAchiever checkRealisableGoalAchiever;
 	private ExecutableGoalAchiever executableGoalAchiever;
 	private boolean finish;
+	private String value;
 
 	public GenericGoalAchiever(CheckRealisableGoalAchiever checkRealisableGoalAchiever,
 			ExecutableGoalAchiever executableGoalAchiever) {
 		this.checkRealisableGoalAchiever = checkRealisableGoalAchiever;
 		this.executableGoalAchiever = executableGoalAchiever;
 		this.finish = false;
+		this.value = "";
 	}
 
 	@Override
@@ -64,9 +66,14 @@ public final class GenericGoalAchiever implements GoalAchiever {
 		this.executableGoalAchiever = executableGoalAchiever;
 	}
 	
+	public final void setValue(String value) {
+		this.value = value;
+	}
+	
 	@Override
 	public String toString() {
 		ToStringBuilder builder = new ToStringBuilder(this);
+		builder.append("value", value);
 		return builder.toString();
 	}
 }

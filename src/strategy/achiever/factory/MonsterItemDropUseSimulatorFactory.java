@@ -27,7 +27,6 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 	private final Map<String, ArtifactGoalAchiever> cookAndAlchemyGoals;
 	private final GoalAverageOptimizer goalAverageOptimizer;
 	private final float maxCookOrPotionTaskPercent;
-	private final GoalAchiever depositNoReservedItemGoalAchiever;
 	private final GoalFactoryCreator factoryCreator;
 	private final Map<String, ArtifactGoalAchiever> simulatedDropItemGoals;
 
@@ -44,7 +43,6 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 		this.characterService = characterService;
 		this.simulatedDropItemGoals = simulatedGoalFactory.createDropItemGoal().stream()
 				.collect(Collectors.toMap(this::createKey, t -> t.getGoal().getDropGoal()));
-		depositNoReservedItemGoalAchiever = factoryCreator.createDepositNoReservedItemGoalAchiever();
 	}
 
 	@Override
@@ -54,7 +52,7 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 		String[] simCodeFound = simulate(testGoals, botCharacter, bankDAO.viewItems());
 		GoalAchiever subGoal = dropGoalInfo.getGoal();
 		if (simCodeFound.length == 1) {
-			subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, subGoal, true, true);
+			subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, subGoal, false, true);
 			genericGoalAchiever.setCheckRealisableGoalAchiever(c -> !characterService.isPossessOnSelf(simCodeFound[0]));
 			ArtifactGoalAchiever artifactGoalAchiever = cookAndAlchemyGoals.get(simCodeFound[0]);
 			int maxCookOrPotionTask = Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems());
@@ -65,27 +63,22 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 				reservedItems.clear();
 				return result;
 			});
+			genericGoalAchiever.setValue(artifactGoalAchiever.toString());
 		} else if (simCodeFound.length > 1) {
 			int maxCookOrPotionTask = Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);
 			updateGenericGoal(simCodeFound, characterService, goalAverageOptimizer, maxCookOrPotionTask);
 			subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
-					new ForceExecuteGoalAchiever(subGoal), true, true);
+					new ForceExecuteGoalAchiever(subGoal), false, true);
 		}
 
-		GoalAchiever goalAchiever = factoryCreator.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever, subGoal,
-				true, true);
-
-		return factoryCreator.createGoalAchieverLoop(goalAchiever, 1, false);
+		return factoryCreator.createGoalAchieverLoop(subGoal, 1, false);
 	}
 
 	private List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(GoalAchieverInfo<ArtifactGoalAchiever> dropGoalInfo, BotCharacter botCharacter) {
-		GoalAchiever simDepositNoReservedItemGoalAchiever = simulatorManager.getGoalFactoryCreator()
-				.createDepositNoReservedItemGoalAchiever();
-		GoalAchiever goalAchieverTwoStep = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
-				simulatedDropItemGoals.get(createKey(dropGoalInfo)), true, true);
-		GoalAchiever goalAchiever = factoryCreator.createGoalAchieverTwoStep(simDepositNoReservedItemGoalAchiever,
-				goalAchieverTwoStep, true, true);
-		simGoalAchiever = new GoalAchieverForLoop(goalAchiever, BinomialProbability.calculateNbTentative(0.9, 1,
+		GoalFactoryCreator simulatorFactoryCreator = simulatorManager.getGoalFactoryCreator();
+		GoalAchiever goalAchieverTwoStep = simulatorFactoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
+				simulatedDropItemGoals.get(createKey(dropGoalInfo)), false, true);
+		simGoalAchiever = new GoalAchieverForLoop(goalAchieverTwoStep, BinomialProbability.calculateNbTentative(0.9, 1,
 				dropGoalInfo.getGoal().getRate(), MAX_SIMULATION_LOOP));
 		return initSimulation(botCharacter);
 	}

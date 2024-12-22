@@ -60,7 +60,7 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 			String[] simCodeFound = simulate(testGoals, botCharacter, bankDAO.viewItems());
 			GoalAchiever subGoal = monsterGoals.get(code);
 			if (simCodeFound.length == 1) {
-				subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, subGoal, true, true);
+				subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, subGoal, false, true);
 				genericGoalAchiever
 						.setCheckRealisableGoalAchiever(c -> !characterService.isPossessOnSelf(simCodeFound[0]));
 				ArtifactGoalAchiever artifactGoalAchiever = cookAndAlchemyGoals.get(simCodeFound[0]);
@@ -72,16 +72,17 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 					reservedItems.clear();
 					return result;
 				});
+				genericGoalAchiever.setValue(artifactGoalAchiever.toString());
 			} else if (simCodeFound.length > 1) {
 				int maxCookOrPotionTask = Math
 						.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);
 				updateGenericGoal(simCodeFound, characterService, goalAverageOptimizer, maxCookOrPotionTask);
 				subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
-						new ForceExecuteGoalAchiever(subGoal), true, true);
+						new ForceExecuteGoalAchiever(subGoal), false, true);
 			}
 
 			GoalAchiever goalAchiever = factoryCreator.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever,
-					subGoal, true, true);
+					subGoal, false, true);
 
 			return factoryCreator.createGoalAchieverLoop(goalAchiever, total, false);
 		}
@@ -89,12 +90,13 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 	}
 
 	private List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(String code, int total, BotCharacter botCharacter) {
-		GoalAchiever simDepositNoReservedItemGoalAchiever = simulatorManager.getGoalFactoryCreator()
+		GoalFactoryCreator simulatorFactoryCreator = simulatorManager.getGoalFactoryCreator();
+		GoalAchiever simDepositNoReservedItemGoalAchiever = simulatorFactoryCreator
 				.createDepositNoReservedItemGoalAchiever();
-		GoalAchiever goalAchieverTwoStep = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
-				simulatedmonstersGoals.get(code), true, true);
-		GoalAchiever goalAchiever = factoryCreator.createGoalAchieverTwoStep(simDepositNoReservedItemGoalAchiever,
-				goalAchieverTwoStep, true, true);
+		GoalAchiever goalAchieverTwoStep = simulatorFactoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
+				simulatedmonstersGoals.get(code), false, true);
+		GoalAchiever goalAchiever = simulatorFactoryCreator.createGoalAchieverTwoStep(simDepositNoReservedItemGoalAchiever,
+				goalAchieverTwoStep, false, true);
 		simGoalAchiever = factoryCreator.createGoalAchieverLoop(goalAchiever, total, false);
 		return initSimulation(botCharacter);
 	}

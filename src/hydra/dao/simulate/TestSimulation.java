@@ -59,11 +59,12 @@ public class TestSimulation {
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
 		List<BotItemReader> viewItems = new ArrayList<>(simulatorManager.getBankDAOSimulator().viewItems());
 		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
-		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
-
+		
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 
 		simulateDropItem(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
+		
+		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
 	}
 
 	private static void simulateDropItem(SimulatorManagerImpl simulatorManager, BotCharacter character,
@@ -104,22 +105,22 @@ public class TestSimulation {
 		//goalParameter.setMonsterItemDropFactory(new DefaultMonsterItemDropFactory(simulatorManager.getGoalFactoryCreator()));
 
 		List<GoalAchieverInfo<MonsterItemDropGoalAchiever>> dropItemGoal = simulatedGoalFactory.createDropItemGoal();
-
+		SumAccumulator accumulator = new SumAccumulator();
+		simulatorManager.getSimulatorListener().setInnerListener((className, methodName, cooldown, error) -> {
+			accumulator.accumulate(cooldown);
+			if (error) {
+				System.out.println(methodName);
+			}
+		});
 		for (GoalAchieverInfo<MonsterItemDropGoalAchiever> simLoopGoal : dropItemGoal) {
-			System.out.println("Item :" + simLoopGoal.getMonsterCode());
+			System.out.println("Monster :" + simLoopGoal.getMonsterCode());
 			simulatorManager.setValue(character, viewItems);
-			SumAccumulator accumulator = new SumAccumulator();
-			simulatorManager.getSimulatorListener().setInnerListener((className, methodName, cooldown, error) -> {
-				accumulator.accumulate(cooldown);
-				if (error) {
-					System.out.println(methodName);
-				}
-			});
 			if (simLoopGoal.getGoal().isRealisableAfterSetRoot(character)) {
 				simLoopGoal.getGoal().clear();
 				boolean result = simLoopGoal.getGoal().execute(new HashMap<>());
 				System.out.println("time :" + accumulator.get() + " : " + result);
 			}
+			accumulator.reset();
 		}
 	}
 

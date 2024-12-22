@@ -256,6 +256,8 @@ public final class ArtifactGoalFactory implements GoalFactory {
 			}
 			if (subGoal != null) {
 				GoalAchiever subSubGoalAchiever;
+				//TODO pour les chooses voir pour mettre le tool au niveau des gathering et non au niveau le plus haut
+				//Ne pas le mettre ici et le mettre quan don l'ajoute au choose???
 				if (goalInfos.get(subGoal).isGathering()) {
 					GoalAchiever equipToolGoalAchiever = factoryCreator
 							.createEquipToolGoalAchiever(goalInfos.get(subGoal).getBotResourceSkill());
