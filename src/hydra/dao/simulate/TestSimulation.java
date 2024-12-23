@@ -23,13 +23,12 @@ import strategy.Strategy;
 import strategy.SumAccumulator;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.GoalParameter;
-import strategy.achiever.factory.DefaultMonsterItemDropFactory;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.MonsterItemDropUseSimulatorFactory;
 import strategy.achiever.factory.MonsterTaskUseSimulatorFactory;
-import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
+import strategy.achiever.factory.goals.GoalAchieverChoose.ChooseBehaviorSelector;
 import strategy.achiever.factory.goals.GoalAchieverLoop;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 import strategy.achiever.factory.goals.MonsterItemDropGoalAchiever;
@@ -58,6 +57,8 @@ public class TestSimulation {
 		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
 		List<BotItemReader> viewItems = new ArrayList<>(simulatorManager.getBankDAOSimulator().viewItems());
+		
+		long begin = System.currentTimeMillis();
 		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
 		
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
@@ -65,6 +66,8 @@ public class TestSimulation {
 		simulateDropItem(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 		
 		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
+		long end = System.currentTimeMillis();
+		System.out.println("Duree:" + (end - begin));
 	}
 
 	private static void simulateDropItem(SimulatorManagerImpl simulatorManager, BotCharacter character,
@@ -187,7 +190,6 @@ public class TestSimulation {
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
-		long begin = System.currentTimeMillis();
 		BotItem potion1 = new BotItem();
 		potion1.setCode("small_health_potion");
 		potion1.setQuantity(100);
@@ -210,8 +212,6 @@ public class TestSimulation {
 						+ simulatorManager.getCharacterDAOSimulator().getCharacter().getUtility2SlotQuantity());
 			}
 		}
-		long end = System.currentTimeMillis();
-		System.out.println("Duree:" + (end - begin));
 	}
 
 	private static void simulateCrafting(SimulatorManagerImpl simulatorManager, BotCharacter character,
@@ -221,15 +221,13 @@ public class TestSimulation {
 		List<GoalAchieverInfo<ArtifactGoalAchiever>> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
 				simulatorManager.getCharacterServiceSimulator(), simulatorManager.getBankDAOSimulator());
 
-		long begin = System.currentTimeMillis();
+		
 		BotCraftSkill craftSkill = BotCraftSkill.GEARCRAFTING;
 		testStrategy(simulatorManager, character, viewItems, simulatedGoalFactory, allSimulateGoals, craftSkill);
 		craftSkill = BotCraftSkill.WEAPONCRAFTING;
 		testStrategy(simulatorManager, character, viewItems, simulatedGoalFactory, allSimulateGoals, craftSkill);
 		craftSkill = BotCraftSkill.JEWELRYCRAFTING;
 		testStrategy(simulatorManager, character, viewItems, simulatedGoalFactory, allSimulateGoals, craftSkill);
-		long end = System.currentTimeMillis();
-		System.out.println("Duree:" + (end - begin));
 	}
 
 	private static void testStrategy(SimulatorManagerImpl simulatorManager, BotCharacter character,

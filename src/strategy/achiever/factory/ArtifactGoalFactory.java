@@ -124,6 +124,10 @@ public final class ArtifactGoalFactory implements GoalFactory {
 							.createDepositNoReservedItemGoalAchiever();
 					ArtifactGoalAchiever achieverTwoStep = factoryCreator
 							.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever, goalAchiever, true, true);
+					GoalAchiever equipToolGoalAchiever = factoryCreator
+							.createEquipToolGoalAchiever(resource.getSkill());
+					achieverTwoStep = factoryCreator.createGoalAchieverTwoStep(equipToolGoalAchiever, achieverTwoStep,
+							true, false);
 					goals.add(achieverTwoStep);
 					getGoalInfo(goalInfos, achieverTwoStep,
 							new GatheringGoalAchieverInfo<ArtifactGoalAchiever>(resourceCode, BotItemType.RESOURCE,
@@ -255,19 +259,8 @@ public final class ArtifactGoalFactory implements GoalFactory {
 				containtsRareResource = true;
 			}
 			if (subGoal != null) {
-				GoalAchiever subSubGoalAchiever;
-				//TODO pour les chooses voir pour mettre le tool au niveau des gathering et non au niveau le plus haut
-				//Ne pas le mettre ici et le mettre quan don l'ajoute au choose???
-				if (goalInfos.get(subGoal).isGathering()) {
-					GoalAchiever equipToolGoalAchiever = factoryCreator
-							.createEquipToolGoalAchiever(goalInfos.get(subGoal).getBotResourceSkill());
-					ArtifactGoalAchiever goalAchieverLoop = factoryCreator.createGoalAchieverLoop(subGoal,
-							botItem.getQuantity(), false);
-					subSubGoalAchiever = factoryCreator.createGoalAchieverTwoStep(equipToolGoalAchiever,
-							goalAchieverLoop, false, false);
-				} else {
-					subSubGoalAchiever = factoryCreator.createGoalAchieverLoop(subGoal, botItem.getQuantity(), false);
-				}
+				GoalAchiever subSubGoalAchiever = factoryCreator.createGoalAchieverLoop(subGoal, botItem.getQuantity(),
+						false);
 				itemGetBankGoalAchiever.setQuantity(botItem.getQuantity());
 				ArtifactGoalAchiever achieverTwoStep = factoryCreator.createGoalAchieverTwoStep(itemGetBankGoalAchiever,
 						subSubGoalAchiever, false, false);
@@ -493,10 +486,6 @@ public final class ArtifactGoalFactory implements GoalFactory {
 
 	@Override
 	public GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo<ArtifactGoalAchiever> goalAchieverInfo) {
-		GoalAchiever goalAchieverIntermediate = factoryCreator.createGoalAchieverConditional(goalAchieverInfo.getGoal(),
-				() -> false, true);
-		return factoryCreator.createGoalAchieverTwoStep(
-				factoryCreator.createEquipToolGoalAchiever(goalAchieverInfo.getBotResourceSkill()),
-				goalAchieverIntermediate, true, true);
+		return factoryCreator.createGoalAchieverConditional(goalAchieverInfo.getGoal(), () -> false, true);
 	}
 }

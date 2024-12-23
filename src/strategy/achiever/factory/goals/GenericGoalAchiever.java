@@ -14,7 +14,7 @@ public final class GenericGoalAchiever implements GoalAchiever {
 	private CheckRealisableGoalAchiever checkRealisableGoalAchiever;
 	private ExecutableGoalAchiever executableGoalAchiever;
 	private boolean finish;
-	private String value;
+	private Object value;
 
 	public GenericGoalAchiever(CheckRealisableGoalAchiever checkRealisableGoalAchiever,
 			ExecutableGoalAchiever executableGoalAchiever) {
@@ -66,7 +66,7 @@ public final class GenericGoalAchiever implements GoalAchiever {
 		this.executableGoalAchiever = executableGoalAchiever;
 	}
 	
-	public final void setValue(String value) {
+	public final void setValue(Object value) {
 		this.value = value;
 	}
 	

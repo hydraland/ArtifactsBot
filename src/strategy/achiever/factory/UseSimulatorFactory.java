@@ -100,7 +100,7 @@ public abstract class UseSimulatorFactory {
 						ri.clear();
 						return resultExec;
 					});
-					genericGoalAchiever.setValue(goal.toString());
+					genericGoalAchiever.setValue(goal);
 					accumulator.reset();
 					accumulator.setMax(minTime);
 					try {
@@ -179,7 +179,7 @@ public abstract class UseSimulatorFactory {
 			ri.clear();
 			return resultExec;
 		});
-		genericGoalAchiever.setValue(Arrays.toString(artifactGA));
+		genericGoalAchiever.setValue(artifactGA);
 		return new ForceExecuteGoalAchiever(simGoalAchiever);
 	}
 
@@ -199,6 +199,6 @@ public abstract class UseSimulatorFactory {
 			ri.clear();
 			return resultExec;
 		});
-		genericGoalAchiever.setValue(Arrays.toString(simCodeFound));
+		genericGoalAchiever.setValue(simCodeFound);
 	}
 }

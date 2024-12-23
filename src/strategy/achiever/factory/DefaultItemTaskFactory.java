@@ -77,20 +77,9 @@ public class DefaultItemTaskFactory implements ItemTaskFactory {
 				goalAchieverList.add(factoryCreator.createGoalAchieverLoop(itemsGoal, total, false));
 				goalAchieverList.add(factoryCreator.createTradeGoalAchiever(taskMasterCoordinates, code, total));
 			}
-			
-			goalAchiever = processGathering(goalAchieverInfo, goalAchiever);
+
 			return goalAchiever;
 		}
 		return null;
-	}
-
-	protected final GoalAchiever processGathering(GoalAchieverInfo<ArtifactGoalAchiever> goalAchieverInfo,
-			GoalAchiever goalAchiever) {
-		if(goalAchieverInfo.isGathering()) {
-			goalAchiever = factoryCreator.createGoalAchieverTwoStep(
-					factoryCreator.createEquipToolGoalAchiever(goalAchieverInfo.getBotResourceSkill()),
-					goalAchiever, true, true);
-		}
-		return goalAchiever;
 	}
 }

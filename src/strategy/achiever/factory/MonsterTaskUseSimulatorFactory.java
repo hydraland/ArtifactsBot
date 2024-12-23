@@ -72,7 +72,7 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 					reservedItems.clear();
 					return result;
 				});
-				genericGoalAchiever.setValue(artifactGoalAchiever.toString());
+				genericGoalAchiever.setValue(artifactGoalAchiever);
 			} else if (simCodeFound.length > 1) {
 				int maxCookOrPotionTask = Math
 						.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);

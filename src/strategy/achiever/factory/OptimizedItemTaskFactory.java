@@ -55,8 +55,8 @@ public class OptimizedItemTaskFactory extends DefaultItemTaskFactory {
 
 				GoalAchiever depositNoReservedItemGoalAchiever = factoryCreator
 						.createDepositNoReservedItemGoalAchiever();
-				return factoryCreator.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever,
-						processGathering(goalAchieverInfo, goalAchieverList), true, false);
+				return factoryCreator.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever, goalAchieverList,
+						true, false);
 			}
 		}
 		return super.createTaskGoalAchiever(code, total, taskMasterCoordinates);
