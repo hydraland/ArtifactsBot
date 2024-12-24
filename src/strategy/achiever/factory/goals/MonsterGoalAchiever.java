@@ -57,10 +57,10 @@ public class MonsterGoalAchiever implements GoalAchiever {
 	@Override
 	public boolean execute(Map<String, Integer> reservedItems) {
 		try {
-			if (!monsterEquipementService.equipBestEquipement(monster, reservedItems)) {
+			if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 				return false;
 			}
-			if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
+			if (!monsterEquipementService.equipBestEquipement(monster, reservedItems)) {
 				return false;
 			}
 			if (moveService.moveTo(coordinates)) {
