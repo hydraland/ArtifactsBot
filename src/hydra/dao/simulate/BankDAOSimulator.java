@@ -7,7 +7,6 @@ import java.util.List;
 
 import hydra.dao.BankDAO;
 import hydra.model.BotBankDetail;
-import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 
@@ -27,15 +26,15 @@ public final class BankDAOSimulator implements BankDAO, Simulator<BankStruct> {
 	}
 
 	@Override
-	public boolean deposit(BotInventoryItem item) {
+	public boolean deposit(String code, int quantity) {
 		int maxSlots = bankStruct.getBankDetail().getSlots();
-		int fillSlot = bankStruct.getStock().size() + (bankStruct.getStock().containsKey(item.getCode()) ? 0 : 1);
+		int fillSlot = bankStruct.getStock().size() + (bankStruct.getStock().containsKey(code) ? 0 : 1);
 		if (fillSlot <= maxSlots
-				&& characterDAOSimulator.checkWithdrawInInventory(item.getCode(), item.getQuantity())) {
+				&& characterDAOSimulator.checkWithdrawInInventory(code, quantity)) {
 			simulatorListener.call(CLASS_NAME, "deposit", COOLDOWN, false);
-			bankStruct.getStock().merge(item.getCode(), item.getQuantity(),
+			bankStruct.getStock().merge(code, quantity,
 					(current, newVal) -> current != null ? current + newVal : newVal);
-			characterDAOSimulator.withdrawInInventory(item.getCode(), item.getQuantity());
+			characterDAOSimulator.withdrawInInventory(code, quantity);
 			return true;
 		}
 		simulatorListener.call(CLASS_NAME, "deposit", 0, true);

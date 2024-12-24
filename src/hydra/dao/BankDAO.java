@@ -8,7 +8,11 @@ import hydra.model.BotItemReader;
 
 public interface BankDAO {
 
-	boolean deposit(BotInventoryItem item);
+	default boolean deposit(BotInventoryItem item) {
+		return deposit(item.getCode(), item.getQuantity());
+	}
+	
+	boolean deposit(String code, int quantity);
 
 	boolean withdraw(BotItemReader item);
 
@@ -23,4 +27,5 @@ public interface BankDAO {
 	List<? extends BotItemReader> viewItems();
 
 	BotItemReader getItem(String code);
+
 }

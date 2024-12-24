@@ -108,7 +108,6 @@ public abstract class UseSimulatorFactory {
 								.isRealisableAfterSetRoot(simulatorManager.getCharacterDAOSimulator().getCharacter())) {
 							simGoalAchiever.clear();
 							reservedItems.clear();
-
 							if (simGoalAchiever.execute(reservedItems) && accumulator.get() < minTime) {
 								minTime = accumulator.get();
 								foundGoalCode = new String[] { artifactGoalAchiever.getItemCode() };
@@ -166,9 +165,10 @@ public abstract class UseSimulatorFactory {
 
 	protected final GoalAchiever createGoals(GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA,
 			CharacterService aCharacterService, GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
-		genericGoalAchiever.setCheckRealisableGoalAchiever(character -> Arrays.stream(artifactGA)
-				.<Boolean>map(aga -> !aCharacterService.isPossessOnSelf(aga.getItemCode()))
-				.reduce(false, (v1, v2) -> v1 || v2));
+		genericGoalAchiever.setCheckRealisableGoalAchiever(
+				character -> Arrays.stream(artifactGA).filter(aga -> aga.getGoal().isRealisable(character))
+						.<Boolean>map(aga -> !aCharacterService.isPossessOnSelf(aga.getItemCode()))
+						.reduce(false, (v1, v2) -> v1 || v2));
 		Arrays.stream(artifactGA).forEach(aga -> aGoalAverageOptimizer.optimize(aga.getGoal(), optimizeValue, 0.9f));
 		genericGoalAchiever.setExecutableGoalAchiever(ri -> {
 			boolean resultExec = Arrays.stream(artifactGA).filter(aga -> {
@@ -186,6 +186,7 @@ public abstract class UseSimulatorFactory {
 	protected final void updateGenericGoal(String[] simCodeFound, CharacterService aCharacterService,
 			GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(character -> Arrays.stream(simCodeFound)
+				.filter(code -> cookAndAlchemyGoals.get(code).isRealisable(character))
 				.<Boolean>map(code -> !aCharacterService.isPossessOnSelf(code)).reduce(false, (v1, v2) -> v1 || v2));
 		Arrays.stream(simCodeFound)
 				.forEach(code -> aGoalAverageOptimizer.optimize(cookAndAlchemyGoals.get(code), optimizeValue, 0.9f));

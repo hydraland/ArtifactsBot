@@ -20,7 +20,6 @@ import hydra.dao.util.Convertor;
 import hydra.dao.util.CooldownManager;
 import hydra.model.BotBankDetail;
 import hydra.model.BotCharacter;
-import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 import strategy.util.BankRecorder;
@@ -55,12 +54,12 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 		this.bankRecorder = bankRecorder;
 		bankDetailCache = new LimitedTimeCacheManager<>(GameConstants.MIN_COOLDOWN_IN_SECOND);
 	}
-
+	
 	@Override
-	public boolean deposit(BotInventoryItem item) {
+	public boolean deposit(String code, int quantity) {
 		cooldownManager.waitBeforeNextAction();
 		SimpleItemSchema simpleItemSchema = new SimpleItemSchema();
-		simpleItemSchema.code(item.getCode()).setQuantity(item.getQuantity());
+		simpleItemSchema.code(code).setQuantity(quantity);
 		try {
 			ApiResponse<BankItemTransactionResponseSchema> response = myCharactersApi
 					.actionDepositBankMyNameActionBankDepositPostWithHttpInfo(persoName, simpleItemSchema);
@@ -69,8 +68,8 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 				characterCache.setCharacter(
 						Convertor.convert(BotCharacter.class, response.getData().getData().getCharacter()));
 				BotItem botItem = new BotItem();
-				botItem.setCode(item.getCode());
-				botItem.setQuantity(item.getQuantity());
+				botItem.setCode(code);
+				botItem.setQuantity(quantity);
 				bankRecorder.putItem(botItem);
 				return true;
 			} else {

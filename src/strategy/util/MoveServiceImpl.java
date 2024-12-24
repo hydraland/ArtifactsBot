@@ -80,9 +80,12 @@ public class MoveServiceImpl implements MoveService {
 		BotCharacter character = characterDAO.getCharacter();
 		int x = character.getX();
 		int y = character.getY();
+		Coordinate coordinate = MoveService.searchClosestLocation(x, y, coordinates);
+		if(x == coordinate.x() && y == coordinate.y()) {
+			return true;
+		}
 		List<BotInventoryItem> teleportItems = characterService
 				.getFilterEquipementInInventory(itemService.getAllTeleportItemCode(), "");
-		Coordinate coordinate = MoveService.searchClosestLocation(x, y, coordinates);
 		int minDistance = MoveService.calculManhattanDistance(x, y, coordinate.x(), coordinate.y());
 		BotInventoryItem useItem = null;
 		for (BotInventoryItem teleportItem : teleportItems) {

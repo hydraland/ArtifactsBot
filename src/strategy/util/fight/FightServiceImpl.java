@@ -1,12 +1,14 @@
 package strategy.util.fight;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import hydra.GameConstants;
@@ -17,8 +19,10 @@ import hydra.dao.response.EquipResponse;
 import hydra.model.BotCharacter;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotEffect;
+import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemReader;
 import hydra.model.BotMonster;
 import strategy.achiever.factory.util.ItemService;
 import strategy.util.BotItemInfo;
@@ -518,92 +522,91 @@ public final class FightServiceImpl implements FightService {
 		return false;
 	}
 
+	@SuppressWarnings("unlikely-arg-type")
 	private boolean equipedConsomable(BotItemInfo[] bestEqts, String[] equipedEqt) {
 		EquipResponse response;
-		List<String> bestConsomableToEquip = new ArrayList<>();
+		List<DiffStruct<Integer>> equipedEqtDiff = new ArrayList<>();
+		List<DiffStruct<Integer>> equipedEqtSame = new ArrayList<>();
 		for (int i = 9; i <= 10; i++) {
-			if (bestEqts[i] != null) {
-				bestConsomableToEquip.add(bestEqts[i].botItemDetails().getCode());
+			equipedEqtDiff.add(new DiffStruct<>(equipedEqt[i], i));
+		}
+
+		List<DiffStruct<ItemOrigin>> bestEqtDiff = new ArrayList<>();
+		for (int i = 9; i <= 10; i++) {
+			ItemOrigin origin = bestEqts[i] == null ? ItemOrigin.ON_SELF : bestEqts[i].origin();
+			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
+			SearchDiffStruct searchStruct = new SearchDiffStruct(code);
+			if (equipedEqtDiff.contains(searchStruct)) {
+				equipedEqtSame.add(equipedEqtDiff.remove(equipedEqtDiff.indexOf(searchStruct)));
+			} else {
+				bestEqtDiff.add(new DiffStruct<>(code, origin));
 			}
 		}
-		if (!bestConsomableToEquip.isEmpty()) {
-			List<String> equipedConsomable = new ArrayList<>();
-			for (int i = 9; i <= 10; i++) {
-				if (!"".equals(equipedEqt[i])) {
-					equipedConsomable.add(equipedEqt[i]);
+
+		for (DiffStruct<Integer> equipedStruct : equipedEqtSame) {
+			int equipedQuantity = characterService.getUtilitySlotQuantity(SLOTS[equipedStruct.value()]);
+			if (equipedQuantity < GameConstants.MAX_ITEM_IN_SLOT && equipedQuantity > 0) {
+				Optional<BotInventoryItem> potionInInventory = characterService
+						.getFirstEquipementInInventory(Arrays.asList(equipedStruct.code()));
+				if (potionInInventory.isPresent()) {
+					response = characterDao.equip(equipedStruct.code(), SLOTS[equipedStruct.value()], Math.min(
+							GameConstants.MAX_ITEM_IN_SLOT - equipedQuantity, potionInInventory.get().getQuantity()));
+					if (!response.ok()) {
+						return false;
+					}
 				}
 			}
+		}
 
-			int firstInsertPlace = 9;
-			for (int i = 9; i <= 10; i++) {
-				if (bestEqts[i] != null) {
-					String bestEqtCode = bestEqts[i].botItemDetails().getCode();
-					if (equipedConsomable.contains(bestEqtCode)) {
-						// search equiped slot
-						int indexEquiped = bestEqtCode.equals(equipedEqt[9]) ? 9 : 10;
-						BotItemInfo itemInfo = new BotItemInfo(bestEqts[i].botItemDetails(),
-								bestEqts[i].quantity() - characterService.getUtilitySlotQuantity(SLOTS[indexEquiped]),
-								bestEqts[i].origin());
-						int quantityToEquip = characterService.getQuantityEquipableForUtility(itemInfo,
-								SLOTS[indexEquiped]);
-						if (quantityToEquip > 0) {
-							response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[indexEquiped],
-									quantityToEquip);
-							if (!response.ok()) {
-								return false;
-							}
-						}
-					} else {
-						// search insert place
-						boolean findInsertPlace = false;
-						for (int j = firstInsertPlace; j <= 10; j++) {
-							int consumableSlotQuantity = characterService
-									.getUtilitySlotQuantity(SLOTS[firstInsertPlace]);
-							if (!bestConsomableToEquip.contains(equipedEqt[j]) && ("".equals(equipedEqt[j])
-									|| consumableSlotQuantity < characterService.getFreeInventorySpace())) {
-								firstInsertPlace = j;
-								findInsertPlace = true;
-								break;
-							}
-						}
-						if (!findInsertPlace) {
-							// Pas de place libre trouvé tant pis on considère que c'est OK
-							return true;
-						}
-						int quantityToEquip = characterService.getQuantityEquipableForUtility(bestEqts[i],
-								SLOTS[firstInsertPlace]);
-						if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
-							BotItem botItem = new BotItem();
-							botItem.setCode(bestEqts[i].botItemDetails().getCode());
-							botItem.setQuantity(Math.min(quantityToEquip, characterService.getFreeInventorySpace()));
-							if (botItem.getQuantity() > 0 && !bankDao.withdraw(botItem)) {
-								return false;
-							}
-						}
-						if ("".equals(equipedEqt[firstInsertPlace])) {
-							response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace],
-									quantityToEquip);
-							if (!response.ok()) {
-								return false;
-							}
-						} else {
-							int consumableSlotQuantity = characterService
-									.getUtilitySlotQuantity(SLOTS[firstInsertPlace]);
-							if (consumableSlotQuantity > characterService.getFreeInventorySpace()) {
-								// Pas assez d'espace libre
-								return true;
-							}
-							response = characterDao.unequip(SLOTS[firstInsertPlace], consumableSlotQuantity);
-							if (!response.ok()) {
-								return false;
-							}
-							response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[firstInsertPlace],
-									quantityToEquip);
-							if (!response.ok()) {
-								return false;
-							}
-						}
-						equipedEqt[firstInsertPlace] = bestEqtCode; // Maj des équipements équipés
+		for (DiffStruct<Integer> equipedStruct : equipedEqtDiff) {
+			DiffStruct<ItemOrigin> bestStruct = bestEqtDiff.removeFirst();
+			boolean unequipOk = false;
+			int freeInventorySpace = characterService.getFreeInventorySpace();
+			int equipedQuantity = characterService.getUtilitySlotQuantity(SLOTS[equipedStruct.value()]);
+			if (equipedQuantity == 0) {
+				unequipOk = true;
+			} else if (equipedQuantity <= freeInventorySpace) {
+				response = characterDao.unequip(SLOTS[equipedStruct.value()], equipedQuantity);
+				if (!response.ok() || !moveService.moveToBank()
+						|| !bankDao.deposit(equipedStruct.code(), equipedQuantity)) {
+					return false;
+				}
+				freeInventorySpace -= equipedQuantity;
+				unequipOk = true;
+			} else if (freeInventorySpace > 0) {
+				if (!moveService.moveToBank()) {
+					return false;
+				}
+				while (equipedQuantity > 0) {
+					int depositQuantity = equipedQuantity > freeInventorySpace ? freeInventorySpace : equipedQuantity;
+					response = characterDao.unequip(SLOTS[equipedStruct.value()], depositQuantity);
+					if (!response.ok() || !bankDao.deposit(equipedStruct.code(), depositQuantity)) {
+						return false;
+					}
+					equipedQuantity -= depositQuantity;
+				}
+				unequipOk = true;
+			}
+
+			if (unequipOk && !bestStruct.code().equals("")) {
+				if (bestStruct.value().equals(ItemOrigin.BANK)) {
+					// Ici on est forcément sur la map de la bank
+					BotItemReader itemInBank = bankDao.getItem(bestStruct.code());
+					BotItem botItem = new BotItem();
+					botItem.setCode(bestStruct.code());
+					botItem.setQuantity(Math.min(GameConstants.MAX_ITEM_IN_SLOT,
+							Math.min(freeInventorySpace, itemInBank.getQuantity())));
+					if (botItem.getQuantity() > 0 && !bankDao.withdraw(botItem)) {
+						return false;
+					}
+				}
+				Optional<BotInventoryItem> potionInInventory = characterService
+						.getFirstEquipementInInventory(Arrays.asList(bestStruct.code()));
+				if (potionInInventory.isPresent()) {
+					response = characterDao.equip(bestStruct.code(), SLOTS[equipedStruct.value()],
+							Math.min(GameConstants.MAX_ITEM_IN_SLOT, potionInInventory.get().getQuantity()));
+					if (!response.ok()) {
+						return false;
 					}
 				}
 			}
@@ -617,7 +620,7 @@ public final class FightServiceImpl implements FightService {
 		EquipResponse response;
 		List<DiffStruct<Integer>> equipedEqtDiff = new ArrayList<>();
 		for (int i = minRange; i < maxExcludeRange; i++) {
-			equipedEqtDiff.add(new DiffStruct<Integer>(equipedEqt[i], i));
+			equipedEqtDiff.add(new DiffStruct<>(equipedEqt[i], i));
 		}
 
 		List<DiffStruct<ItemOrigin>> bestEqtDiff = new ArrayList<>();
@@ -625,7 +628,7 @@ public final class FightServiceImpl implements FightService {
 			ItemOrigin origin = bestEqts[i] == null ? ItemOrigin.ON_SELF : bestEqts[i].origin();
 			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
 			if (ItemOrigin.BANK.equals(origin) || !equipedEqtDiff.remove(new SearchDiffStruct(code))) {
-				bestEqtDiff.add(new DiffStruct<ItemOrigin>(code, origin));
+				bestEqtDiff.add(new DiffStruct<>(code, origin));
 			}
 		}
 

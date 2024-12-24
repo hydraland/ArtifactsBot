@@ -60,12 +60,11 @@ public class TestSimulation {
 		
 		long begin = System.currentTimeMillis();
 		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
-		
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 
 		simulateDropItem(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
-		
 		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
+		
 		long end = System.currentTimeMillis();
 		System.out.println("Duree:" + (end - begin));
 	}
