@@ -1,5 +1,6 @@
 package strategy.util.fight.factory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import hydra.model.BotCharacter;
 import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 import strategy.SumAccumulator;
+import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 import strategy.util.fight.RestoreStruct;
@@ -42,9 +44,9 @@ public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 		if (hpToHealAfterInventoryFood <= 0) {
 			return true;
 		}
-		hpToHeal = moveInBankIfMoreFast(hpToHeal, reservedItems);
+		int hpToHealAfterBankFood = moveInBankIfMoreFast(hpToHealAfterInventoryFood, reservedItems);
 
-		if (hpToHeal > 0) {
+		if (hpToHealAfterBankFood > 0) {
 			return characterDao.rest().ok();
 		}
 		return true;
@@ -53,7 +55,8 @@ public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 	private int moveInBankIfMoreFast(int hpToHeal, Map<String, Integer> reservedItems) {
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
-		simulatorManager.setValue(characterDao.getCharacter(), bankDAO.viewItems());
+		BotCharacter character = characterDao.getCharacter();
+		simulatorManager.setValue(character, bankDAO.viewItems());
 		accumulator.reset();
 		accumulator.setMax(Integer.MAX_VALUE);
 		simulatorManager.getCharacterDAOSimulator().rest();
@@ -76,26 +79,31 @@ public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 
 	private static int useRestoreBankItem(int hpToHeal, Map<String, Integer> reservedItems, MoveService moveService,
 			BankDAO bankDAO, CharacterDAO characterDAO, ItemDAO itemDAO) {
-		List<RestoreStruct> healItems = getHealItems(reservedItems, characterDAO.getCharacter().getLevel(), itemDAO,
-				bankDAO.viewItems());
-		for (RestoreStruct healItem : healItems) {
-			int singleHeal = getHealValue(healItem);
-			int quantity;
-			if (singleHeal * healItem.quantity() <= hpToHeal) {
-				quantity = healItem.quantity();
-			} else {
-				quantity = hpToHeal / singleHeal + 1;
+		BotCharacter character = characterDAO.getCharacter();
+		Coordinate characterCoordinate = new Coordinate(character.getX(), character.getY());
+		List<RestoreStruct> healItems = getHealItems(reservedItems, character.getLevel(), itemDAO, bankDAO.viewItems());
+		try {
+			for (RestoreStruct healItem : healItems) {
+				int singleHeal = getHealValue(healItem);
+				int quantity;
+				if (singleHeal * healItem.quantity() <= hpToHeal) {
+					quantity = healItem.quantity();
+				} else {
+					quantity = hpToHeal / singleHeal + 1;
+				}
+				if (!moveService.moveToBank() || !bankDAO.withdraw(restoreStructToBotItem(healItem, quantity))
+						|| !characterDAO.use(healItem.itemDetails().getCode(), quantity).ok()) {
+					return hpToHeal;
+				}
+				hpToHeal -= singleHeal * quantity;
+				if (hpToHeal <= 0) {
+					return 0;
+				}
 			}
-			if (!moveService.moveToBank() || !bankDAO.withdraw(restoreStructToBotItem(healItem, quantity))
-					|| !characterDAO.use(healItem.itemDetails().getCode(), quantity).ok()) {
-				return hpToHeal;
-			}
-			hpToHeal -= singleHeal * quantity;
-			if (hpToHeal <= 0) {
-				return 0;
-			}
+			return hpToHeal;
+		} finally {
+			moveService.moveTo(Arrays.asList(characterCoordinate));
 		}
-		return hpToHeal;
 	}
 
 	private static BotItemReader restoreStructToBotItem(RestoreStruct itemStruct, int quantity) {
