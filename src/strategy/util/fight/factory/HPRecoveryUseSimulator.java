@@ -76,10 +76,8 @@ public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 
 	private static int useRestoreBankItem(int hpToHeal, Map<String, Integer> reservedItems, MoveService moveService,
 			BankDAO bankDAO, CharacterDAO characterDAO, ItemDAO itemDAO) {
-		moveService.moveToBank();
 		List<RestoreStruct> healItems = getHealItems(reservedItems, characterDAO.getCharacter().getLevel(), itemDAO,
 				bankDAO.viewItems());
-
 		for (RestoreStruct healItem : healItems) {
 			int singleHeal = getHealValue(healItem);
 			int quantity;
@@ -88,8 +86,8 @@ public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 			} else {
 				quantity = hpToHeal / singleHeal + 1;
 			}
-			if (!bankDAO.withdraw(restoreStructToBotItem(healItem, quantity))
-					&& !characterDAO.use(healItem.itemDetails().getCode(), quantity).ok()) {
+			if (!moveService.moveToBank() || !bankDAO.withdraw(restoreStructToBotItem(healItem, quantity))
+					|| !characterDAO.use(healItem.itemDetails().getCode(), quantity).ok()) {
 				return hpToHeal;
 			}
 			hpToHeal -= singleHeal * quantity;
