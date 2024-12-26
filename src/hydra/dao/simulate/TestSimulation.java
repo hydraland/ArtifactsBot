@@ -189,14 +189,14 @@ public class TestSimulation {
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
-		BotItem potion1 = new BotItem();
+		/*BotItem potion1 = new BotItem();
 		potion1.setCode("small_health_potion");
 		potion1.setQuantity(100);
 		viewItems.add(potion1);
 		BotItem potion2 = new BotItem();
 		potion2.setCode("minor_health_potion");
 		potion2.setQuantity(100);
-		viewItems.add(potion2);
+		viewItems.add(potion2);*/
 		for (MonsterGoalAchiever simGoal : monsterGoals) {
 			simulatorManager.setValue(character, viewItems);
 			accumulator.reset();

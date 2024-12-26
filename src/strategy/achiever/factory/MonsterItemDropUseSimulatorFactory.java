@@ -49,7 +49,7 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 	public GoalAchiever createItemGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> dropGoalInfo) {
 		BotCharacter botCharacter = characterDAO.getCharacter();
 		List<GoalAchieverInfo<ArtifactGoalAchiever>> testGoals = initSimulation(dropGoalInfo, botCharacter);
-		String[] simCodeFound = simulate(testGoals, botCharacter, bankDAO.viewItems());
+		String[] simCodeFound = simulate(testGoals, botCharacter, bankDAO.viewItems(), dropGoalInfo.getMonsterCode());
 		GoalAchiever subGoal = dropGoalInfo.getGoal();
 		if (simCodeFound.length == 1) {
 			subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, subGoal, false, true);

@@ -25,6 +25,7 @@ import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.Bornes;
 import strategy.util.CharacterService;
+import strategy.util.OptimizeResult;
 import strategy.util.StrategySkillUtils;
 import util.Combinator;
 
@@ -70,7 +71,7 @@ public abstract class UseSimulatorFactory {
 	}
 
 	protected final String[] simulate(List<GoalAchieverInfo<ArtifactGoalAchiever>> testGoals, BotCharacter botCharacter,
-			List<? extends BotItemReader> botItems) {
+			List<? extends BotItemReader> botItems, String monsterCode) {
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
@@ -131,7 +132,11 @@ public abstract class UseSimulatorFactory {
 		combinator.set(0, cookingGoal);
 		combinator.set(1, potionGoal);
 		combinator.set(2, potionGoal2);
-
+		OptimizeResult optimizeEquipementsPossesed = simulatorManager.getFightService().optimizeEquipementsPossesed(
+				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), new HashMap<>());
+		if (optimizeEquipementsPossesed.fightDetails().eval() < 0.9) {
+			return foundGoalCode;
+		}
 		for (GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA : combinator) {
 			if (artifactGA[1] == artifactGA[2]) {
 				continue;

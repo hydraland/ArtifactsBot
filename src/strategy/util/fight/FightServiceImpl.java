@@ -49,6 +49,7 @@ public final class FightServiceImpl implements FightService {
 	private final CacheManager<String, OptimizeResult> optimizeCacheManager;
 	private final ItemService itemService;
 	private final HashMap<String, UtilityStruct> useUtilityMap;
+	private final Set<String> oddItems;
 
 	public FightServiceImpl(CharacterDAO characterDao, BankDAO bankDao, ItemDAO itemDAO,
 			CharacterService characterService, MoveService moveService, ItemService itemService) {
@@ -58,8 +59,9 @@ public final class FightServiceImpl implements FightService {
 		this.characterService = characterService;
 		this.moveService = moveService;
 		this.itemService = itemService;
-		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600*168);
+		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 168);
 		this.useUtilityMap = new HashMap<>();
+		this.oddItems = new HashSet<>();
 	}
 
 	@Override
@@ -153,15 +155,21 @@ public final class FightServiceImpl implements FightService {
 		if (optimizeCacheManager.contains(key)) {
 			return optimizeCacheManager.get(key);
 		}
-		List<BotItemInfo> weaponCharacter = equipableCharacterEquipement.get(BotCharacterInventorySlot.WEAPON);
-		List<BotItemInfo> bodyArmorCharacter = equipableCharacterEquipement.get(BotCharacterInventorySlot.BODY_ARMOR);
-		List<BotItemInfo> bootsCharacter = equipableCharacterEquipement.get(BotCharacterInventorySlot.BOOTS);
-		List<BotItemInfo> helmetCharacter = equipableCharacterEquipement.get(BotCharacterInventorySlot.HELMET);
-		List<BotItemInfo> shieldCharacter = equipableCharacterEquipement.get(BotCharacterInventorySlot.SHIELD);
-		List<BotItemInfo> legArmorCharacter = equipableCharacterEquipement.get(BotCharacterInventorySlot.LEG_ARMOR);
-		List<BotItemInfo> amulerCharacter = equipableCharacterEquipement.get(BotCharacterInventorySlot.AMULET);
-		List<BotItemInfo> ring1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.RING1);
-		List<BotItemInfo> ring2Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.RING2);
+		List<BotItemInfo> weaponCharacter = filterOdd(
+				equipableCharacterEquipement.get(BotCharacterInventorySlot.WEAPON));
+		List<BotItemInfo> bodyArmorCharacter = filterOdd(
+				equipableCharacterEquipement.get(BotCharacterInventorySlot.BODY_ARMOR));
+		List<BotItemInfo> bootsCharacter = filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.BOOTS));
+		List<BotItemInfo> helmetCharacter = filterOdd(
+				equipableCharacterEquipement.get(BotCharacterInventorySlot.HELMET));
+		List<BotItemInfo> shieldCharacter = filterOdd(
+				equipableCharacterEquipement.get(BotCharacterInventorySlot.SHIELD));
+		List<BotItemInfo> legArmorCharacter = filterOdd(
+				equipableCharacterEquipement.get(BotCharacterInventorySlot.LEG_ARMOR));
+		List<BotItemInfo> amulerCharacter = filterOdd(
+				equipableCharacterEquipement.get(BotCharacterInventorySlot.AMULET));
+		List<BotItemInfo> ring1Character = filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING1));
+		List<BotItemInfo> ring2Character = filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING2));
 		List<BotItemInfo> utility1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY1);
 		List<BotItemInfo> utility2Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY2);
 		List<BotItemInfo> artifact1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT1);
@@ -232,6 +240,42 @@ public final class FightServiceImpl implements FightService {
 		useUtilityMap.put(monster.getCode(),
 				new UtilityStruct(maxFightDetails.eval(), bestEquipements[9] != null || bestEquipements[10] != null));
 		return result;
+	}
+
+	private List<BotItemInfo> filterOdd(List<BotItemInfo> items) {
+		List<BotItemInfo> filteredItem = items.stream().filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList();
+		Map<String, Map<Integer, Integer>> itemsMap = new HashMap<>();
+		for (BotItemInfo item : filteredItem) {
+			Map<Integer, Integer> effectMap = resetEffectMap();
+			updateEffectInMap(effectMap, item.botItemDetails(), 1);
+			itemsMap.put(item.botItemDetails().getCode(), effectMap);
+		}
+		boolean oddItemAdded = false;
+		for (BotItemInfo item : filteredItem) {
+			String itemCode = item.botItemDetails().getCode();
+			Map<Integer, Integer> effectMap = itemsMap.get(itemCode);
+			for (Entry<String, Map<Integer, Integer>> entry : itemsMap.entrySet()) {
+				if (!entry.getKey().equals(itemCode) && upperEffects(effectMap, entry.getValue())) {
+					oddItems.add(itemCode);
+					oddItemAdded = true;
+					break;
+				}
+			}
+		}
+		return oddItemAdded ? filteredItem.stream().filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList() : filteredItem;
+	}
+
+	private boolean upperEffects(Map<Integer, Integer> effectMap, Map<Integer, Integer> effectMapToCompare) {
+		if (effectMap.size() != effectMapToCompare.size()) {
+			return false;
+		}
+		for (Entry<Integer, Integer> entry : effectMap.entrySet()) {
+			Integer effect = effectMapToCompare.get(entry.getKey());
+			if (effect == null || entry.getValue() > effect) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private void addNullValueIfAbsent(List<BotItemInfo> botItemList) {

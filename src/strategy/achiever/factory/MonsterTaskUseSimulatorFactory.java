@@ -57,7 +57,7 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 			BotCharacter botCharacter = characterDAO.getCharacter();
 			List<GoalAchieverInfo<ArtifactGoalAchiever>> testGoals = initSimulation(code, total, botCharacter);
 
-			String[] simCodeFound = simulate(testGoals, botCharacter, bankDAO.viewItems());
+			String[] simCodeFound = simulate(testGoals, botCharacter, bankDAO.viewItems(), code);
 			GoalAchiever subGoal = monsterGoals.get(code);
 			if (simCodeFound.length == 1) {
 				subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever, subGoal, false, true);
