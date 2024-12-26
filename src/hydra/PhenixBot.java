@@ -88,11 +88,11 @@ public final class PhenixBot extends Bot {
 		MonsterTaskFactory monsterTaskFactory = new MonsterTaskUseSimulatorFactory(
 				goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.ALL).stream()
 						.collect(Collectors.toMap(MonsterGoalAchiever::getMonsterCode, Function.identity())),
-				cookAndAlchemyGoals, bankDao, characterDao, goalFactoryCreator, characterService, simulator,
+				cookAndAlchemyGoals, bankDao, characterDao, itemDao, goalFactoryCreator, characterService, simulator,
 				simulatedFactory, TASK_MONSTER_COOK_OR_POTION_CREATE_PER_CENT);
 		goalParameter.setMonsterTaskFactory(monsterTaskFactory);
 		MonsterItemDropFactory monsterItemDropFactory = new MonsterItemDropUseSimulatorFactory(cookAndAlchemyGoals,
-				bankDao, characterDao, goalFactoryCreator, characterService, simulator, simulatedFactory,
+				bankDao, characterDao, itemDao, goalFactoryCreator, characterService, simulator, simulatedFactory,
 				TASK_MONSTER_COOK_OR_POTION_CREATE_PER_CENT);
 		goalParameter.setMonsterItemDropFactory(monsterItemDropFactory);
 		HPRecoveryFactory hpRecoveryFactory = new HPRecoveryUseSimulatorFactory(characterDao, itemDao, bankDao,

@@ -59,7 +59,7 @@ public final class FightServiceImpl implements FightService {
 		this.characterService = characterService;
 		this.moveService = moveService;
 		this.itemService = itemService;
-		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 168);
+		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 48);
 		this.useUtilityMap = new HashMap<>();
 		this.oddItems = new HashSet<>();
 	}
@@ -70,7 +70,7 @@ public final class FightServiceImpl implements FightService {
 				|| useUtilityMap.get(monster.getCode()).utilityUsed();
 		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = characterService
 				.getEquipableCharacterEquipement(reservedItems, useUtility);
-		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility);
+		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility, false);
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public final class FightServiceImpl implements FightService {
 				|| useUtilityMap.get(monster.getCode()).utilityUsed();
 		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(
 				reservedItems, useUtility);
-		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility);
+		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility, false);
 	}
 
 	@Override
@@ -90,7 +90,7 @@ public final class FightServiceImpl implements FightService {
 		Map<String, OptimizeResult> result = new HashMap<>();
 		for (BotMonster monster : monsters) {
 			result.computeIfAbsent(monster.getCode(),
-					c -> optimizeEquipements(monster, equipableCharacterEquipement, true));
+					c -> optimizeEquipements(monster, equipableCharacterEquipement, true, false));
 		}
 		return result;
 	}
@@ -147,7 +147,7 @@ public final class FightServiceImpl implements FightService {
 
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility) {
+			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility, boolean ignoreEquiped) {
 		// TODO Voir si tenir compte du vrai HP du perso (Peut être cela ne sert pas à
 		// grand chose)??
 		int characterHp = characterService.getCharacterHPWihtoutEquipment();
@@ -168,8 +168,8 @@ public final class FightServiceImpl implements FightService {
 				equipableCharacterEquipement.get(BotCharacterInventorySlot.LEG_ARMOR));
 		List<BotItemInfo> amulerCharacter = filterOdd(
 				equipableCharacterEquipement.get(BotCharacterInventorySlot.AMULET));
-		List<BotItemInfo> ring1Character = filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING1));
-		List<BotItemInfo> ring2Character = filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING2));
+		List<BotItemInfo> ring1Character = new ArrayList<>(filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING1)));
+		List<BotItemInfo> ring2Character = new ArrayList<>(filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING2)));
 		List<BotItemInfo> utility1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY1);
 		List<BotItemInfo> utility2Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY2);
 		List<BotItemInfo> artifact1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT1);
@@ -204,8 +204,8 @@ public final class FightServiceImpl implements FightService {
 		combinator.set(12, artifact2Character);
 		combinator.set(13, artifact3Character);
 
-		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter());
-		FightDetails maxFightDetails = initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
+		BotItemInfo[] bestEquipements = ignoreEquiped ? null : initBestEquipments(characterDao.getCharacter());
+		FightDetails maxFightDetails = ignoreEquiped ? new FightDetails(0, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, 0, 0) : initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
 				characterHp);
 		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
@@ -232,7 +232,7 @@ public final class FightServiceImpl implements FightService {
 			bestEquipements = new BotItemInfo[14];
 
 			// Evaluation
-			maxFightDetails = new FightDetails(0, 1, 0, 0, 0);
+			maxFightDetails = new FightDetails(0, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, 0, 0);
 		}
 
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);

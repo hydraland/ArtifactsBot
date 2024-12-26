@@ -17,7 +17,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
-import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 import strategy.Strategy;
 import strategy.SumAccumulator;
@@ -57,14 +56,14 @@ public class TestSimulation {
 		goalParameter.setHPRecoveryFactory(new DefaultHPRecoveryFactory(simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getCharacterServiceSimulator()));
 		List<BotItemReader> viewItems = new ArrayList<>(simulatorManager.getBankDAOSimulator().viewItems());
-		
+
 		long begin = System.currentTimeMillis();
 		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 
 		simulateDropItem(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
-		
+
 		long end = System.currentTimeMillis();
 		System.out.println("Duree:" + (end - begin));
 	}
@@ -101,10 +100,12 @@ public class TestSimulation {
 								|| BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
 						.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal)),
 				simulatorManager.getBankDAOSimulator(), simulatorManager.getCharacterDAOSimulator(),
-				simulatorManager.getGoalFactoryCreator(), simulatorManager.getCharacterServiceSimulator(),
-				secondSimulatorManager, secondSimulatedGoalFactory, 0.3f);
+				simulatorManager.getItemDAOSimulator(), simulatorManager.getGoalFactoryCreator(),
+				simulatorManager.getCharacterServiceSimulator(), secondSimulatorManager, secondSimulatedGoalFactory,
+				0.3f);
 		goalParameter.setMonsterItemDropFactory(factoryMonster);
-		//goalParameter.setMonsterItemDropFactory(new DefaultMonsterItemDropFactory(simulatorManager.getGoalFactoryCreator()));
+		// goalParameter.setMonsterItemDropFactory(new
+		// DefaultMonsterItemDropFactory(simulatorManager.getGoalFactoryCreator()));
 
 		List<GoalAchieverInfo<MonsterItemDropGoalAchiever>> dropItemGoal = simulatedGoalFactory.createDropItemGoal();
 		SumAccumulator accumulator = new SumAccumulator();
@@ -163,10 +164,11 @@ public class TestSimulation {
 								|| BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
 						.collect(Collectors.toMap(GoalAchieverInfo::getItemCode, GoalAchieverInfo::getGoal)),
 				simulatorManager.getBankDAOSimulator(), simulatorManager.getCharacterDAOSimulator(),
-				simulatorManager.getGoalFactoryCreator(), simulatorManager.getCharacterServiceSimulator(),
-				secondSimulatorManager, secondSimulatedGoalFactory, 0.3f);
+				simulatorManager.getItemDAOSimulator(), simulatorManager.getGoalFactoryCreator(),
+				simulatorManager.getCharacterServiceSimulator(), secondSimulatorManager, secondSimulatedGoalFactory,
+				0.3f);
 
-		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("pig", 100);
+		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("cyclops", 100);
 		simulatorManager.setValue(character, viewItems);
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener().setInnerListener((className, methodName, cooldown, error) -> {
@@ -189,14 +191,12 @@ public class TestSimulation {
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
-		/*BotItem potion1 = new BotItem();
-		potion1.setCode("small_health_potion");
-		potion1.setQuantity(100);
-		viewItems.add(potion1);
-		BotItem potion2 = new BotItem();
-		potion2.setCode("minor_health_potion");
-		potion2.setQuantity(100);
-		viewItems.add(potion2);*/
+		/*
+		 * BotItem potion1 = new BotItem(); potion1.setCode("small_health_potion");
+		 * potion1.setQuantity(100); viewItems.add(potion1); BotItem potion2 = new
+		 * BotItem(); potion2.setCode("minor_health_potion"); potion2.setQuantity(100);
+		 * viewItems.add(potion2);
+		 */
 		for (MonsterGoalAchiever simGoal : monsterGoals) {
 			simulatorManager.setValue(character, viewItems);
 			accumulator.reset();
@@ -220,7 +220,6 @@ public class TestSimulation {
 		List<GoalAchieverInfo<ArtifactGoalAchiever>> allSimulateGoals = Strategy.filterTaskGoals(itemSimulatedGoals,
 				simulatorManager.getCharacterServiceSimulator(), simulatorManager.getBankDAOSimulator());
 
-		
 		BotCraftSkill craftSkill = BotCraftSkill.GEARCRAFTING;
 		testStrategy(simulatorManager, character, viewItems, simulatedGoalFactory, allSimulateGoals, craftSkill);
 		craftSkill = BotCraftSkill.WEAPONCRAFTING;

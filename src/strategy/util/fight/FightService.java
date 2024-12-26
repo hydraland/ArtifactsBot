@@ -15,7 +15,7 @@ public interface FightService {
 	boolean equipEquipements(BotItemInfo[] bestEqt);
 
 	OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility);
+			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility, boolean ignoreEquiped);
 
 	OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems);
 

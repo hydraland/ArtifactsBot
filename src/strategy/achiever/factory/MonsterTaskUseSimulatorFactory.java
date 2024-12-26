@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
+import hydra.dao.ItemDAO;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.model.BotCharacter;
 import strategy.achiever.GoalAchiever;
@@ -35,9 +36,10 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 
 	public MonsterTaskUseSimulatorFactory(Map<String, MonsterGoalAchiever> monsterGoals,
 			Map<String, ArtifactGoalAchiever> cookAndAlchemyGoals, BankDAO bankDAO, CharacterDAO characterDAO,
-			GoalFactoryCreator factoryCreator, CharacterService characterService, SimulatorManager simulatorManager,
-			GoalFactory simulatedGoalFactory, float maxCookOrPotionTaskPercent) {
-		super(simulatorManager, factoryCreator, simulatedGoalFactory, maxCookOrPotionTaskPercent, cookAndAlchemyGoals);
+			ItemDAO itemDAO, GoalFactoryCreator factoryCreator, CharacterService characterService,
+			SimulatorManager simulatorManager, GoalFactory simulatedGoalFactory, float maxCookOrPotionTaskPercent) {
+		super(simulatorManager, factoryCreator, simulatedGoalFactory, maxCookOrPotionTaskPercent, cookAndAlchemyGoals,
+				itemDAO);
 		this.factoryCreator = factoryCreator;
 		this.goalAverageOptimizer = new GoalAverageOptimizerImpl(characterDAO);
 		this.maxCookOrPotionTaskPercent = maxCookOrPotionTaskPercent;
@@ -89,15 +91,17 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 		return null;
 	}
 
-	private List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(String code, int total, BotCharacter botCharacter) {
+	private List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(String code, int total,
+			BotCharacter botCharacter) {
 		GoalFactoryCreator simulatorFactoryCreator = simulatorManager.getGoalFactoryCreator();
 		GoalAchiever simDepositNoReservedItemGoalAchiever = simulatorFactoryCreator
 				.createDepositNoReservedItemGoalAchiever();
 		GoalAchiever goalAchieverTwoStep = simulatorFactoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
 				simulatedmonstersGoals.get(code), false, true);
-		GoalAchiever goalAchiever = simulatorFactoryCreator.createGoalAchieverTwoStep(simDepositNoReservedItemGoalAchiever,
-				goalAchieverTwoStep, false, true);
-		simGoalAchiever = factoryCreator.createGoalAchieverLoop(goalAchiever, total, false);
+		GoalAchiever goalAchiever = simulatorFactoryCreator
+				.createGoalAchieverTwoStep(simDepositNoReservedItemGoalAchiever, goalAchieverTwoStep, false, true);
+		simGoalAchiever = factoryCreator.createGoalAchieverLoop(goalAchiever,
+				Math.min(total, Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems())), false);
 		return initSimulation(botCharacter);
 	}
 

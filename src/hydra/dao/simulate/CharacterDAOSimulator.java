@@ -143,12 +143,13 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		String monsterCode = searchBoxMonster.get().getContent().getCode();
 		simulatorListener.startInnerCall();
 		BotMonster monster = monsterDAO.getMonster(monsterCode);
-		//On prend comme hypothèse que les HP du perso sont full, ce qui est théoriquement le cas
+		// On prend comme hypothèse que les HP du perso sont full, ce qui est
+		// théoriquement le cas
 		FightDetails calculateFightResult = fightService.calculateFightResult(monster);
 		simulatorListener.stopInnerCall();
 		BotFight botFight = new BotFight();
 		botFight.setTurns((int) calculateFightResult.nbTurn());
-		botFight.setResult(calculateFightResult.eval() > 1 ? "win" : "loss");
+		botFight.setResult(calculateFightResult.eval() >= 1 ? "win" : "loss");
 		if (botFight.isWin()) {
 			List<BotDropReceived> drops = generateDrop(monster.getDrops());
 			save(false);
@@ -201,10 +202,10 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 			int quantity = 0;
 			if (effectRestore.isPresent()) {
 				quantity = Math.min(utilityQuantity, calculateFightResult.restoreTurn());
-			} else if(effectTeleport.isEmpty()) {
+			} else if (effectTeleport.isEmpty()) {
 				quantity = 1;
 			}
-			if(quantity > 0) {
+			if (quantity > 0) {
 				setSlotValue(slot, CharacterService.getSlotValue(botCharacter, slot), quantity, x -> -x);
 			}
 		}

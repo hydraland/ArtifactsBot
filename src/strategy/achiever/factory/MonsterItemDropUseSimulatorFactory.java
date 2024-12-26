@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
+import hydra.dao.ItemDAO;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.model.BotCharacter;
 import strategy.achiever.GoalAchiever;
@@ -20,7 +21,6 @@ import util.BinomialProbability;
 
 public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory implements MonsterItemDropFactory {
 	private static final int MAX_SIMULATION_TIME_IN_SECOND = 172800;
-	private static final int MAX_SIMULATION_LOOP = 100;
 	private final BankDAO bankDAO;
 	private final CharacterService characterService;
 	private final CharacterDAO characterDAO;
@@ -31,9 +31,11 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 	private final Map<String, ArtifactGoalAchiever> simulatedDropItemGoals;
 
 	public MonsterItemDropUseSimulatorFactory(Map<String, ArtifactGoalAchiever> cookAndAlchemyGoals, BankDAO bankDAO,
-			CharacterDAO characterDAO, GoalFactoryCreator factoryCreator, CharacterService characterService,
-			SimulatorManager simulatorManager, GoalFactory simulatedGoalFactory, float maxCookOrPotionTaskPercent) {
-		super(simulatorManager, factoryCreator, simulatedGoalFactory, maxCookOrPotionTaskPercent, cookAndAlchemyGoals);
+			CharacterDAO characterDAO, ItemDAO itemDAO, GoalFactoryCreator factoryCreator,
+			CharacterService characterService, SimulatorManager simulatorManager, GoalFactory simulatedGoalFactory,
+			float maxCookOrPotionTaskPercent) {
+		super(simulatorManager, factoryCreator, simulatedGoalFactory, maxCookOrPotionTaskPercent, cookAndAlchemyGoals,
+				itemDAO);
 		this.factoryCreator = factoryCreator;
 		this.goalAverageOptimizer = new GoalAverageOptimizerImpl(characterDAO);
 		this.maxCookOrPotionTaskPercent = maxCookOrPotionTaskPercent;
@@ -74,21 +76,23 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 		return factoryCreator.createGoalAchieverLoop(subGoal, 1, false);
 	}
 
-	private List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(GoalAchieverInfo<ArtifactGoalAchiever> dropGoalInfo, BotCharacter botCharacter) {
+	private List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(
+			GoalAchieverInfo<ArtifactGoalAchiever> dropGoalInfo, BotCharacter botCharacter) {
 		GoalFactoryCreator simulatorFactoryCreator = simulatorManager.getGoalFactoryCreator();
 		GoalAchiever goalAchieverTwoStep = simulatorFactoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
 				simulatedDropItemGoals.get(createKey(dropGoalInfo)), false, true);
-		simGoalAchiever = new GoalAchieverForLoop(goalAchieverTwoStep, BinomialProbability.calculateNbTentative(0.9, 1,
-				dropGoalInfo.getGoal().getRate(), MAX_SIMULATION_LOOP));
+		simGoalAchiever = new GoalAchieverForLoop(goalAchieverTwoStep,
+				BinomialProbability.calculateNbTentative(0.9, 1, dropGoalInfo.getGoal().getRate(),
+						Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems()) + 1));
 		return initSimulation(botCharacter);
 	}
-	
+
 	@Override
 	protected int getMaxSimulationTime() {
 		return MAX_SIMULATION_TIME_IN_SECOND;
 	}
 
 	private String createKey(GoalAchieverInfo<?> info) {
-		return info.getMonsterCode()+info.getItemCode();
+		return info.getMonsterCode() + info.getItemCode();
 	}
 }
