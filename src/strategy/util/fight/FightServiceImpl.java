@@ -58,7 +58,7 @@ public final class FightServiceImpl implements FightService {
 		this.characterService = characterService;
 		this.moveService = moveService;
 		this.itemService = itemService;
-		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600);
+		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600*168);
 		this.useUtilityMap = new HashMap<>();
 	}
 
@@ -135,7 +135,8 @@ public final class FightServiceImpl implements FightService {
 
 	private String createKey(Integer characterHp, String code,
 			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement) {
-		StringBuilder builder = new StringBuilder(characterHp);
+		StringBuilder builder = new StringBuilder();
+		builder.append(characterHp);
 		builder.append(code);
 		equipableCharacterEquipement.entrySet().stream()
 				.forEach(entry -> builder.append(entry.getKey()).append(Objects.hash(entry.getValue().toArray())));
@@ -198,7 +199,7 @@ public final class FightServiceImpl implements FightService {
 		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter());
 		FightDetails maxFightDetails = initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
 				characterHp);
-		Map<String, Integer> effectMap = resetEffectMap();
+		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
 			if (validCombinaison(botItemInfos)) {
 				for (BotItemInfo botItemInfo : botItemInfos) {
@@ -264,7 +265,7 @@ public final class FightServiceImpl implements FightService {
 
 	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster,
 			int characterHp) {
-		Map<String, Integer> effectMap = resetEffectMap();
+		Map<Integer, Integer> effectMap = resetEffectMap();
 
 		updateEffectInMapForEquipedEqt(character.getWeaponSlot(), effectMap, 1);
 		updateEffectInMapForEquipedEqt(character.getBodyArmorSlot(), effectMap, 1);
@@ -284,7 +285,7 @@ public final class FightServiceImpl implements FightService {
 		return optimizeVictory(effectMap, monster, characterHp, GameConstants.MAX_FIGHT_TURN);
 	}
 
-	private void updateEffectInMapForEquipedEqt(String slot, Map<String, Integer> effectMap, int quantity) {
+	private void updateEffectInMapForEquipedEqt(String slot, Map<Integer, Integer> effectMap, int quantity) {
 		if (!"".equals(slot)) {
 			updateEffectInMap(effectMap, itemDAO.getItem(slot), quantity);
 		}
@@ -311,18 +312,19 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	private void updateEffectInMap(Map<String, Integer> effectMap, BotItemDetails botItemDetail, int quantity) {
+	private void updateEffectInMap(Map<Integer, Integer> effectMap, BotItemDetails botItemDetail, int quantity) {
 		botItemDetail.getEffects().stream().forEach(effect -> {
 			if (BotEffect.RESTORE.equals(effect.getName())) {
 				addRestore(effectMap, effect.getValue(), quantity);
 			} else {
-				effectMap.put(effect.getName().name(), effect.getValue() + effectMap.get(effect.getName().name()));
+				effectMap.put(effect.getName().ordinal(),
+						effect.getValue() + effectMap.getOrDefault(effect.getName().ordinal(), 0));
 			}
 		});
 	}
 
 	// On ignore les blocks
-	private FightDetails optimizeVictory(Map<String, Integer> effectMap, BotMonster monster, int characterHp,
+	private FightDetails optimizeVictory(Map<Integer, Integer> effectMap, BotMonster monster, int characterHp,
 			int maxCharacterTurn) {
 		int characterDmg = calculCharacterDamage(effectMap, monster);
 		int characterTurn = calculTurns(monster.getHp(), characterDmg);
@@ -343,43 +345,37 @@ public final class FightServiceImpl implements FightService {
 				monsterResult.characterHP(), monsterResult.restoreTurn());
 	}
 
-	private List<RestoreStruct> getRestoreValue(Map<String, Integer> effectMap) {
+	private List<RestoreStruct> getRestoreValue(Map<Integer, Integer> effectMap) {
 		List<RestoreStruct> result = new ArrayList<>();
-		String prefixKey = BotEffect.RESTORE.name();
-		int index = 0;
-		String key = prefixKey + index;
-		while (effectMap.containsKey(key)) {
-			result.add(new RestoreStruct(effectMap.get(key), effectMap.get(key + "Q")));
-			index++;
-			key = prefixKey + index;
+		int index = -1;
+		while (effectMap.containsKey(index)) {
+			result.add(new RestoreStruct(effectMap.get(index), effectMap.get(index - 1)));
+			index -= 2;
 		}
 		return result;
 	}
 
-	private void addRestore(Map<String, Integer> effectMap, int value, int quantity) {
-		String prefixKey = BotEffect.RESTORE.name();
-		int index = 0;
-		String key = prefixKey + index;
-		while (effectMap.containsKey(key)) {
-			index++;
-			key = prefixKey + index;
+	private void addRestore(Map<Integer, Integer> effectMap, int value, int quantity) {
+		int index = -1;
+		while (effectMap.containsKey(index)) {
+			index -= 2;
 		}
-		effectMap.put(key, value);
-		effectMap.put(key + "Q", quantity);
+		effectMap.put(index, value);
+		effectMap.put(index - 1, quantity);
 	}
 
 	private int calculTurns(int hp, int dmg) {
 		return dmg == 0 ? GameConstants.MAX_FIGHT_TURN : hp / dmg + (hp % dmg == 0 ? 0 : 1);
 	}
 
-	private MonsterCalculStruct calculMonsterTurns(int characterHp, Map<String, Integer> effectMap, BotMonster monster,
+	private MonsterCalculStruct calculMonsterTurns(int characterHp, Map<Integer, Integer> effectMap, BotMonster monster,
 			int maxCharacterTurn, int characterDmg) {
 		List<RestoreStruct> restoreValues = getRestoreValue(effectMap);
 		int monsterDmg = calculMonsterDamage(effectMap, monster);
-		int characterMaxHp = characterHp + effectMap.get(BotEffect.HP.name());
-		int characterMaxHpWithBoost = characterMaxHp + effectMap.get(BotEffect.BOOST_HP.name());
+		int characterMaxHp = characterHp + effectMap.getOrDefault(BotEffect.HP.ordinal(), 0);
+		int characterMaxHpWithBoost = characterMaxHp + effectMap.getOrDefault(BotEffect.BOOST_HP.ordinal(), 0);
 		int halfCharacterMaxHpWithBoost = characterMaxHpWithBoost / 2;
-		if (restoreValues.size() == 0) {
+		if (restoreValues.isEmpty()) {
 			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
 
 			int minTurn = monsterTurn > maxCharacterTurn ? maxCharacterTurn : monsterTurn;
@@ -414,39 +410,39 @@ public final class FightServiceImpl implements FightService {
 				(a, b) -> a + b);
 	}
 
-	private Map<String, Integer> resetEffectMap() {
-		Map<String, Integer> effectMap = new HashMap<>();
-		for (BotEffect botEffect : BotEffect.values()) {
-			effectMap.put(botEffect.name(), 0);
-		}
-		return effectMap;
+	private Map<Integer, Integer> resetEffectMap() {
+		return HashMap.newHashMap(BotEffect.values().length);
 	}
 
-	private int calculMonsterDamage(Map<String, Integer> effectMap, BotMonster monster) {
-		int monsterEartDmg = monster.getAttackEarth() * Math.round(1
-				- (effectMap.get(BotEffect.RES_EARTH.name()) + effectMap.get(BotEffect.BOOST_RES_EARTH.name())) / 100f);
-		int monsterAirDmg = monster.getAttackAir() * Math.round(
-				1 - (effectMap.get(BotEffect.RES_AIR.name()) + effectMap.get(BotEffect.BOOST_RES_AIR.name())) / 100f);
-		int monsterWaterDmg = monster.getAttackWater() * Math.round(1
-				- (effectMap.get(BotEffect.RES_WATER.name()) + effectMap.get(BotEffect.BOOST_RES_WATER.name())) / 100f);
-		int monsterFireDmg = monster.getAttackFire() * Math.round(
-				1 - (effectMap.get(BotEffect.RES_FIRE.name()) + effectMap.get(BotEffect.BOOST_RES_FIRE.name())) / 100f);
+	private int calculMonsterDamage(Map<Integer, Integer> effectMap, BotMonster monster) {
+		int monsterEartDmg = monster.getAttackEarth()
+				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_EARTH.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_EARTH.ordinal(), 0)) / 100f);
+		int monsterAirDmg = monster.getAttackAir()
+				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_AIR.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_AIR.ordinal(), 0)) / 100f);
+		int monsterWaterDmg = monster.getAttackWater()
+				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_WATER.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_WATER.ordinal(), 0)) / 100f);
+		int monsterFireDmg = monster.getAttackFire()
+				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_FIRE.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_FIRE.ordinal(), 0)) / 100f);
 		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
 	}
 
-	private int calculCharacterDamage(Map<String, Integer> effectMap, BotMonster monster) {
-		int characterEartDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_EARTH.name()),
-				effectMap.get(BotEffect.DMG_EARTH.name()), effectMap.get(BotEffect.BOOST_DMG_EARTH.name()),
-				monster.getResEarth());
-		int characterAirDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_AIR.name()),
-				effectMap.get(BotEffect.DMG_AIR.name()), effectMap.get(BotEffect.BOOST_DMG_AIR.name()),
-				monster.getResAir());
-		int characterWaterDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_WATER.name()),
-				effectMap.get(BotEffect.DMG_WATER.name()), effectMap.get(BotEffect.BOOST_DMG_WATER.name()),
-				monster.getResWater());
-		int characterFireDmg = calculEffectDamage(effectMap.get(BotEffect.ATTACK_FIRE.name()),
-				effectMap.get(BotEffect.DMG_FIRE.name()), effectMap.get(BotEffect.BOOST_DMG_FIRE.name()),
-				monster.getResFire());
+	private int calculCharacterDamage(Map<Integer, Integer> effectMap, BotMonster monster) {
+		int characterEartDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_EARTH.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.DMG_EARTH.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.BOOST_DMG_EARTH.ordinal(), 0), monster.getResEarth());
+		int characterAirDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_AIR.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.DMG_AIR.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.BOOST_DMG_AIR.ordinal(), 0), monster.getResAir());
+		int characterWaterDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_WATER.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.DMG_WATER.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.BOOST_DMG_WATER.ordinal(), 0), monster.getResWater());
+		int characterFireDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_FIRE.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.DMG_FIRE.ordinal(), 0),
+				effectMap.getOrDefault(BotEffect.BOOST_DMG_FIRE.ordinal(), 0), monster.getResFire());
 		return characterEartDmg + characterAirDmg + characterWaterDmg + characterFireDmg;
 	}
 
