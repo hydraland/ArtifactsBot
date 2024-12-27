@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import hydra.dao.ItemDAO;
+import hydra.dao.simulate.CharacterDAOSimulator;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.dao.simulate.StopSimulationException;
 import hydra.model.BotCharacter;
@@ -186,9 +187,8 @@ public abstract class UseSimulatorFactory {
 			for (GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA : combinator) {
 
 				simulatorManager.setValue(botCharacter, botItems);
-				accumulator.setMax(Integer.MAX_VALUE); // Pour ne pas planter dans l'optimisation
 				GoalAchiever testGoal = createGoals(artifactGA, simulatorManager.getCharacterServiceSimulator(),
-						simulateGoalAverageOptimizer, maxCookOrPotionTask);
+						maxCookOrPotionTask);
 				accumulator.reset();
 				accumulator.setMax(minTime);
 				try {
@@ -221,21 +221,21 @@ public abstract class UseSimulatorFactory {
 	protected abstract int getMaxSimulationTime();
 
 	protected final GoalAchiever createGoals(GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA,
-			CharacterService aCharacterService, GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
+			CharacterService aCharacterService, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(
 				character -> Arrays.stream(artifactGA).filter(aga -> aga.getGoal().isRealisable(character))
-						.<Boolean>map(aga -> !aCharacterService.isPossessOnSelf(aga.getItemCode()))//TODO a revoir créer plutot isPosseInInventory
+						.<Boolean>map(aga -> !aCharacterService.inventoryConstaints(aga.getItemCode(), 1))
 						.reduce(false, (v1, v2) -> v1 || v2));
-		Arrays.stream(artifactGA).forEach(aga -> aGoalAverageOptimizer.optimize(aga.getGoal(), optimizeValue, 0.9f));
-		genericGoalAchiever.setExecutableGoalAchiever(ri -> {
-			boolean resultExec = Arrays.stream(artifactGA).filter(aga -> {
-				aga.getGoal().clear();
-				return true;
-			}).map(aga -> !aCharacterService.isPossessOnSelf(aga.getItemCode()) && aga.getGoal().execute(ri))//TODO pour le simulateur faire la création instantanément (depositInInventory et check)
-					.reduce(false, (v1, v2) -> v1 || v2);
-			ri.clear();
-			return resultExec;
-		});
+		genericGoalAchiever.setExecutableGoalAchiever(ri -> Arrays.stream(artifactGA).map(aga -> {
+			boolean val = !aCharacterService.inventoryConstaints(aga.getItemCode(), 1)
+					&& ((CharacterDAOSimulator) simulatorManager.getCharacterDAOSimulator())
+							.checkDepositInInventory(aga.getItemCode(), optimizeValue);
+			if (val) {
+				((CharacterDAOSimulator) simulatorManager.getCharacterDAOSimulator())
+						.depositInInventory(aga.getItemCode(), optimizeValue);
+			}
+			return val;
+		}).reduce(false, (v1, v2) -> v1 || v2));
 		genericGoalAchiever.setValue(artifactGA);
 		return new ForceExecuteGoalAchiever(simGoalAchiever);
 	}
@@ -244,7 +244,8 @@ public abstract class UseSimulatorFactory {
 			GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(character -> Arrays.stream(simCodeFound)
 				.filter(code -> cookAndAlchemyGoals.get(code).isRealisable(character))
-				.<Boolean>map(code -> !aCharacterService.isPossessOnSelf(code)).reduce(false, (v1, v2) -> v1 || v2));//TODO a revoir créer plutot isPosseInInventory
+				.<Boolean>map(code -> !aCharacterService.inventoryConstaints(code, 1))
+				.reduce(false, (v1, v2) -> v1 || v2));
 		Arrays.stream(simCodeFound)
 				.forEach(code -> aGoalAverageOptimizer.optimize(cookAndAlchemyGoals.get(code), optimizeValue, 0.9f));
 		genericGoalAchiever.setExecutableGoalAchiever(ri -> {
@@ -252,7 +253,7 @@ public abstract class UseSimulatorFactory {
 				ArtifactGoalAchiever aga = cookAndAlchemyGoals.get(code);
 				aga.clear();
 				return true;
-			}).map(code -> !aCharacterService.isPossessOnSelf(code) && cookAndAlchemyGoals.get(code).execute(ri))
+			}).map(code -> !aCharacterService.inventoryConstaints(code, 1) && cookAndAlchemyGoals.get(code).execute(ri))
 					.reduce(false, (v1, v2) -> v1 || v2);
 			ri.clear();
 			return resultExec;

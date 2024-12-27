@@ -179,6 +179,7 @@ public class TestSimulation {
 		});
 		if (simLoopGoal.isRealisableAfterSetRoot(character)) {
 			simLoopGoal.clear();
+			System.out.println("Execute cyclops task");
 			boolean result = simLoopGoal.execute(new HashMap<>());
 			System.out.println("time :" + accumulator.get() + " : " + result);
 		}
