@@ -58,7 +58,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 	@Override
 	public boolean isRealisable(BotCharacter character) {
 		monsterEquipementService.reset();
-		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS).fightDetails().eval() > 1d;
+		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS).fightDetails().eval() >= 1;
 	}
 
 	@Override
