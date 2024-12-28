@@ -64,7 +64,7 @@ public final class BalanceTimeStrategy implements Strategy {
 		itemGoalsForEvent = goalFactory.createItemsGoals(() -> ChooseBehaviorSelector.GATHERING, GoalFilter.EVENT);
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
 		monsterGoals = goalFactory.createMonstersGoals(resp -> resp.fight().getXp() == 0, GoalFilter.NO_EVENT);
-		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
+		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
 		timeGoalAchieverMap = new HashMap<>();
 		itemGoals.stream().forEach(ga -> timeGoalAchieverMap.put(ga.getItemCode(),

@@ -71,7 +71,7 @@ public class SimulatorStrategy implements Strategy {
 		itemSimulatedGoals = simulatedGoalFactory.createItemsGoals(() -> ChooseBehaviorSelector.CRAFTING_AND_GATHERING,
 				GoalFilter.NO_EVENT);
 		inventoryGoals = goalFactory.createManagedInventoryCustomGoal();
-		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> false, GoalFilter.EVENT);
+		monsterGoalsForEvent = goalFactory.createMonstersGoals(resp -> !resp.fight().isWin(), GoalFilter.EVENT);
 		taskGoals = goalFactory.createTaskGoals();
 		dropItemGoal = goalFactory.createDropItemGoal();
 	}
