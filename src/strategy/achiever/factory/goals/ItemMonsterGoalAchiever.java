@@ -92,6 +92,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 				}
 				return goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
 			}
+			monsterEquipementService.reset();
 			goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
 		}
 		return false;

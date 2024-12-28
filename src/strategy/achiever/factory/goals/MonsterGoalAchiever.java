@@ -69,6 +69,10 @@ public class MonsterGoalAchiever implements GoalAchiever {
 					if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 						return false;
 					}
+					if(!response.fight().isWin()) {
+						monsterEquipementService.reset();
+						goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
+					}
 					return !stopCondition.isStop(response);
 				}
 			}
