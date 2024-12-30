@@ -33,10 +33,10 @@ import strategy.util.fight.factory.HPRecoveryFactory;
 
 public final class HydraBot extends Bot {
 
-	private static final int MIN_FREE_SLOT = 6;
+	private static final int MIN_FREE_SLOT = 4;
 	private static final int RARE_ITEM_SEUIL_RATE = 100;
 	private static final int RESERVED_COINS = 6;
-	private static final int MIN_FREE_INVENTORY_SPACE = 20;
+	private static final int MIN_FREE_INVENTORY_SPACE = 5;
 	private final GoalExecutoManager goalExecutorManager;
 
 	private HydraBot(String token) {
