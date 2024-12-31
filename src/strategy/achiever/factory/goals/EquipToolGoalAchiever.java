@@ -41,8 +41,7 @@ public final class EquipToolGoalAchiever implements GoalAchiever {
 
 	@Override
 	public boolean isRealisable(BotCharacter character) {
-		searchTool();
-		return inventoryItem != null || bankCode != null;
+		return true;
 	}
 
 	private void searchTool() {
@@ -70,13 +69,13 @@ public final class EquipToolGoalAchiever implements GoalAchiever {
 	public boolean execute(Map<String, Integer> reservedItems) {
 		try {
 			BotCharacter character = characterDao.getCharacter();
-			// TODO Hypothèse c'est que les tools sont que des weapon
+			// TODO Hypothèse c'est que les tools sont que des weapons
 			if (itemService.isTools(character.getWeaponSlot(), resourceSkill)) {
 				return true;// Déja équipé
 			}
 			searchTool();// On met à jour en cas de changement
 			if (inventoryItem == null && bankCode == null) {
-				return false;// On n'a rien à équiper
+				return true;// On n'a rien à équiper
 			}
 			BotCharacterInventorySlot slot = inventoryItem != null
 					? ItemService.typeToSlot(itemService.getToolType(inventoryItem.getCode()))
@@ -93,10 +92,7 @@ public final class EquipToolGoalAchiever implements GoalAchiever {
 				BotItem botItem = new BotItem();
 				botItem.setCode(bankCode);
 				botItem.setQuantity(1);
-				if (!bankDAO.withdraw(botItem)) {
-					return false;
-				}
-				return characterDao.equip(botItem, slot, 1).ok();
+				return bankDAO.withdraw(botItem) && characterDao.equip(botItem, slot, 1).ok();
 			}
 			return false;
 		} finally {

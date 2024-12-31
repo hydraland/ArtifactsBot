@@ -205,13 +205,13 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 	}
 
 	@Override
-	public ResourceGoalAchiever createGatheringGoalAchiever(String resourceCode, int rate, List<Coordinate> coordinates,
-			int level, BotResourceSkill skill, String boxCode, boolean event) {
+	public ResourceGoalAchiever createGatheringGoalAchiever(GoalAchiever equipToolGoal, String resourceCode,
+			int rate, List<Coordinate> coordinates, int level, BotResourceSkill skill, String boxCode, boolean event) {
 		return event
-				? new GatheringEventGoalAchiever(characterDAO, characterService, mapDAO, resourceCode, rate,
-						coordinates, level, skill, boxCode, moveService)
-				: new GatheringGoalAchiever(characterDAO, characterService, mapDAO, resourceCode, rate, coordinates,
-						level, skill, boxCode, moveService);
+				? new GatheringEventGoalAchiever(equipToolGoal, characterDAO, characterService, mapDAO, resourceCode,
+						rate, coordinates, level, skill, boxCode, moveService)
+				: new GatheringGoalAchiever(equipToolGoal, characterDAO, characterService, mapDAO, resourceCode, rate,
+						coordinates, level, skill, boxCode, moveService);
 	}
 
 	@Override
@@ -285,8 +285,8 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 	}
 
 	@Override
-	public MonsterItemDropGoalAchiever createMonsterItemDropGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> goalInfo, CharacterDAO characterDao,
-			GoalParameter parameter) {
+	public MonsterItemDropGoalAchiever createMonsterItemDropGoalAchiever(
+			GoalAchieverInfo<ArtifactGoalAchiever> goalInfo, CharacterDAO characterDao, GoalParameter parameter) {
 		return new MonsterItemDropGoalAchiever(goalInfo, characterDao, parameter);
 	}
 }

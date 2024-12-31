@@ -118,16 +118,13 @@ public final class ArtifactGoalFactory implements GoalFactory {
 				boolean event = eventResourceBoxCode.contains(boxCode);
 				if (GoalFilter.ALL.equals(filter) || (event && GoalFilter.EVENT.equals(filter))
 						|| (!event && GoalFilter.NO_EVENT.equals(filter))) {
-					ResourceGoalAchiever goalAchiever = factoryCreator.createGatheringGoalAchiever(resourceCode, rate,
+					ResourceGoalAchiever goalAchiever = factoryCreator.createGatheringGoalAchiever(factoryCreator
+							.createEquipToolGoalAchiever(resource.getSkill()), resourceCode, rate,
 							resourceLocation.get(boxCode), resource.getLevel(), resource.getSkill(), boxCode, event);
 					GoalAchiever depositNoReservedItemGoalAchiever = factoryCreator
 							.createDepositNoReservedItemGoalAchiever();
 					ArtifactGoalAchiever achieverTwoStep = factoryCreator
 							.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever, goalAchiever, true, true);
-					GoalAchiever equipToolGoalAchiever = factoryCreator
-							.createEquipToolGoalAchiever(resource.getSkill());
-					achieverTwoStep = factoryCreator.createGoalAchieverTwoStep(equipToolGoalAchiever, achieverTwoStep,
-							true, false);
 					goals.add(achieverTwoStep);
 					getGoalInfo(goalInfos, achieverTwoStep,
 							new GatheringGoalAchieverInfo<ArtifactGoalAchiever>(resourceCode, BotItemType.RESOURCE,

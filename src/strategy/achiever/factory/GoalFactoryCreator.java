@@ -64,11 +64,10 @@ public interface GoalFactoryCreator {
 	ArtifactGoalAchiever createGoalAchieverTwoStep(GoalAchiever optionalGoal, GoalAchiever goal, boolean virtualRoot,
 			boolean checkBeforeExecuteOptional);
 
-	ResourceGoalAchiever createGatheringGoalAchiever(String resourceCode, int rate, List<Coordinate> coordinates,
-			int level, BotResourceSkill skill, String boxCode, boolean event);
+	ResourceGoalAchiever createGatheringGoalAchiever(GoalAchiever equipToolGoal, String resourceCode, int rate,
+			List<Coordinate> coordinates, int level, BotResourceSkill skill, String boxCode, boolean event);
 
-	ResourceGoalAchiever createItemMonsterGoalAchiever(
-			String resourceCode, int rate, List<Coordinate> coordinates,
+	ResourceGoalAchiever createItemMonsterGoalAchiever(String resourceCode, int rate, List<Coordinate> coordinates,
 			BotMonster monster, boolean event);
 
 	MonsterGoalAchiever createMonsterGoalAchiever(List<Coordinate> coordinates, BotMonster monster,
@@ -96,6 +95,6 @@ public interface GoalFactoryCreator {
 
 	GoalAchiever createGoalAchieverConditional(GoalAchiever subGoal, Condition condition, boolean virtualRoot);
 
-	MonsterItemDropGoalAchiever createMonsterItemDropGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> goalInfo, CharacterDAO characterDao,
-			GoalParameter parameter);
+	MonsterItemDropGoalAchiever createMonsterItemDropGoalAchiever(GoalAchieverInfo<ArtifactGoalAchiever> goalInfo,
+			CharacterDAO characterDao, GoalParameter parameter);
 }

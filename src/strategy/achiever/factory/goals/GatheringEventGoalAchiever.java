@@ -7,16 +7,17 @@ import hydra.dao.CharacterDAO;
 import hydra.dao.MapDAO;
 import hydra.model.BotCharacter;
 import hydra.model.BotResourceSkill;
+import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
 public class GatheringEventGoalAchiever extends GatheringGoalAchiever {
 
-	public GatheringEventGoalAchiever(CharacterDAO characterDAO, CharacterService characterService, MapDAO mapDao,
+	public GatheringEventGoalAchiever(GoalAchiever equipToolGoal, CharacterDAO characterDAO, CharacterService characterService, MapDAO mapDao,
 			String resourceCode, int rate, List<Coordinate> coordinates, int level, BotResourceSkill skill,
 			String boxCode, MoveService moveService) {
-		super(characterDAO, characterService, mapDao, resourceCode, rate, coordinates, level, skill, boxCode,
+		super(equipToolGoal, characterDAO, characterService, mapDao, resourceCode, rate, coordinates, level, skill, boxCode,
 				moveService);
 	}
 	@Override

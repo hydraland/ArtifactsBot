@@ -11,6 +11,7 @@ import hydra.dao.response.GatheringResponse;
 import hydra.model.BotCharacter;
 import hydra.model.BotItemReader;
 import hydra.model.BotResourceSkill;
+import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.Cumulator;
 import strategy.util.CharacterService;
@@ -30,10 +31,13 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 	protected final MapDAO mapDao;
 	private final MoveService moveService;
 	private final CharacterService characterService;
+	private final GoalAchiever equipToolGoal;
+	private boolean equipTool;
 
-	public GatheringGoalAchiever(CharacterDAO characterDAO, CharacterService characterService, MapDAO mapDao,
-			String resourceCode, int rate, List<Coordinate> coordinates, int level, BotResourceSkill skill,
-			String boxCode, MoveService moveService) {
+	public GatheringGoalAchiever(GoalAchiever equipToolGoal, CharacterDAO characterDAO,
+			CharacterService characterService, MapDAO mapDao, String resourceCode, int rate,
+			List<Coordinate> coordinates, int level, BotResourceSkill skill, String boxCode, MoveService moveService) {
+		this.equipToolGoal = equipToolGoal;
 		this.characterService = characterService;
 		this.mapDao = mapDao;
 		this.resourceCode = resourceCode;
@@ -45,12 +49,13 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 		this.boxCode = boxCode;
 		this.moveService = moveService;
 		this.finish = false;
+		this.equipTool = true;
 	}
 
 	@Override
 	public boolean isRealisable(BotCharacter character) {
 		int skillLevel = characterService.getLevel(skill);
-		return skillLevel >= this.level;
+		return skillLevel >= this.level && equipToolGoal.isRealisable(character);
 	}
 
 	@Override
@@ -61,6 +66,10 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 				this.finish = true;
 				return true;
 			}
+		}
+
+		if (equipTool) {
+			equipTool = !equipToolGoal.execute(reservedItems);
 		}
 		if (moveService.moveTo(coordinates)) {
 			GatheringResponse response = characterDAO.collect();
@@ -83,32 +92,34 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 
 	@Override
 	public boolean isFinish() {
-		return this.finish;
+		return finish;
 	}
 
 	@Override
 	public String getCode() {
-		return this.resourceCode;
+		return resourceCode;
 	}
 
 	@Override
 	public void clear() {
-		this.finish = false;
+		finish = false;
+		equipTool = true;
+		equipToolGoal.clear();
 	}
 
 	@Override
 	public void setRoot() {
-		this.root = true;
+		root = true;
 	}
 
 	@Override
 	public void unsetRoot() {
-		this.root = false;
+		root = false;
 	}
 
 	@Override
 	public double getRate() {
-		return (1d / this.rate);
+		return (1d / rate);
 	}
 
 	@Override
@@ -125,6 +136,7 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 		builder.append("root", root);
 		builder.append("rate", rate);
 		builder.append("skill", skill);
+		builder.append("equipToolGoal", equipToolGoal);
 		return builder.toString();
 	}
 }

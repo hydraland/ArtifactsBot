@@ -147,7 +147,8 @@ public final class FightServiceImpl implements FightService {
 
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility, boolean ignoreEquiped) {
+			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility,
+			boolean ignoreEquiped) {
 		// TODO Voir si tenir compte du vrai HP du perso (Peut être cela ne sert pas à
 		// grand chose)??
 		int characterHp = characterService.getCharacterHPWihtoutEquipment();
@@ -168,8 +169,10 @@ public final class FightServiceImpl implements FightService {
 				equipableCharacterEquipement.get(BotCharacterInventorySlot.LEG_ARMOR));
 		List<BotItemInfo> amulerCharacter = filterOdd(
 				equipableCharacterEquipement.get(BotCharacterInventorySlot.AMULET));
-		List<BotItemInfo> ring1Character = new ArrayList<>(filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING1)));
-		List<BotItemInfo> ring2Character = new ArrayList<>(filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING2)));
+		List<BotItemInfo> ring1Character = new ArrayList<>(
+				filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING1)));
+		List<BotItemInfo> ring2Character = new ArrayList<>(
+				filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING2)));
 		List<BotItemInfo> utility1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY1);
 		List<BotItemInfo> utility2Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY2);
 		List<BotItemInfo> artifact1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT1);
@@ -205,8 +208,9 @@ public final class FightServiceImpl implements FightService {
 		combinator.set(13, artifact3Character);
 
 		BotItemInfo[] bestEquipements = ignoreEquiped ? null : initBestEquipments(characterDao.getCharacter());
-		FightDetails maxFightDetails = ignoreEquiped ? new FightDetails(0, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, 0, 0) : initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
-				characterHp);
+		FightDetails maxFightDetails = ignoreEquiped
+				? new FightDetails(0, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, 0, 0)
+				: initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp);
 		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
 			if (validCombinaison(botItemInfos)) {
@@ -219,7 +223,10 @@ public final class FightServiceImpl implements FightService {
 				// Evaluation
 				FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHp,
 						maxFightDetails.characterTurn());
-				if (currentFightDetails.eval() > maxFightDetails.eval()) {
+				if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (currentFightDetails
+						.characterTurn() == maxFightDetails.characterTurn()
+						&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn() && currentFightDetails.characterHP() > 0)
+								|| (currentFightDetails.characterHP() > maxFightDetails.characterHP())))) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
 				}
@@ -243,7 +250,8 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private List<BotItemInfo> filterOdd(List<BotItemInfo> items) {
-		List<BotItemInfo> filteredItem = items.stream().filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList();
+		List<BotItemInfo> filteredItem = items.stream()
+				.filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList();
 		Map<String, Map<Integer, Integer>> itemsMap = new HashMap<>();
 		for (BotItemInfo item : filteredItem) {
 			Map<Integer, Integer> effectMap = resetEffectMap();
@@ -262,7 +270,9 @@ public final class FightServiceImpl implements FightService {
 				}
 			}
 		}
-		return oddItemAdded ? filteredItem.stream().filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList() : filteredItem;
+		return oddItemAdded
+				? filteredItem.stream().filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList()
+				: filteredItem;
 	}
 
 	private boolean upperEffects(Map<Integer, Integer> effectMap, Map<Integer, Integer> effectMapToCompare) {
@@ -384,9 +394,11 @@ public final class FightServiceImpl implements FightService {
 
 		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, effectMap, monster, characterTurn,
 				characterDmg);
+		// Le calcul fait que l'on privilégie la non utilisation de potion quand cela
+		// est possible
 		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
 		return new FightDetails(((double) monsterResult.monsterTurn()) / characterTurn, nbTurn, characterTurn,
-				monsterResult.characterHP(), monsterResult.restoreTurn());
+				nbTurn < characterTurn ? 0 : monsterResult.characterHP(), monsterResult.restoreTurn());
 	}
 
 	private List<RestoreStruct> getRestoreValue(Map<Integer, Integer> effectMap) {
@@ -424,12 +436,12 @@ public final class FightServiceImpl implements FightService {
 
 			int minTurn = monsterTurn > maxCharacterTurn ? maxCharacterTurn : monsterTurn;
 			return new MonsterCalculStruct(monsterTurn, 0,
-					Math.min(characterMaxHp, characterMaxHpWithBoost - minTurn * monsterDmg));
+					Math.min(characterMaxHp, characterMaxHpWithBoost - (minTurn - 1) * monsterDmg));
 		}
 		int halfMonsterTurn = calculTurns(halfCharacterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
 		if (halfMonsterTurn >= maxCharacterTurn) {
 			return new MonsterCalculStruct(halfMonsterTurn * 2, 0,
-					Math.min(characterMaxHp, characterMaxHpWithBoost - maxCharacterTurn * monsterDmg));
+					Math.min(characterMaxHp, characterMaxHpWithBoost - (maxCharacterTurn - 1) * monsterDmg));
 		}
 		int monsterTurn = halfMonsterTurn;
 		int characterHP = characterMaxHpWithBoost - halfMonsterTurn * monsterDmg;
@@ -460,16 +472,16 @@ public final class FightServiceImpl implements FightService {
 
 	private int calculMonsterDamage(Map<Integer, Integer> effectMap, BotMonster monster) {
 		int monsterEartDmg = monster.getAttackEarth()
-				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_EARTH.ordinal(), 0)
+				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_EARTH.ordinal(), 0)
 						+ effectMap.getOrDefault(BotEffect.BOOST_RES_EARTH.ordinal(), 0)) / 100f);
 		int monsterAirDmg = monster.getAttackAir()
-				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_AIR.ordinal(), 0)
+				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_AIR.ordinal(), 0)
 						+ effectMap.getOrDefault(BotEffect.BOOST_RES_AIR.ordinal(), 0)) / 100f);
 		int monsterWaterDmg = monster.getAttackWater()
-				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_WATER.ordinal(), 0)
+				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_WATER.ordinal(), 0)
 						+ effectMap.getOrDefault(BotEffect.BOOST_RES_WATER.ordinal(), 0)) / 100f);
 		int monsterFireDmg = monster.getAttackFire()
-				* Math.round(1 - (effectMap.getOrDefault(BotEffect.RES_FIRE.ordinal(), 0)
+				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_FIRE.ordinal(), 0)
 						+ effectMap.getOrDefault(BotEffect.BOOST_RES_FIRE.ordinal(), 0)) / 100f);
 		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
 	}
@@ -491,7 +503,7 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private int calculEffectDamage(float attackDmg, float dmgPercent, float dmgBoost, float monsterRes) {
-		return (int) (attackDmg * ((100d + dmgPercent + dmgBoost) * (100d - monsterRes)) / 10000);
+		return (int) Math.rint((attackDmg * ((100d + dmgPercent + dmgBoost) * (100d - monsterRes)) / 10000));
 	}
 
 	@Override
