@@ -67,7 +67,7 @@ public interface CharacterService {
 		}
 	}
 
-	int getCharacterHPWihtoutEquipment();
+	int getCharacterHPWithoutEquipment();
 
 	Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
 			Map<String, Integer> reservedItems, boolean useUtility);

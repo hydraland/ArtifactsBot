@@ -170,7 +170,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 					(botCharacter.getLevel() - monster.getLevel()) > GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP ? 0 : 9);
 			botFight.setGold(random.nextInt(monster.getMinGold(), monster.getMaxGold() + 1));
 			botCharacter.setGold(botFight.getGold());
-			botCharacter.setHp(calculateFightResult.characterHP());
+			botCharacter.setHp(botCharacter.getHp() - calculateFightResult.characterLossHP());
 			if (monsterCode.equals(botCharacter.getTask())
 					&& botCharacter.getTaskProgress() < botCharacter.getTaskTotal()) {
 				botCharacter.setTaskProgress(botCharacter.getTaskProgress() + 1);

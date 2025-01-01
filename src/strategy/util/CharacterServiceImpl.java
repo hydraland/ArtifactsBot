@@ -244,7 +244,7 @@ public final class CharacterServiceImpl implements CharacterService {
 	}
 
 	@Override
-	public int getCharacterHPWihtoutEquipment() {
+	public int getCharacterHPWithoutEquipment() {
 		BotCharacter character = characterDao.getCharacter();
 		return GameConstants.HP_LEVEL_1 + GameConstants.HP_PER_LEVEL * character.getLevel();
 	}

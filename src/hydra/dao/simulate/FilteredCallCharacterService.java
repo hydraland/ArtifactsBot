@@ -106,10 +106,10 @@ public final class FilteredCallCharacterService implements CharacterService {
 	}
 
 	@Override
-	public int getCharacterHPWihtoutEquipment() {
+	public int getCharacterHPWithoutEquipment() {
 		simulatorListener.startInnerCall();
 		try {
-			return characterService.getCharacterHPWihtoutEquipment();
+			return characterService.getCharacterHPWithoutEquipment();
 		} finally {
 			simulatorListener.stopInnerCall();
 		}

@@ -35,6 +35,8 @@ import util.Combinator;
 import util.LimitedTimeCacheManager;
 
 public final class FightServiceImpl implements FightService {
+	private static final FightDetails DEFAULT_FIGHT_DETAILS = new FightDetails(0, GameConstants.MAX_FIGHT_TURN,
+			GameConstants.MAX_FIGHT_TURN, Integer.MAX_VALUE, 0);
 	private final CharacterDAO characterDao;
 	private final CharacterService characterService;
 	private static final BotCharacterInventorySlot[] SLOTS = new BotCharacterInventorySlot[] {
@@ -151,7 +153,7 @@ public final class FightServiceImpl implements FightService {
 			boolean ignoreEquiped) {
 		// TODO Voir si tenir compte du vrai HP du perso (Peut être cela ne sert pas à
 		// grand chose)??
-		int characterHp = characterService.getCharacterHPWihtoutEquipment();
+		int characterHp = characterService.getCharacterHPWithoutEquipment();
 		String key = createKey(characterHp, monster.getCode(), equipableCharacterEquipement);
 		if (optimizeCacheManager.contains(key)) {
 			return optimizeCacheManager.get(key);
@@ -208,8 +210,7 @@ public final class FightServiceImpl implements FightService {
 		combinator.set(13, artifact3Character);
 
 		BotItemInfo[] bestEquipements = ignoreEquiped ? null : initBestEquipments(characterDao.getCharacter());
-		FightDetails maxFightDetails = ignoreEquiped
-				? new FightDetails(0, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, 0, 0)
+		FightDetails maxFightDetails = ignoreEquiped ? DEFAULT_FIGHT_DETAILS
 				: initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp);
 		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
@@ -225,8 +226,9 @@ public final class FightServiceImpl implements FightService {
 						maxFightDetails.characterTurn());
 				if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (currentFightDetails
 						.characterTurn() == maxFightDetails.characterTurn()
-						&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn() && currentFightDetails.characterHP() > 0)
-								|| (currentFightDetails.characterHP() > maxFightDetails.characterHP())))) {
+						&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn()
+								&& currentFightDetails.eval() >= 1)
+								|| (currentFightDetails.characterLossHP() < maxFightDetails.characterLossHP())))) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
 				}
@@ -239,7 +241,7 @@ public final class FightServiceImpl implements FightService {
 			bestEquipements = new BotItemInfo[14];
 
 			// Evaluation
-			maxFightDetails = new FightDetails(0, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, 0, 0);
+			maxFightDetails = DEFAULT_FIGHT_DETAILS;
 		}
 
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
@@ -296,7 +298,7 @@ public final class FightServiceImpl implements FightService {
 
 	@Override
 	public FightDetails calculateFightResult(BotMonster monster) {
-		int characterHp = characterService.getCharacterHPWihtoutEquipment();
+		int characterHp = characterService.getCharacterHPWithoutEquipment();
 		return initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp);
 	}
 
@@ -385,11 +387,11 @@ public final class FightServiceImpl implements FightService {
 		if (characterTurn >= GameConstants.MAX_FIGHT_TURN) {
 			// l'hypothèse c'est que l'on ne doit pas se retrouver dans ce cas, d'ou hp
 			// character à -1
-			return new FightDetails(0d, GameConstants.MAX_FIGHT_TURN, GameConstants.MAX_FIGHT_TURN, -1, 0);
+			return DEFAULT_FIGHT_DETAILS;
 		}
 		if (characterTurn > maxCharacterTurn) {
 			// IL y a mieux donc on envoi un résultat par défaut
-			return new FightDetails(0d, characterTurn, characterTurn, -1, 0);
+			return new FightDetails(0d, characterTurn, characterTurn, Integer.MAX_VALUE, 0);
 		}
 
 		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, effectMap, monster, characterTurn,
@@ -397,8 +399,10 @@ public final class FightServiceImpl implements FightService {
 		// Le calcul fait que l'on privilégie la non utilisation de potion quand cela
 		// est possible
 		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
-		return new FightDetails(((double) monsterResult.monsterTurn()) / characterTurn, nbTurn, characterTurn,
-				nbTurn < characterTurn ? 0 : monsterResult.characterHP(), monsterResult.restoreTurn());
+		//Si le tour du monstre est inférieur à celui du perso on met 100 pour explorer d'autres possibilités
+		return new FightDetails(((double) monsterResult.monsterTurn()) / characterTurn, nbTurn, nbTurn < characterTurn ? GameConstants.MAX_FIGHT_TURN : characterTurn,
+				nbTurn < characterTurn ? Integer.MAX_VALUE : monsterResult.characterLossHP(),
+				monsterResult.restoreTurn());
 	}
 
 	private List<RestoreStruct> getRestoreValue(Map<Integer, Integer> effectMap) {
@@ -434,14 +438,14 @@ public final class FightServiceImpl implements FightService {
 		if (restoreValues.isEmpty()) {
 			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
 
-			int minTurn = monsterTurn > maxCharacterTurn ? maxCharacterTurn : monsterTurn;
+			int monsterTotalDmg = monsterDmg * (monsterTurn > maxCharacterTurn ? (maxCharacterTurn - 1) : monsterTurn);
 			return new MonsterCalculStruct(monsterTurn, 0,
-					Math.min(characterMaxHp, characterMaxHpWithBoost - (minTurn - 1) * monsterDmg));
+					Math.max(0, monsterTotalDmg - (characterMaxHpWithBoost - characterMaxHp)));
 		}
 		int halfMonsterTurn = calculTurns(halfCharacterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
 		if (halfMonsterTurn >= maxCharacterTurn) {
 			return new MonsterCalculStruct(halfMonsterTurn * 2, 0,
-					Math.min(characterMaxHp, characterMaxHpWithBoost - (maxCharacterTurn - 1) * monsterDmg));
+					Math.max(0, (maxCharacterTurn - 1) * monsterDmg - (characterMaxHpWithBoost - characterMaxHp)));
 		}
 		int monsterTurn = halfMonsterTurn;
 		int characterHP = characterMaxHpWithBoost - halfMonsterTurn * monsterDmg;
@@ -449,8 +453,11 @@ public final class FightServiceImpl implements FightService {
 		int restoreTurn = 0;
 		while (characterHP >= 0 && monsterHP >= 0) {
 			if (characterHP < halfCharacterMaxHpWithBoost) {
-				restoreTurn++;
-				characterHP += getRestoreValue(restoreValues, restoreTurn);
+				int restoreValue = getRestoreValue(restoreValues, restoreTurn);
+				if (restoreValue > 0) {
+					restoreTurn++;
+				}
+				characterHP += restoreValue;
 			}
 			monsterTurn++;
 			monsterHP -= characterDmg;
@@ -458,11 +465,11 @@ public final class FightServiceImpl implements FightService {
 				characterHP -= monsterDmg;
 			}
 		}
-		return new MonsterCalculStruct(monsterTurn, restoreTurn, characterHP);
+		return new MonsterCalculStruct(monsterTurn, restoreTurn, Math.max(0, (characterMaxHp - characterHP)));
 	}
 
 	private int getRestoreValue(List<RestoreStruct> restoreValues, int restoreTurn) {
-		return restoreValues.stream().filter(rs -> rs.quantity() >= restoreTurn).map(RestoreStruct::value).reduce(0,
+		return restoreValues.stream().filter(rs -> rs.quantity() > restoreTurn).map(RestoreStruct::value).reduce(0,
 				(a, b) -> a + b);
 	}
 
@@ -722,7 +729,7 @@ public final class FightServiceImpl implements FightService {
 		}
 	}
 
-	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterHP) {
+	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterLossHP) {
 	}
 
 	private static final record RestoreStruct(int value, int quantity) {
