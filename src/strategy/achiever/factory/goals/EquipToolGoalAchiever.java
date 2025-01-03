@@ -9,7 +9,6 @@ import hydra.dao.CharacterDAO;
 import hydra.model.BotCharacter;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 import hydra.model.BotResourceSkill;
 import strategy.achiever.GoalAchiever;
@@ -89,10 +88,7 @@ public final class EquipToolGoalAchiever implements GoalAchiever {
 			}
 
 			if (moveService.moveToBank()) {
-				BotItem botItem = new BotItem();
-				botItem.setCode(bankCode);
-				botItem.setQuantity(1);
-				return bankDAO.withdraw(botItem) && characterDao.equip(botItem, slot, 1).ok();
+				return bankDAO.withdraw(bankCode, 1) && characterDao.equip(bankCode, slot, 1).ok();
 			}
 			return false;
 		} finally {

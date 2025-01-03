@@ -50,7 +50,6 @@ public class MonsterGoalAchiever implements GoalAchiever {
 
 	@Override
 	public boolean isRealisable(BotCharacter character) {
-		monsterEquipementService.reset();
 		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS).fightDetails().eval() >= 1;
 	}
 
@@ -66,15 +65,9 @@ public class MonsterGoalAchiever implements GoalAchiever {
 			if (moveService.moveTo(coordinates)) {
 				FightResponse response = characterDAO.fight();
 				if (response.ok()) {
-					if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
-						return false;
-					}
-					if(!response.fight().isWin()) {
-						monsterEquipementService.reset();
-						goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
-					}
-					return !stopCondition.isStop(response);
+					return goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems) && !stopCondition.isStop(response);
 				}
+				goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
 			}
 			return false;
 		} finally {

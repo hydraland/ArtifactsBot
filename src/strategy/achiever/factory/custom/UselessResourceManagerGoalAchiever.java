@@ -55,7 +55,8 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 		int maxSlot = bankDAO.getBankDetail().getSlots();
 		int freeBankSpace = maxSlot - bankDAO.viewItems().size();
 		return maxSkillLevel() > GameConstants.MAX_LEVEL_DIFFERENCE_FOR_XP
-				&& System.currentTimeMillis() - oldCall > ONE_DAY && freeBankSpace <= Math.round(maxSlot*MIN_FREE_SPACE_PER_CENT);
+				&& System.currentTimeMillis() - oldCall > ONE_DAY
+				&& freeBankSpace <= Math.round(maxSlot * MIN_FREE_SPACE_PER_CENT);
 	}
 
 	@Override
@@ -80,10 +81,7 @@ public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiev
 					itemToRemove.setCode(uselessItem.getCode());
 					itemToRemove
 							.setQuantity(Math.min(uselessItem.getQuantity(), characterService.getFreeInventorySpace()));
-					if (!bankDAO.withdraw(itemToRemove)) {
-						return false;
-					}
-					if (characterDAO.deleteItem(itemToRemove).ok()) {
+					if (!bankDAO.withdraw(itemToRemove) || !characterDAO.deleteItem(itemToRemove).ok()) {
 						return false;
 					}
 				}

@@ -51,8 +51,6 @@ import strategy.util.fight.FightDetails;
 import strategy.util.fight.FightService;
 import strategy.util.fight.FightServiceImpl;
 import util.CacheManager;
-import util.EventListener;
-import util.ListenerAdapter;
 import util.PermanentCacheManager;
 
 public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotCharacter> {
@@ -78,7 +76,6 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 	private final SplittableRandom random;
 	private final ByteArrayOutputStream memoryStream;
 	private final ResourceDAO resourceDAO;
-	private final ListenerAdapter<String> listenerAdapter;
 	private final CacheManager<String, Optional<BotBox>> monsterBoxCache;
 	private ItemService itemService;
 
@@ -95,18 +92,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		this.fightService = new FightServiceImpl(this, null, itemDAO, characterService, null, null);
 		this.random = new SplittableRandom();
 		memoryStream = new ByteArrayOutputStream();
-		this.listenerAdapter = new ListenerAdapter<>();
 		this.monsterBoxCache = new PermanentCacheManager<>();
-	}
-
-	@Override
-	public void addEquipmentChangeListener(EventListener<String> listener) {
-		listenerAdapter.addEventListener(listener);
-	}
-
-	@Override
-	public void removeEquipmentChangeListener(EventListener<String> listener) {
-		listenerAdapter.removeEventListener(listener);
 	}
 
 	@Override
@@ -340,7 +326,6 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 			setSlotValue(slot, code, quantity, operator);
 			updateEffect(getItem(CharacterService.getSlotValue(botCharacter, slot)), operator);
 			simulatorListener.call(CLASS_NAME, EQUIP, 3, false);
-			listenerAdapter.fire(EQUIP);
 			return new EquipResponse(true);
 		}
 		simulatorListener.call(CLASS_NAME, EQUIP, 3, true);
@@ -356,7 +341,6 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 			setSlotValue(slot, code, quantity, operator);
 			updateEffect(getItem(code), operator);
 			simulatorListener.call(CLASS_NAME, UNEQUIP, 3, false);
-			listenerAdapter.fire(UNEQUIP);
 			return new EquipResponse(true);
 		}
 		simulatorListener.call(CLASS_NAME, UNEQUIP, 0, true);

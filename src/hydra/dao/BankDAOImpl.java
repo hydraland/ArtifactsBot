@@ -44,8 +44,8 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 		ERROR_BANK_DETAIL.setNextExpansionCost(Integer.MAX_VALUE);
 	}
 
-	public BankDAOImpl(ApiClient apiClient, String persoName, CooldownManager cooldownManager, BankRecorder bankRecorder,
-			CharacterCache characterCache) {
+	public BankDAOImpl(ApiClient apiClient, String persoName, CooldownManager cooldownManager,
+			BankRecorder bankRecorder, CharacterCache characterCache) {
 		this.persoName = persoName;
 		this.cooldownManager = cooldownManager;
 		this.characterCache = characterCache;
@@ -54,7 +54,7 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 		this.bankRecorder = bankRecorder;
 		bankDetailCache = new LimitedTimeCacheManager<>(GameConstants.MIN_COOLDOWN_IN_SECOND);
 	}
-	
+
 	@Override
 	public boolean deposit(String code, int quantity) {
 		cooldownManager.waitBeforeNextAction();
@@ -80,7 +80,7 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 			return false;
 		}
 	}
-	
+
 	@Override
 	public boolean depositGold(int quantity) {
 		cooldownManager.waitBeforeNextAction();
@@ -88,7 +88,8 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 			DepositWithdrawGoldSchema depositWithdrawGoldSchema = new DepositWithdrawGoldSchema();
 			depositWithdrawGoldSchema.setQuantity(quantity);
 			ApiResponse<BankGoldTransactionResponseSchema> response = myCharactersApi
-					.actionDepositBankGoldMyNameActionBankDepositGoldPostWithHttpInfo(persoName, depositWithdrawGoldSchema);
+					.actionDepositBankGoldMyNameActionBankDepositGoldPostWithHttpInfo(persoName,
+							depositWithdrawGoldSchema);
 			if (isOk(response)) {
 				cooldownManager.begin(response.getData().getData().getCooldown().getRemainingSeconds());
 				characterCache.setCharacter(
@@ -104,13 +105,14 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 	}
 
 	@Override
-	public boolean withdraw(BotItemReader item) {
-		if(item.getQuantity() > bankRecorder.getItem(item.getCode()).getQuantity()) {
+	public boolean withdraw(String code, int quantity) {
+		if (quantity > bankRecorder.getItem(code).getQuantity()) {
+			// Protection pour pa piquer chez les autres bots
 			return false;
 		}
 		cooldownManager.waitBeforeNextAction();
 		SimpleItemSchema simpleItemSchema = new SimpleItemSchema();
-		simpleItemSchema.code(item.getCode()).setQuantity(item.getQuantity());
+		simpleItemSchema.code(code).setQuantity(quantity);
 		try {
 			ApiResponse<BankItemTransactionResponseSchema> response = myCharactersApi
 					.actionWithdrawBankMyNameActionBankWithdrawPostWithHttpInfo(persoName, simpleItemSchema);
@@ -118,7 +120,7 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 				cooldownManager.begin(response.getData().getData().getCooldown().getRemainingSeconds());
 				characterCache.setCharacter(
 						Convertor.convert(BotCharacter.class, response.getData().getData().getCharacter()));
-				bankRecorder.remove(item);
+				bankRecorder.remove(code, quantity);
 				return true;
 			} else {
 				return false;
@@ -128,7 +130,7 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 			return false;
 		}
 	}
-	
+
 	@Override
 	public boolean withdrawGold(int quantity) {
 		cooldownManager.waitBeforeNextAction();
@@ -136,7 +138,8 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 			DepositWithdrawGoldSchema depositWithdrawGoldSchema = new DepositWithdrawGoldSchema();
 			depositWithdrawGoldSchema.setQuantity(quantity);
 			ApiResponse<BankGoldTransactionResponseSchema> response = myCharactersApi
-					.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPostWithHttpInfo(persoName, depositWithdrawGoldSchema );
+					.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPostWithHttpInfo(persoName,
+							depositWithdrawGoldSchema);
 			if (isOk(response)) {
 				cooldownManager.begin(response.getData().getData().getCooldown().getRemainingSeconds());
 				characterCache.setCharacter(
@@ -150,9 +153,9 @@ public class BankDAOImpl extends AbstractDAO implements BankDAO {
 			return false;
 		}
 	}
-	
+
 	public BotBankDetail getBankDetail() {
-		if(bankDetailCache.contains(BANK_DETAIL_CACHE_KEY)) {
+		if (bankDetailCache.contains(BANK_DETAIL_CACHE_KEY)) {
 			return bankDetailCache.get(BANK_DETAIL_CACHE_KEY);
 		}
 		try {

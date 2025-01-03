@@ -59,12 +59,17 @@ public class TestSimulation {
 
 		long begin = System.currentTimeMillis();
 		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
+		long inter1 = System.currentTimeMillis();
+		System.out.println("Duree Crafting:" + (inter1 - begin));
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
-
+		long inter2 = System.currentTimeMillis();
+		System.out.println("Duree Cook and Fight:" + (inter2 - inter1));
 		simulateDropItem(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
+		long inter3 = System.currentTimeMillis();
+		System.out.println("Duree Drop:" + (inter3 - inter2));
 		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
-
 		long end = System.currentTimeMillis();
+		System.out.println("Duree fight:" + (end - inter3));
 		System.out.println("Duree:" + (end - begin));
 	}
 
@@ -168,7 +173,10 @@ public class TestSimulation {
 				simulatorManager.getCharacterServiceSimulator(), secondSimulatorManager, secondSimulatedGoalFactory,
 				0.3f);
 
+		long beginSimu = System.currentTimeMillis();
 		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("cyclops", 100);
+		long endSimu = System.currentTimeMillis();
+		System.out.println("Durée simu : "+(endSimu-beginSimu));
 		simulatorManager.setValue(character, viewItems);
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener().setInnerListener((className, methodName, cooldown, error) -> {
@@ -192,12 +200,6 @@ public class TestSimulation {
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
-		/*
-		 * BotItem potion1 = new BotItem(); potion1.setCode("small_health_potion");
-		 * potion1.setQuantity(100); viewItems.add(potion1); BotItem potion2 = new
-		 * BotItem(); potion2.setCode("minor_health_potion"); potion2.setQuantity(100);
-		 * viewItems.add(potion2);
-		 */
 		for (MonsterGoalAchiever simGoal : monsterGoals) {
 			simulatorManager.setValue(character, viewItems);
 			accumulator.reset();
@@ -206,10 +208,6 @@ public class TestSimulation {
 				simLoopGoal.clear();
 				boolean result = simLoopGoal.execute(new HashMap<>());
 				System.out.println(simGoal.getMonsterCode() + ":" + accumulator.get() + ":" + result);
-				System.out.println("Potion : "
-						+ simulatorManager.getCharacterDAOSimulator().getCharacter().getUtility1SlotQuantity());
-				System.out.println("Potion : "
-						+ simulatorManager.getCharacterDAOSimulator().getCharacter().getUtility2SlotQuantity());
 			}
 		}
 	}

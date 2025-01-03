@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -136,10 +137,10 @@ public final class CharacterServiceImpl implements CharacterService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<BotItemInfo> getEquipableCharacterEquipement(BotItemType itemType, Map<String, Integer> reservedItems,
+	private List<BotItemInfo> getEquipableCharacterEquipement(BotItemType itemType, Map<String, Integer> ignoreItems,
 			SlotQuantityStruct... equipementSlots) {
 		BotCharacter character = characterDao.getCharacter();
-		Map<String, BotItemInfo> inventoryItemInfo = new HashMap<>();
+		Map<String, BotItemInfo> duplicateItemInfo = new HashMap<>();
 		Map<String, BotItemDetails> equipementsMap;
 		List<String> equipementsName;
 		if (cache.contains("M" + itemType + character.getLevel())) {
@@ -154,30 +155,30 @@ public final class CharacterServiceImpl implements CharacterService {
 		}
 
 		List<BotInventoryItem> inventoryEqtsFiltered = getFilterEquipementInInventory(equipementsName, "").stream()
-				.filter(bii -> !reservedItems.containsKey(bii.getCode())).toList();
-		List<BotItemInfo> equipementsCharacter = new ArrayList<>();
+				.filter(bii -> !ignoreItems.containsKey(bii.getCode())).toList();
+		List<BotItemInfo> equipementsCharacter = new LinkedList<>();
 		equipementsCharacter.addAll(inventoryEqtsFiltered.stream().<BotItemInfo>mapMulti((item, u) -> {
 			String code = item.getCode();
 			if (equipementsMap.containsKey(code)) {
-				BotItemInfo botItemInfo = new BotItemInfo(equipementsMap.get(code), item.getQuantity(),
-						ItemOrigin.ON_SELF);
+				BotItemInfo botItemInfo = new BotItemInfo(equipementsMap.get(code), item.getQuantity());
 				u.accept(botItemInfo);
-				inventoryItemInfo.put(code, botItemInfo);
+				duplicateItemInfo.put(code, botItemInfo);
 			} // Sinon l'item est de trop haut niveau pour le perso
 		}).toList());
 
 		for (SlotQuantityStruct equipementSlot : equipementSlots) {
 			String slotCode = equipementSlot.slot();
-			if (!"".equals(slotCode)) {
+			if (!"".equals(slotCode) && !ignoreItems.containsKey(slotCode)) {
 				BotItemDetails botItemDetails = equipementsMap.get(slotCode);
-				if (inventoryItemInfo.containsKey(slotCode)) {
-					BotItemInfo oldBotItemInfo = inventoryItemInfo.get(slotCode);
+				if (duplicateItemInfo.containsKey(slotCode)) {
+					BotItemInfo oldBotItemInfo = duplicateItemInfo.get(slotCode);
 					equipementsCharacter.remove(oldBotItemInfo);
-					equipementsCharacter.add(new BotItemInfo(botItemDetails,
-							equipementSlot.quantity() + oldBotItemInfo.quantity(), ItemOrigin.ON_SELF));
+					equipementsCharacter.add(
+							new BotItemInfo(botItemDetails, equipementSlot.quantity() + oldBotItemInfo.quantity()));
 				} else {
-					equipementsCharacter
-							.add(new BotItemInfo(botItemDetails, equipementSlot.quantity(), ItemOrigin.ON_SELF));
+					BotItemInfo botItemInfo = new BotItemInfo(botItemDetails, equipementSlot.quantity());
+					equipementsCharacter.add(botItemInfo);
+					duplicateItemInfo.put(slotCode, botItemInfo);
 				}
 			}
 		}
@@ -186,59 +187,51 @@ public final class CharacterServiceImpl implements CharacterService {
 	}
 
 	@Override
-	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipement(
-			Map<String, Integer> reservedItems, boolean useUtility) {
+	public Map<BotItemType, List<BotItemInfo>> getEquipableCharacterEquipement(
+			Map<String, Integer> ignoreItems, boolean useUtility) {
 		BotCharacter character = characterDao.getCharacter();
 
-		List<BotItemInfo> weaponCharacter = getEquipableCharacterEquipement(BotItemType.WEAPON, reservedItems,
+		List<BotItemInfo> weaponCharacter = getEquipableCharacterEquipement(BotItemType.WEAPON, ignoreItems,
 				new SlotQuantityStruct(character.getWeaponSlot(), 1));
-		List<BotItemInfo> bodyArmorCharacter = getEquipableCharacterEquipement(BotItemType.BODY_ARMOR, reservedItems,
+		List<BotItemInfo> bodyArmorCharacter = getEquipableCharacterEquipement(BotItemType.BODY_ARMOR, ignoreItems,
 				new SlotQuantityStruct(character.getBodyArmorSlot(), 1));
-		List<BotItemInfo> bootsCharacter = getEquipableCharacterEquipement(BotItemType.BOOTS, reservedItems,
+		List<BotItemInfo> bootsCharacter = getEquipableCharacterEquipement(BotItemType.BOOTS, ignoreItems,
 				new SlotQuantityStruct(character.getBootsSlot(), 1));
-		List<BotItemInfo> helmetCharacter = getEquipableCharacterEquipement(BotItemType.HELMET, reservedItems,
+		List<BotItemInfo> helmetCharacter = getEquipableCharacterEquipement(BotItemType.HELMET, ignoreItems,
 				new SlotQuantityStruct(character.getHelmetSlot(), 1));
-		List<BotItemInfo> shieldCharacter = getEquipableCharacterEquipement(BotItemType.SHIELD, reservedItems,
+		List<BotItemInfo> shieldCharacter = getEquipableCharacterEquipement(BotItemType.SHIELD, ignoreItems,
 				new SlotQuantityStruct(character.getShieldSlot(), 1));
-		List<BotItemInfo> legArmorCharacter = getEquipableCharacterEquipement(BotItemType.LEG_ARMOR, reservedItems,
+		List<BotItemInfo> legArmorCharacter = getEquipableCharacterEquipement(BotItemType.LEG_ARMOR, ignoreItems,
 				new SlotQuantityStruct(character.getLegArmorSlot(), 1));
-		List<BotItemInfo> amuletCharacter = getEquipableCharacterEquipement(BotItemType.AMULET, reservedItems,
+		List<BotItemInfo> amuletCharacter = getEquipableCharacterEquipement(BotItemType.AMULET, ignoreItems,
 				new SlotQuantityStruct(character.getAmuletSlot(), 1));
-		List<BotItemInfo> ring1Character = getEquipableCharacterEquipement(BotItemType.RING, reservedItems,
+		List<BotItemInfo> ringCharacter = getEquipableCharacterEquipement(BotItemType.RING, ignoreItems,
 				new SlotQuantityStruct(character.getRing1Slot(), 1),
 				new SlotQuantityStruct(character.getRing2Slot(), 1));
-		List<BotItemInfo> ring2Character = new ArrayList<>(ring1Character);
-		List<BotItemInfo> conso1Character;
+		List<BotItemInfo> consoCharacter;
 		if (useUtility) {
-			conso1Character = getEquipableCharacterEquipement(BotItemType.UTILITY, reservedItems,
+			consoCharacter = getEquipableCharacterEquipement(BotItemType.UTILITY, ignoreItems,
 					new SlotQuantityStruct(character.getUtility1Slot(), character.getUtility1SlotQuantity()),
 					new SlotQuantityStruct(character.getUtility2Slot(), character.getUtility2SlotQuantity()));
 		} else {
-			conso1Character = new ArrayList<>();
+			consoCharacter = new ArrayList<>();
 		}
-		List<BotItemInfo> conso2Character = new ArrayList<>(conso1Character);
-		List<BotItemInfo> artifact1Character = getEquipableCharacterEquipement(BotItemType.ARTIFACT, reservedItems,
+		List<BotItemInfo> artifactCharacter = getEquipableCharacterEquipement(BotItemType.ARTIFACT, ignoreItems,
 				new SlotQuantityStruct(character.getArtifact1Slot(), 1),
 				new SlotQuantityStruct(character.getArtifact2Slot(), 1),
 				new SlotQuantityStruct(character.getArtifact3Slot(), 1));
-		List<BotItemInfo> artifact2Character = new ArrayList<>(artifact1Character);
-		List<BotItemInfo> artifact3Character = new ArrayList<>(artifact1Character);
 
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> result = new EnumMap<>(BotCharacterInventorySlot.class);
-		result.put(BotCharacterInventorySlot.WEAPON, weaponCharacter);
-		result.put(BotCharacterInventorySlot.BODY_ARMOR, bodyArmorCharacter);
-		result.put(BotCharacterInventorySlot.BOOTS, bootsCharacter);
-		result.put(BotCharacterInventorySlot.HELMET, helmetCharacter);
-		result.put(BotCharacterInventorySlot.SHIELD, shieldCharacter);
-		result.put(BotCharacterInventorySlot.LEG_ARMOR, legArmorCharacter);
-		result.put(BotCharacterInventorySlot.AMULET, amuletCharacter);
-		result.put(BotCharacterInventorySlot.RING1, ring1Character);
-		result.put(BotCharacterInventorySlot.RING2, ring2Character);
-		result.put(BotCharacterInventorySlot.UTILITY1, conso1Character);
-		result.put(BotCharacterInventorySlot.UTILITY2, conso2Character);
-		result.put(BotCharacterInventorySlot.ARTIFACT1, artifact1Character);
-		result.put(BotCharacterInventorySlot.ARTIFACT2, artifact2Character);
-		result.put(BotCharacterInventorySlot.ARTIFACT3, artifact3Character);
+		Map<BotItemType, List<BotItemInfo>> result = new EnumMap<>(BotItemType.class);
+		result.put(BotItemType.WEAPON, weaponCharacter);
+		result.put(BotItemType.BODY_ARMOR, bodyArmorCharacter);
+		result.put(BotItemType.BOOTS, bootsCharacter);
+		result.put(BotItemType.HELMET, helmetCharacter);
+		result.put(BotItemType.SHIELD, shieldCharacter);
+		result.put(BotItemType.LEG_ARMOR, legArmorCharacter);
+		result.put(BotItemType.AMULET, amuletCharacter);
+		result.put(BotItemType.RING, ringCharacter);
+		result.put(BotItemType.UTILITY, consoCharacter);
+		result.put(BotItemType.ARTIFACT, artifactCharacter);
 
 		return result;
 	}
@@ -251,7 +244,7 @@ public final class CharacterServiceImpl implements CharacterService {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
+	public Map<BotItemType, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
 			Map<String, Integer> reservedItems, boolean useUtility) {
 		BotCharacter character = characterDao.getCharacter();
 		Map<String, BotItemDetails> equipementsMap;
@@ -263,7 +256,7 @@ public final class CharacterServiceImpl implements CharacterService {
 			cache.add("M" + character.getLevel(), equipementsMap);
 		}
 
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> result = new EnumMap<>(BotCharacterInventorySlot.class);
+		Map<BotItemType, List<BotItemInfo>> result = new EnumMap<>(BotItemType.class);
 		List<? extends BotItemReader> itemInBankFiltered = bankDAO.viewItems().stream()
 				.filter(bi -> !reservedItems.containsKey(bi.getCode())).toList();
 		for (BotItemReader item : itemInBankFiltered) {
@@ -274,80 +267,71 @@ public final class CharacterServiceImpl implements CharacterService {
 				BotItemType type = botItemDetails.getType();
 				switch (type) {
 				case WEAPON: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.WEAPON,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.WEAPON,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case AMULET: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.AMULET,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.AMULET,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case BODY_ARMOR: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.BODY_ARMOR,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.BODY_ARMOR,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case BOOTS: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.BOOTS,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.BOOTS,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case HELMET: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.HELMET,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.HELMET,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case LEG_ARMOR: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.LEG_ARMOR,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.LEG_ARMOR,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case SHIELD: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.SHIELD,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.SHIELD,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case UTILITY: {
 					if (useUtility) {
-						List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.UTILITY1,
+						List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.UTILITY,
 								k -> new ArrayList<>());
-						listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
-						listItems = result.computeIfAbsent(BotCharacterInventorySlot.UTILITY2, k -> new ArrayList<>());
-						listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+						listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					}
 					break;
 				}
 				case RING: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.RING1,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.RING,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
-					listItems = result.computeIfAbsent(BotCharacterInventorySlot.RING2, k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				case ARTIFACT: {
-					List<BotItemInfo> listItems = result.computeIfAbsent(BotCharacterInventorySlot.ARTIFACT1,
+					List<BotItemInfo> listItems = result.computeIfAbsent(BotItemType.ARTIFACT,
 							k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
-					listItems = result.computeIfAbsent(BotCharacterInventorySlot.ARTIFACT2, k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
-					listItems = result.computeIfAbsent(BotCharacterInventorySlot.ARTIFACT3, k -> new ArrayList<>());
-					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity(), ItemOrigin.BANK));
+					listItems.add(new BotItemInfo(botItemDetails, item.getQuantity()));
 					break;
 				}
 				default:
 					throw new IllegalArgumentException("Value  " + type + " not authorize");
 				}
 			}
-
 		}
 		return result;
 	}

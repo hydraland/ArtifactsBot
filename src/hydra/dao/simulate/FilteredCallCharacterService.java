@@ -9,6 +9,7 @@ import hydra.dao.BankDAO;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotInventoryItem;
+import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 import strategy.util.BotItemInfo;
 import strategy.util.CharacterService;
@@ -95,7 +96,7 @@ public final class FilteredCallCharacterService implements CharacterService {
 	}
 
 	@Override
-	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipement(
+	public Map<BotItemType, List<BotItemInfo>> getEquipableCharacterEquipement(
 			Map<String, Integer> reservedItems, boolean useUtility) {
 		simulatorListener.startInnerCall();
 		try {
@@ -116,7 +117,7 @@ public final class FilteredCallCharacterService implements CharacterService {
 	}
 
 	@Override
-	public Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
+	public Map<BotItemType, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
 			Map<String, Integer> reservedItems, boolean useUtility) {
 		simulatorListener.startInnerCall();
 		try {

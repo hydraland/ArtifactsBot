@@ -9,9 +9,9 @@ public interface BankRecorder {
 
 	void putItem(BotItem item);
 
-	BotItemReader remove(BotItemReader botItem);
-
 	List<? extends BotItemReader> viewItems();
 	
 	BotItemReader getItem(String code);
+
+	BotItemReader remove(String code, int quantity);
 }

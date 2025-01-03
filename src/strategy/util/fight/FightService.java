@@ -3,7 +3,7 @@ package strategy.util.fight;
 import java.util.List;
 import java.util.Map;
 
-import hydra.model.BotCharacterInventorySlot;
+import hydra.model.BotItemType;
 import hydra.model.BotMonster;
 import strategy.util.BotItemInfo;
 import strategy.util.OptimizeResult;
@@ -15,7 +15,7 @@ public interface FightService {
 	boolean equipEquipements(BotItemInfo[] bestEqt);
 
 	OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility, boolean ignoreEquiped);
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility, boolean ignoreEquiped);
 
 	OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems);
 

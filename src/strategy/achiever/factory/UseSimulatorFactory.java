@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -15,9 +16,9 @@ import hydra.dao.simulate.CharacterDAOSimulator;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.dao.simulate.StopSimulationException;
 import hydra.model.BotCharacter;
-import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotItemReader;
+import hydra.model.BotItemType;
 import strategy.SumAccumulator;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.GoalFactory.GoalFilter;
@@ -31,7 +32,6 @@ import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.Bornes;
 import strategy.util.BotItemInfo;
 import strategy.util.CharacterService;
-import strategy.util.ItemOrigin;
 import strategy.util.OptimizeResult;
 import strategy.util.StrategySkillUtils;
 import util.Combinator;
@@ -134,29 +134,22 @@ public abstract class UseSimulatorFactory {
 		int maxCookOrPotionTask = Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);
 		OptimizeResult optimizeEquipementsPossesed = simulatorManager.getFightService().optimizeEquipementsPossesed(
 				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), new HashMap<>());
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> eqtList = new EnumMap<>(BotCharacterInventorySlot.class);
-		List<BotItemInfo> utility1 = testGoals.stream()
+		Map<BotItemType, List<BotItemInfo>> eqtList = new EnumMap<>(BotItemType.class);
+		List<BotItemInfo> utility = testGoals.stream()
 				.filter(aga -> BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
-				.map(aga -> new BotItemInfo(itemDAO.getItem(aga.getItemCode()), maxCookOrPotionTask,
-						ItemOrigin.ON_SELF))
+				.map(aga -> new BotItemInfo(itemDAO.getItem(aga.getItemCode()), maxCookOrPotionTask))
 				.collect(Collectors.toList());
-		List<BotItemInfo> utility2 = new ArrayList<>(utility1);
 		BotItemInfo[] bestEqts = optimizeEquipementsPossesed.bestEqt();
-		eqtList.put(BotCharacterInventorySlot.WEAPON, newList(bestEqts[0]));
-		eqtList.put(BotCharacterInventorySlot.BODY_ARMOR, newList(bestEqts[1]));
-		eqtList.put(BotCharacterInventorySlot.BOOTS, newList(bestEqts[2]));
-		eqtList.put(BotCharacterInventorySlot.HELMET, newList(bestEqts[3]));
-		eqtList.put(BotCharacterInventorySlot.SHIELD, newList(bestEqts[4]));
-		eqtList.put(BotCharacterInventorySlot.LEG_ARMOR, newList(bestEqts[5]));
-		eqtList.put(BotCharacterInventorySlot.AMULET, newList(bestEqts[6]));
-		eqtList.put(BotCharacterInventorySlot.RING1, newList(bestEqts[7]));
-		eqtList.put(BotCharacterInventorySlot.RING2, newList(bestEqts[8]));
-		eqtList.put(BotCharacterInventorySlot.UTILITY1, utility1);
-		eqtList.put(BotCharacterInventorySlot.UTILITY2, utility2);
-
-		eqtList.put(BotCharacterInventorySlot.ARTIFACT1, newList(bestEqts[11]));
-		eqtList.put(BotCharacterInventorySlot.ARTIFACT2, newList(bestEqts[12]));
-		eqtList.put(BotCharacterInventorySlot.ARTIFACT3, newList(bestEqts[13]));
+		eqtList.put(BotItemType.WEAPON, newList(bestEqts[0]));
+		eqtList.put(BotItemType.BODY_ARMOR, newList(bestEqts[1]));
+		eqtList.put(BotItemType.BOOTS, newList(bestEqts[2]));
+		eqtList.put(BotItemType.HELMET, newList(bestEqts[3]));
+		eqtList.put(BotItemType.SHIELD, newList(bestEqts[4]));
+		eqtList.put(BotItemType.LEG_ARMOR, newList(bestEqts[5]));
+		eqtList.put(BotItemType.AMULET, newList(bestEqts[6]));
+		eqtList.put(BotItemType.RING, newList(mergeSameRing(bestEqts[7], bestEqts[8])));
+		eqtList.put(BotItemType.UTILITY, utility);
+		eqtList.put(BotItemType.ARTIFACT, newList(bestEqts[11], bestEqts[12], bestEqts[13]));
 		OptimizeResult optimizeEquipements = simulatorManager.getFightService().optimizeEquipements(
 				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), eqtList, true, true);
 		if (optimizeEquipements.fightDetails().eval() >= 1) {
@@ -209,12 +202,23 @@ public abstract class UseSimulatorFactory {
 			}
 		}
 		return foundGoalCode;
-
 	}
 
-	private List<BotItemInfo> newList(BotItemInfo botItemInfo) {
-		List<BotItemInfo> returnList = new ArrayList<>();
-		returnList.add(botItemInfo);
+	private BotItemInfo[] mergeSameRing(BotItemInfo botItemInfo, BotItemInfo botItemInfo2) {
+		if (botItemInfo != null && botItemInfo2 != null
+				&& botItemInfo.botItemDetails().getCode().equals(botItemInfo2.botItemDetails().getCode())) {
+			return new BotItemInfo[] { new BotItemInfo(botItemInfo.botItemDetails(), 2) };
+		}
+		return new BotItemInfo[] { botItemInfo, botItemInfo2 };
+	}
+
+	private List<BotItemInfo> newList(BotItemInfo... botItemInfos) {
+		List<BotItemInfo> returnList = new LinkedList<>();
+		for (BotItemInfo botItemInfo : botItemInfos) {
+			if (botItemInfo != null) {
+				returnList.add(botItemInfo);
+			}
+		}
 		return returnList;
 	}
 

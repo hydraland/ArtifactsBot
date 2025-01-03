@@ -22,7 +22,7 @@ public class BankRecorderImpl implements BankRecorder {
 	private static final Logger LOGGER = Logger.getLogger(MethodHandles.lookup().lookupClass().getName());
 	private List<BotItem> items;
 	private File saveFile;
-	
+
 	public BankRecorderImpl(File saveFile) {
 		this.saveFile = saveFile;
 		load();
@@ -31,8 +31,8 @@ public class BankRecorderImpl implements BankRecorder {
 	@Override
 	public void putItem(BotItem item) {
 		BotItem botItemFound = getItem(item.getCode());
-		if(botItemFound.getQuantity() > 0) {
-			botItemFound.setQuantity(item.getQuantity()+botItemFound.getQuantity());
+		if (botItemFound.getQuantity() > 0) {
+			botItemFound.setQuantity(item.getQuantity() + botItemFound.getQuantity());
 		} else {
 			items.add(item);
 		}
@@ -44,19 +44,19 @@ public class BankRecorderImpl implements BankRecorder {
 		Optional<BotItem> botItemFound = items.stream().filter(botItem -> botItem.getCode().equals(code)).findFirst();
 		return botItemFound.isPresent() ? botItemFound.get() : new BotItem();
 	}
-	
+
 	@Override
-	public BotItemReader remove(BotItemReader botItem) {
-		BotItem searchedItem = getItem(botItem.getCode());
-		if(botItem.getQuantity() == searchedItem.getQuantity()) {
+	public BotItemReader remove(String code, int quantity) {
+		BotItem searchedItem = getItem(code);
+		if (quantity == searchedItem.getQuantity()) {
 			items.remove(searchedItem);
 		} else {
-			searchedItem.setQuantity(searchedItem.getQuantity() - botItem.getQuantity());
+			searchedItem.setQuantity(searchedItem.getQuantity() - quantity);
 		}
 		save();
 		return searchedItem;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private void load() {
 		if (saveFile.exists()) {
@@ -65,18 +65,18 @@ public class BankRecorderImpl implements BankRecorder {
 				items = (List<BotItem>) encoder.readObject();
 			} catch (IOException e) {
 				LOGGER.log(Level.SEVERE, "Bank load error", e);
-			} 
+			}
 		} else {
 			items = Collections.emptyList();
 		}
 	}
-	
+
 	private void save() {
 		try (OutputStream outStream = new FileOutputStream(saveFile); XMLEncoder encoder = new XMLEncoder(outStream)) {
 			encoder.writeObject(items);
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "Bank save error", e);
-		} 
+		}
 	}
 
 	@Override

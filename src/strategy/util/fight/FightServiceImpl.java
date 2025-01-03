@@ -1,13 +1,13 @@
 package strategy.util.fight;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -20,14 +20,13 @@ import hydra.model.BotCharacter;
 import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotEffect;
 import hydra.model.BotInventoryItem;
-import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemReader;
+import hydra.model.BotItemType;
 import hydra.model.BotMonster;
 import strategy.achiever.factory.util.ItemService;
 import strategy.util.BotItemInfo;
 import strategy.util.CharacterService;
-import strategy.util.ItemOrigin;
 import strategy.util.MoveService;
 import strategy.util.OptimizeResult;
 import util.CacheManager;
@@ -61,7 +60,8 @@ public final class FightServiceImpl implements FightService {
 		this.characterService = characterService;
 		this.moveService = moveService;
 		this.itemService = itemService;
-		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 48);
+		// 1 semaine 3600*168
+		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 168);
 		this.useUtilityMap = new HashMap<>();
 		this.oddItems = new HashSet<>();
 	}
@@ -70,7 +70,7 @@ public final class FightServiceImpl implements FightService {
 	public OptimizeResult optimizeEquipementsInInventory(BotMonster monster, Map<String, Integer> reservedItems) {
 		boolean useUtility = useUtilityMap.get(monster.getCode()) == null
 				|| useUtilityMap.get(monster.getCode()).utilityUsed();
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = characterService
+		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = characterService
 				.getEquipableCharacterEquipement(reservedItems, useUtility);
 		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility, false);
 	}
@@ -79,16 +79,16 @@ public final class FightServiceImpl implements FightService {
 	public OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems) {
 		boolean useUtility = useUtilityMap.get(monster.getCode()) == null
 				|| useUtilityMap.get(monster.getCode()).utilityUsed();
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(
-				reservedItems, useUtility);
+		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(reservedItems,
+				useUtility);
 		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility, false);
 	}
 
 	@Override
 	public Map<String, OptimizeResult> optimizeEquipementsPossesed(List<BotMonster> monsters,
 			Map<String, Integer> reservedItems) {
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(
-				reservedItems, true);
+		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(reservedItems,
+				true);
 		Map<String, OptimizeResult> result = new HashMap<>();
 		for (BotMonster monster : monsters) {
 			result.computeIfAbsent(monster.getCode(),
@@ -97,33 +97,61 @@ public final class FightServiceImpl implements FightService {
 		return result;
 	}
 
-	private Map<BotCharacterInventorySlot, List<BotItemInfo>> getAllCharacterEquipments(
-			Map<String, Integer> reservedItems, boolean useUtility) {
+	private Map<BotItemType, List<BotItemInfo>> getAllCharacterEquipments(Map<String, Integer> reservedItems,
+			boolean useUtility) {
 		Map<String, Integer> ignoreItems = new HashMap<>(reservedItems);
+		// On ignore les items dépassé
+		addIgnoreItems(ignoreItems, oddItems);
 		// On ignore les tools, ne sont pas fait pour le combat
 		addIgnoreItems(ignoreItems, itemService.getToolsCode());
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement = characterService
+		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = characterService
 				.getEquipableCharacterEquipement(ignoreItems, useUtility);
 		// On ignore les équipements que l'on a dans l'inventaire ou sur le perso avec
 		// la particularité des ring
 		addIgnoreItems(ignoreItems, equipableCharacterEquipement);
-		Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipementInBank = characterService
+		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipementInBank = characterService
 				.getEquipableCharacterEquipementInBank(bankDao, ignoreItems, useUtility);
 
-		for (Entry<BotCharacterInventorySlot, List<BotItemInfo>> entry : equipableCharacterEquipement.entrySet()) {
+		for (Entry<BotItemType, List<BotItemInfo>> entry : equipableCharacterEquipement.entrySet()) {
 			List<BotItemInfo> list = equipableCharacterEquipementInBank.get(entry.getKey());
 			if (list != null) {
-				entry.getValue().addAll(list);
+				if (BotItemType.RING.equals(entry.getKey())) {
+					List<BotItemInfo> ringsPreserved = new LinkedList<>();
+					Map<String, BotItemInfo> ringsSingle = new HashMap<>();
+					entry.getValue().forEach(bii -> {
+						if (bii.quantity() == 1) {
+							ringsSingle.put(bii.botItemDetails().getCode(), bii);
+						} else {
+							ringsPreserved.add(bii);
+						}
+					});
+					list.forEach(bii -> {
+						if (ringsSingle.containsKey(bii.botItemDetails().getCode())) {
+							if (bii.quantity() > 1) {
+								ringsPreserved.add(bii);
+							} else {
+								ringsPreserved.add(new BotItemInfo(bii.botItemDetails(), 2));
+							}
+							ringsSingle.remove(bii.botItemDetails().getCode());
+						} else {
+							ringsPreserved.add(bii);
+						}
+					});
+					entry.getValue().clear();
+					entry.getValue().addAll(ringsPreserved);
+					entry.getValue().addAll(ringsSingle.values());
+				} else {
+					entry.getValue().addAll(list);
+				}
 			}
 		}
 		return equipableCharacterEquipement;
 	}
 
 	private void addIgnoreItems(Map<String, Integer> ignoreItems,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement) {
-		for (Entry<BotCharacterInventorySlot, List<BotItemInfo>> entry : equipableCharacterEquipement.entrySet()) {
-			if (!BotCharacterInventorySlot.RING1.equals(entry.getKey())
-					&& !BotCharacterInventorySlot.RING2.equals(entry.getKey())) {
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement) {
+		for (Entry<BotItemType, List<BotItemInfo>> entry : equipableCharacterEquipement.entrySet()) {
+			if (!BotItemType.RING.equals(entry.getKey())) {
 				entry.getValue().forEach(bii -> ignoreItems.put(bii.botItemDetails().getCode(), 0));
 			} else {
 				// On ignore que s'il y a au moins 2 ring
@@ -133,65 +161,45 @@ public final class FightServiceImpl implements FightService {
 		}
 	}
 
-	private void addIgnoreItems(Map<String, Integer> ignoreItems, List<String> toolsCode) {
-		toolsCode.stream().forEach(tc -> ignoreItems.put(tc, 0));
-	}
-
-	private String createKey(Integer characterHp, String code,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement) {
-		StringBuilder builder = new StringBuilder();
-		builder.append(characterHp);
-		builder.append(code);
-		equipableCharacterEquipement.entrySet().stream()
-				.forEach(entry -> builder.append(entry.getKey()).append(Objects.hash(entry.getValue().toArray())));
-		return builder.toString();
+	private void addIgnoreItems(Map<String, Integer> ignoreItems, Collection<String> itemsCode) {
+		itemsCode.stream().forEach(tc -> ignoreItems.put(tc, 0));
 	}
 
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotCharacterInventorySlot, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility,
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility,
 			boolean ignoreEquiped) {
 		// TODO Voir si tenir compte du vrai HP du perso (Peut être cela ne sert pas à
 		// grand chose)??
 		int characterHp = characterService.getCharacterHPWithoutEquipment();
-		String key = createKey(characterHp, monster.getCode(), equipableCharacterEquipement);
+		String key = FightServiceUtils.createKey(characterHp, monster.getCode(), equipableCharacterEquipement);
 		if (optimizeCacheManager.contains(key)) {
 			return optimizeCacheManager.get(key);
 		}
-		List<BotItemInfo> weaponCharacter = filterOdd(
-				equipableCharacterEquipement.get(BotCharacterInventorySlot.WEAPON));
-		List<BotItemInfo> bodyArmorCharacter = filterOdd(
-				equipableCharacterEquipement.get(BotCharacterInventorySlot.BODY_ARMOR));
-		List<BotItemInfo> bootsCharacter = filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.BOOTS));
-		List<BotItemInfo> helmetCharacter = filterOdd(
-				equipableCharacterEquipement.get(BotCharacterInventorySlot.HELMET));
-		List<BotItemInfo> shieldCharacter = filterOdd(
-				equipableCharacterEquipement.get(BotCharacterInventorySlot.SHIELD));
-		List<BotItemInfo> legArmorCharacter = filterOdd(
-				equipableCharacterEquipement.get(BotCharacterInventorySlot.LEG_ARMOR));
-		List<BotItemInfo> amulerCharacter = filterOdd(
-				equipableCharacterEquipement.get(BotCharacterInventorySlot.AMULET));
-		List<BotItemInfo> ring1Character = new ArrayList<>(
-				filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING1)));
-		List<BotItemInfo> ring2Character = new ArrayList<>(
-				filterOdd(equipableCharacterEquipement.get(BotCharacterInventorySlot.RING2)));
-		List<BotItemInfo> utility1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY1);
-		List<BotItemInfo> utility2Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.UTILITY2);
-		List<BotItemInfo> artifact1Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT1);
-		List<BotItemInfo> artifact2Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT2);
-		List<BotItemInfo> artifact3Character = equipableCharacterEquipement.get(BotCharacterInventorySlot.ARTIFACT3);
+		List<BotItemInfo> weaponCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.WEAPON));
+		List<BotItemInfo> bodyArmorCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.BODY_ARMOR));
+		List<BotItemInfo> bootsCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.BOOTS));
+		List<BotItemInfo> helmetCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.HELMET));
+		List<BotItemInfo> shieldCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.SHIELD));
+		List<BotItemInfo> legArmorCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.LEG_ARMOR));
+		List<BotItemInfo> amulerCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.AMULET));
+		List<BotItemInfo> ring1Character = new LinkedList<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.RING)));
+		List<BotItemInfo> utility1Character = equipableCharacterEquipement.get(BotItemType.UTILITY);
+		List<BotItemInfo> artifact1Character = equipableCharacterEquipement.get(BotItemType.ARTIFACT);
 
 		// On ajoute null pour les items multiples, à faire sur les autres si la notion
 		// d'item mauvais apparait
 		if (ring1Character.size() == 1 && ring1Character.getFirst().quantity() == 1) {
 			addNullValueIfAbsent(ring1Character);
-			addNullValueIfAbsent(ring2Character);
 		}
 		addNullValueIfAbsent(utility1Character);
-		addNullValueIfAbsent(utility2Character);
 		addNullValueIfAbsent(artifact1Character);
-		addNullValueIfAbsent(artifact2Character);
-		addNullValueIfAbsent(artifact3Character);
+
+		List<BotItemInfo> ring2Character = new LinkedList<>(ring1Character);
+		List<BotItemInfo> utility2Character = new LinkedList<>(utility1Character);
+		List<BotItemInfo> artifact2Character = new LinkedList<>(artifact1Character);
+		List<BotItemInfo> artifact3Character = new LinkedList<>(artifact1Character);
 
 		Combinator<BotItemInfo> combinator = new Combinator<>(BotItemInfo.class, 14);
 		combinator.set(0, weaponCharacter);
@@ -316,7 +324,7 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private BotItemInfo initBestEquipement(String slot, int quantity) {
-		return "".equals(slot) ? null : new BotItemInfo(itemDAO.getItem(slot), quantity, ItemOrigin.ON_SELF);
+		return "".equals(slot) ? null : new BotItemInfo(itemDAO.getItem(slot), quantity);
 	}
 
 	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster,
@@ -362,8 +370,7 @@ public final class FightServiceImpl implements FightService {
 		// cas ou les rings sont dans l'inventaire, à la bank ou les 2
 		if (botItemInfos[7] != null && botItemInfos[8] != null
 				&& botItemInfos[7].botItemDetails().getCode().equals(botItemInfos[8].botItemDetails().getCode())) {
-			return botItemInfos[7].quantity() > 1 || botItemInfos[8].quantity() > 1
-					|| !botItemInfos[7].origin().equals(botItemInfos[8].origin());
+			return botItemInfos[7].quantity() > 1;
 		}
 		return true;
 	}
@@ -399,14 +406,16 @@ public final class FightServiceImpl implements FightService {
 		// Le calcul fait que l'on privilégie la non utilisation de potion quand cela
 		// est possible
 		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
-		//Si le tour du monstre est inférieur à celui du perso on met 100 pour explorer d'autres possibilités
-		return new FightDetails(((double) monsterResult.monsterTurn()) / characterTurn, nbTurn, nbTurn < characterTurn ? GameConstants.MAX_FIGHT_TURN : characterTurn,
+		// Si le tour du monstre est inférieur à celui du perso on met 100 pour explorer
+		// d'autres possibilités
+		return new FightDetails(((double) monsterResult.monsterTurn()) / characterTurn, nbTurn,
+				nbTurn < characterTurn ? GameConstants.MAX_FIGHT_TURN : characterTurn,
 				nbTurn < characterTurn ? Integer.MAX_VALUE : monsterResult.characterLossHP(),
 				monsterResult.restoreTurn());
 	}
 
 	private List<RestoreStruct> getRestoreValue(Map<Integer, Integer> effectMap) {
-		List<RestoreStruct> result = new ArrayList<>();
+		List<RestoreStruct> result = new LinkedList<>();
 		int index = -1;
 		while (effectMap.containsKey(index)) {
 			result.add(new RestoreStruct(effectMap.get(index), effectMap.get(index - 1)));
@@ -523,21 +532,15 @@ public final class FightServiceImpl implements FightService {
 				character.getRing2Slot(), character.getUtility1Slot(), character.getUtility2Slot(),
 				character.getArtifact1Slot(), character.getArtifact2Slot(), character.getArtifact3Slot() };
 
-		if (containtsItemBankOrigin(bestEqts) && !moveService.moveToBank()) {
-			return false;
-		}
-
 		EquipResponse response = null;
 		// Traitement équipement ne posant pas de problème d'unicité
 		for (int i = 0; i < 7; i++) {
 			if (bestEqts[i] != null) {
-				if (bestEqts[i].origin().equals(ItemOrigin.BANK)) {
-					BotItem botItem = new BotItem();
-					botItem.setCode(bestEqts[i].botItemDetails().getCode());
-					botItem.setQuantity(1);
-					if (!bankDao.withdraw(botItem)) {
-						return false;
-					}
+				if (!equipedEqt[i].equals(bestEqts[i].botItemDetails().getCode())
+						&& !characterService.inventoryConstaints(bestEqts[i].botItemDetails().getCode(), 1)
+						&& (!moveService.moveToBank()
+								|| !bankDao.withdraw(bestEqts[i].botItemDetails().getCode(), 1))) {
+					return false;
 				}
 				if ("".equals(equipedEqt[i])) {
 					response = characterDao.equip(bestEqts[i].botItemDetails(), SLOTS[i], 1);
@@ -571,34 +574,23 @@ public final class FightServiceImpl implements FightService {
 		return equipedConsomable(bestEqts, equipedEqt);
 	}
 
-	private boolean containtsItemBankOrigin(BotItemInfo[] bestEqts) {
-		for (int i = 0; i < bestEqts.length; i++) {
-			BotItemInfo bestEqt = bestEqts[i];
-			if (bestEqt != null && bestEqt.origin().equals(ItemOrigin.BANK)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	@SuppressWarnings("unlikely-arg-type")
 	private boolean equipedConsomable(BotItemInfo[] bestEqts, String[] equipedEqt) {
 		EquipResponse response;
-		List<DiffStruct<Integer>> equipedEqtDiff = new ArrayList<>();
-		List<DiffStruct<Integer>> equipedEqtSame = new ArrayList<>();
+		List<DiffStruct<Integer>> equipedEqtDiff = new LinkedList<>();
+		List<DiffStruct<Integer>> equipedEqtSame = new LinkedList<>();
 		for (int i = 9; i <= 10; i++) {
 			equipedEqtDiff.add(new DiffStruct<>(equipedEqt[i], i));
 		}
 
-		List<DiffStruct<ItemOrigin>> bestEqtDiff = new ArrayList<>();
+		List<DiffStruct<Void>> bestEqtDiff = new LinkedList<>();
 		for (int i = 9; i <= 10; i++) {
-			ItemOrigin origin = bestEqts[i] == null ? ItemOrigin.ON_SELF : bestEqts[i].origin();
 			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
 			SearchDiffStruct searchStruct = new SearchDiffStruct(code);
 			if (equipedEqtDiff.contains(searchStruct)) {
 				equipedEqtSame.add(equipedEqtDiff.remove(equipedEqtDiff.indexOf(searchStruct)));
 			} else {
-				bestEqtDiff.add(new DiffStruct<>(code, origin));
+				bestEqtDiff.add(new DiffStruct<>(code, null));
 			}
 		}
 
@@ -618,7 +610,7 @@ public final class FightServiceImpl implements FightService {
 		}
 
 		for (DiffStruct<Integer> equipedStruct : equipedEqtDiff) {
-			DiffStruct<ItemOrigin> bestStruct = bestEqtDiff.removeFirst();
+			DiffStruct<Void> bestStruct = bestEqtDiff.removeFirst();
 			boolean unequipOk = false;
 			int freeInventorySpace = characterService.getFreeInventorySpace();
 			int equipedQuantity = characterService.getUtilitySlotQuantity(SLOTS[equipedStruct.value()]);
@@ -647,22 +639,20 @@ public final class FightServiceImpl implements FightService {
 				unequipOk = true;
 			}
 
-			if (unequipOk && !bestStruct.code().equals("")) {
-				if (bestStruct.value().equals(ItemOrigin.BANK)) {
-					// Ici on est forcément sur la map de la bank
-					BotItemReader itemInBank = bankDao.getItem(bestStruct.code());
-					BotItem botItem = new BotItem();
-					botItem.setCode(bestStruct.code());
-					botItem.setQuantity(Math.min(GameConstants.MAX_ITEM_IN_SLOT,
-							Math.min(freeInventorySpace, itemInBank.getQuantity())));
-					if (botItem.getQuantity() > 0 && !bankDao.withdraw(botItem)) {
+			String bestStructCode = bestStruct.code();
+			if (unequipOk && !bestStructCode.equals("")) {
+				if (!characterService.inventoryConstaints(bestStructCode, 1)) {
+					BotItemReader itemInBank = bankDao.getItem(bestStructCode);
+					int quantity = Math.min(GameConstants.MAX_ITEM_IN_SLOT,
+							Math.min(freeInventorySpace, itemInBank.getQuantity()));
+					if (quantity > 0 && (!moveService.moveToBank() || !bankDao.withdraw(bestStructCode, quantity))) {
 						return false;
 					}
 				}
 				Optional<BotInventoryItem> potionInInventory = characterService
-						.getFirstEquipementInInventory(Arrays.asList(bestStruct.code()));
+						.getFirstEquipementInInventory(Arrays.asList(bestStructCode));
 				if (potionInInventory.isPresent()) {
-					response = characterDao.equip(bestStruct.code(), SLOTS[equipedStruct.value()],
+					response = characterDao.equip(bestStructCode, SLOTS[equipedStruct.value()],
 							Math.min(GameConstants.MAX_ITEM_IN_SLOT, potionInInventory.get().getQuantity()));
 					if (!response.ok()) {
 						return false;
@@ -677,38 +667,33 @@ public final class FightServiceImpl implements FightService {
 	private boolean equipedRingOrArtefact(BotItemInfo[] bestEqts, String[] equipedEqt, int minRange,
 			int maxExcludeRange) {
 		EquipResponse response;
-		List<DiffStruct<Integer>> equipedEqtDiff = new ArrayList<>();
+		List<DiffStruct<Integer>> equipedEqtDiff = new LinkedList<>();
 		for (int i = minRange; i < maxExcludeRange; i++) {
 			equipedEqtDiff.add(new DiffStruct<>(equipedEqt[i], i));
 		}
 
-		List<DiffStruct<ItemOrigin>> bestEqtDiff = new ArrayList<>();
+		List<DiffStruct<Void>> bestEqtDiff = new LinkedList<>();
 		for (int i = minRange; i < maxExcludeRange; i++) {
-			ItemOrigin origin = bestEqts[i] == null ? ItemOrigin.ON_SELF : bestEqts[i].origin();
 			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
-			if (ItemOrigin.BANK.equals(origin) || !equipedEqtDiff.remove(new SearchDiffStruct(code))) {
-				bestEqtDiff.add(new DiffStruct<>(code, origin));
+			if (!equipedEqtDiff.remove(new SearchDiffStruct(code))) {
+				bestEqtDiff.add(new DiffStruct<>(code, null));
 			}
 		}
 
 		for (DiffStruct<Integer> equipedStruct : equipedEqtDiff) {
-			DiffStruct<ItemOrigin> bestStruct = bestEqtDiff.removeFirst();
-			if (bestStruct.value().equals(ItemOrigin.BANK)) {
-				BotItem botItem = new BotItem();
-				botItem.setCode(bestStruct.code());
-				botItem.setQuantity(1);
-				if (!bankDao.withdraw(botItem)) {
-					return false;
-				}
-			}
-
-			if (!"".equals(equipedStruct.code())) {
+			DiffStruct<Void> bestStruct = bestEqtDiff.removeFirst();
+			String bestStructCode = bestStruct.code();
+			if (!"".equals(bestStructCode)) {
 				response = characterDao.unequip(SLOTS[equipedStruct.value()], 1);
 				if (!response.ok()) {
 					return false;
 				}
 			}
-			response = characterDao.equip(bestStruct.code(), SLOTS[equipedStruct.value()], 1);
+			if (!characterService.inventoryConstaints(bestStructCode, 1)
+					&& (!moveService.moveToBank() || !bankDao.withdraw(bestStructCode, 1))) {
+				return false;
+			}
+			response = characterDao.equip(bestStructCode, SLOTS[equipedStruct.value()], 1);
 			if (!response.ok()) {
 				return false;
 			}

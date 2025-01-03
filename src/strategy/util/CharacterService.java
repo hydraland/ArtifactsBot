@@ -11,6 +11,7 @@ import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotCraftSkill;
 import hydra.model.BotInventoryItem;
 import hydra.model.BotItemDetails;
+import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 
 public interface CharacterService {
@@ -29,7 +30,7 @@ public interface CharacterService {
 
 	int getLevel(BotResourceSkill key);
 
-	Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipement(
+	Map<BotItemType, List<BotItemInfo>> getEquipableCharacterEquipement(
 			Map<String, Integer> reservedItems, boolean useUtility);
 
 	static String getSlotValue(BotCharacter character, BotCharacterInventorySlot slot) {
@@ -69,7 +70,7 @@ public interface CharacterService {
 
 	int getCharacterHPWithoutEquipment();
 
-	Map<BotCharacterInventorySlot, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
+	Map<BotItemType, List<BotItemInfo>> getEquipableCharacterEquipementInBank(BankDAO bankDAO,
 			Map<String, Integer> reservedItems, boolean useUtility);
 
 	int getQuantityEquipableForUtility(BotItemInfo botItemInfo, BotCharacterInventorySlot slot);

@@ -42,8 +42,6 @@ import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 import hydra.model.BotRecycleDetails;
 import strategy.achiever.Interruptor;
-import util.EventListener;
-import util.ListenerAdapter;
 
 public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 	private String persoName;
@@ -54,7 +52,6 @@ public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 	private static final int NOT_FOUND_CODE = 598;
 	private final CharactersApi charactersApi;
 	private final Interruptor interruptor;
-	private final ListenerAdapter<String> listenerAdapter;
 
 	public CharacterDAOImpl(ApiClient apiClient, String persoName, CooldownManager cooldownManager,
 			CharacterCache characterCache, Interruptor interruptor) {
@@ -64,17 +61,6 @@ public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 		this.charactersApi = new CharactersApi(apiClient);
 		this.persoName = persoName;
 		this.cooldownManager = cooldownManager;
-		this.listenerAdapter = new ListenerAdapter<>();
-	}
-	
-	@Override
-	public void addEquipmentChangeListener(EventListener<String> listener) {
-		listenerAdapter.addEventListener(listener);
-	}
-	
-	@Override
-	public void removeEquipmentChangeListener(EventListener<String> listener) {
-		listenerAdapter.removeEventListener(listener);
 	}
 
 	@Override
@@ -184,7 +170,6 @@ public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 			ApiResponse<EquipmentResponseSchema> response = myCharactersApi
 					.actionEquipItemMyNameActionEquipPostWithHttpInfo(persoName, equipSchema);
 			if (isOk(response)) {
-				listenerAdapter.fire("equip");
 				cooldownManager.begin(response.getData().getData().getCooldown().getRemainingSeconds());
 				characterCache.setCharacter(
 						Convertor.convert(BotCharacter.class, response.getData().getData().getCharacter()));
@@ -277,7 +262,6 @@ public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 			ApiResponse<EquipmentResponseSchema> response = myCharactersApi
 					.actionUnequipItemMyNameActionUnequipPostWithHttpInfo(persoName, unequipSchema);
 			if (isOk(response)) {
-				listenerAdapter.fire("unequip");
 				cooldownManager.begin(response.getData().getData().getCooldown().getRemainingSeconds());
 				characterCache.setCharacter(
 						Convertor.convert(BotCharacter.class, response.getData().getData().getCharacter()));

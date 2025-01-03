@@ -44,7 +44,6 @@ public final class EquilibrumBot extends Bot {
 		FightService fightService = new FightServiceImpl(characterDao, bankDao, itemDao, characterService, moveService,
 				itemService);
 		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
-		characterDao.addEquipmentChangeListener(monsterEquipementService);
 		GoalFactoryCreator goalFactoryCreator = new GoalFactoryCreatorImpl(characterDao, bankDao, itemDao,
 				grandExchangeDAO, taskDao, mapDao, moveService, characterService, itemService, fightService,
 				monsterEquipementService, goalParameter);

@@ -10,8 +10,6 @@ import hydra.dao.ItemDAO;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.dao.simulate.StopSimulationException;
 import hydra.model.BotCharacter;
-import hydra.model.BotItem;
-import hydra.model.BotItemReader;
 import strategy.SumAccumulator;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
@@ -91,7 +89,7 @@ public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 				} else {
 					quantity = hpToHeal / singleHeal + 1;
 				}
-				if (!moveService.moveToBank() || !bankDAO.withdraw(restoreStructToBotItem(healItem, quantity))
+				if (!moveService.moveToBank() || !bankDAO.withdraw(healItem.itemDetails().getCode(), quantity)
 						|| !characterDAO.use(healItem.itemDetails().getCode(), quantity).ok()) {
 					return hpToHeal;
 				}
@@ -104,12 +102,5 @@ public class HPRecoveryUseSimulator extends AbstractHPRecovery {
 		} finally {
 			moveService.moveTo(Arrays.asList(characterCoordinate));
 		}
-	}
-
-	private static BotItemReader restoreStructToBotItem(RestoreStruct itemStruct, int quantity) {
-		BotItem item = new BotItem();
-		item.setCode(itemStruct.itemDetails().getCode());
-		item.setQuantity(quantity);
-		return item;
 	}
 }

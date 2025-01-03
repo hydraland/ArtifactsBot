@@ -14,7 +14,6 @@ import hydra.model.BotCharacterInventorySlot;
 import hydra.model.BotInventoryItem;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemReader;
-import util.EventListener;
 
 public interface CharacterDAO {
 
@@ -67,9 +66,4 @@ public interface CharacterDAO {
 	default UseResponse use(BotInventoryItem item) {
 		return use(item.getCode(), item.getQuantity());
 	}
-
-	void removeEquipmentChangeListener(EventListener<String> listener);
-
-	void addEquipmentChangeListener(EventListener<String> listener);
-
 }

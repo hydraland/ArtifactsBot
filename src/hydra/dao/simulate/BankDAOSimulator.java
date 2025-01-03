@@ -29,8 +29,7 @@ public final class BankDAOSimulator implements BankDAO, Simulator<BankStruct> {
 	public boolean deposit(String code, int quantity) {
 		int maxSlots = bankStruct.getBankDetail().getSlots();
 		int fillSlot = bankStruct.getStock().size() + (bankStruct.getStock().containsKey(code) ? 0 : 1);
-		if (fillSlot <= maxSlots
-				&& characterDAOSimulator.checkWithdrawInInventory(code, quantity)) {
+		if (fillSlot <= maxSlots && characterDAOSimulator.checkWithdrawInInventory(code, quantity)) {
 			simulatorListener.call(CLASS_NAME, "deposit", COOLDOWN, false);
 			bankStruct.getStock().merge(code, quantity,
 					(current, newVal) -> current != null ? current + newVal : newVal);
@@ -42,11 +41,13 @@ public final class BankDAOSimulator implements BankDAO, Simulator<BankStruct> {
 	}
 
 	@Override
-	public boolean withdraw(BotItemReader item) {
-		if (bankStruct.getStock().getOrDefault(item.getCode(), 0) >= item.getQuantity()
-				&& characterDAOSimulator.checkDepositInInventory(item.getCode(), item.getQuantity())) {
+	public boolean withdraw(String code, int quantity) {
+		if (bankStruct.getStock().getOrDefault(code, 0) >= quantity
+				&& characterDAOSimulator.checkDepositInInventory(code, quantity)) {
 			simulatorListener.call(CLASS_NAME, "withdraw", COOLDOWN, false);
-			characterDAOSimulator.depositInInventory(item.getCode(), item.getQuantity());
+			characterDAOSimulator.depositInInventory(code, quantity);
+			bankStruct.getStock().merge(code, quantity,
+					(current, newVal) -> current - newVal == 0 ? null : current - newVal);
 			return true;
 		}
 		simulatorListener.call(CLASS_NAME, "withdraw", 0, true);
