@@ -134,7 +134,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		FightDetails calculateFightResult = fightService.calculateFightResult(monster);
 		simulatorListener.stopInnerCall();
 		BotFight botFight = new BotFight();
-		botFight.setTurns((int) calculateFightResult.nbTurn());
+		botFight.setTurns(calculateFightResult.nbTurn());
 		botFight.setResult(calculateFightResult.eval() >= 1 ? "win" : "loss");
 		if (botFight.isWin()) {
 			List<BotDropReceived> drops = generateDrop(monster.getDrops());
@@ -167,7 +167,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 			botCharacter.setX(0);
 			botCharacter.setY(0);
 		}
-		long turn = calculateFightResult.nbTurn() * 2;
+		int turn = calculateFightResult.nbTurn() * 2 - (botFight.isWin() ? 1 : 0);
 		int cooldown = Math.max(Math.round(turn - (botCharacter.getHaste() * 0.01f * turn)), 5);
 		// update potion number
 		updateUtility(BotCharacterInventorySlot.UTILITY1, calculateFightResult);
@@ -183,12 +183,10 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 			BotItemDetails item = itemDAO.getItem(CharacterService.getSlotValue(botCharacter, slot));
 			final Optional<BotItemEffect> effectRestore = item.getEffects().stream()
 					.filter(bie -> BotEffect.RESTORE.equals(bie.getName())).findAny();
-			final Optional<BotItemEffect> effectTeleport = item.getEffects().stream()
-					.filter(bie -> BotEffect.TELEPORT_X.equals(bie.getName())).findAny();
 			int quantity = 0;
 			if (effectRestore.isPresent()) {
 				quantity = Math.min(utilityQuantity, calculateFightResult.restoreTurn());
-			} else if (effectTeleport.isEmpty()) {
+			} else {
 				quantity = 1;
 			}
 			if (quantity > 0) {
