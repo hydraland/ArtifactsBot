@@ -71,7 +71,7 @@ public final class FightServiceImpl implements FightService {
 		boolean useUtility = !noUseUtilityMonsterCode.contains(monster.getCode());
 		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = characterService
 				.getEquipableCharacterEquipement(reservedItems, useUtility);
-		return optimizeEquipements(monster, equipableCharacterEquipement, false);
+		return optimizeEquipements(monster, equipableCharacterEquipement);
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public final class FightServiceImpl implements FightService {
 		boolean useUtility = !noUseUtilityMonsterCode.contains(monster.getCode());
 		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(reservedItems,
 				useUtility);
-		return optimizeEquipements(monster, equipableCharacterEquipement, false);
+		return optimizeEquipements(monster, equipableCharacterEquipement);
 	}
 
 	@Override
@@ -90,7 +90,7 @@ public final class FightServiceImpl implements FightService {
 		Map<String, OptimizeResult> result = new HashMap<>();
 		for (BotMonster monster : monsters) {
 			result.computeIfAbsent(monster.getCode(),
-					c -> optimizeEquipements(monster, equipableCharacterEquipement, false));
+					c -> optimizeEquipements(monster, equipableCharacterEquipement));
 		}
 		return result;
 	}
@@ -162,15 +162,18 @@ public final class FightServiceImpl implements FightService {
 	private void addIgnoreItems(Map<String, Integer> ignoreItems, Collection<String> itemsCode) {
 		itemsCode.stream().forEach(tc -> ignoreItems.put(tc, 0));
 	}
+	
+	private OptimizeResult optimizeEquipements(BotMonster monster,
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement) {
+		int characterHp = characterService.getCharacterHPWithoutEquipment();
+		return optimizeEquipements(monster, equipableCharacterEquipement, false, characterHp);
+	}
 
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
 			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement,
-			boolean ignoreEquiped) {
-		// TODO Voir si tenir compte du vrai HP du perso (Peut être cela ne sert pas à
-		// grand chose)??
-		int characterHp = characterService.getCharacterHPWithoutEquipment();
-		String key = FightServiceUtils.createKey(characterHp, monster.getCode(), equipableCharacterEquipement);
+			boolean ignoreEquiped, int characterHpWithoutEqt) {
+		String key = FightServiceUtils.createKey(characterHpWithoutEqt, monster.getCode(), equipableCharacterEquipement);
 		if (optimizeCacheManager.contains(key)) {
 			return optimizeCacheManager.get(key);
 		}
@@ -217,7 +220,7 @@ public final class FightServiceImpl implements FightService {
 
 		BotItemInfo[] bestEquipements = ignoreEquiped ? null : initBestEquipments(characterDao.getCharacter());
 		FightDetails maxFightDetails = ignoreEquiped ? DEFAULT_FIGHT_DETAILS
-				: initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp);
+				: initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHpWithoutEqt);
 		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
 			if (validCombinaison(botItemInfos)) {
@@ -228,7 +231,7 @@ public final class FightServiceImpl implements FightService {
 				}
 
 				// Evaluation
-				FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHp,
+				FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHpWithoutEqt,
 						maxFightDetails.characterTurn());
 				if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (currentFightDetails
 						.characterTurn() == maxFightDetails.characterTurn()
@@ -570,11 +573,11 @@ public final class FightServiceImpl implements FightService {
 		}
 
 		// Traitement des consommables
-		return equipedConsomable(bestEqts, equipedEqt);
+		return equipedUtility(bestEqts, equipedEqt);
 	}
 
 	@SuppressWarnings("unlikely-arg-type")
-	private boolean equipedConsomable(BotItemInfo[] bestEqts, String[] equipedEqt) {
+	private boolean equipedUtility(BotItemInfo[] bestEqts, String[] equipedEqt) {
 		EquipResponse response;
 		List<DiffStruct<Integer>> equipedEqtDiff = new LinkedList<>();
 		List<DiffStruct<Integer>> equipedEqtSame = new LinkedList<>();

@@ -14,13 +14,13 @@ public interface FightService {
 
 	boolean equipEquipements(BotItemInfo[] bestEqt);
 
-	OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, boolean ignoreEquiped);
-
 	OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems);
 
 	Map<String, OptimizeResult> optimizeEquipementsPossesed(List<BotMonster> monsters,
 			Map<String, Integer> reservedItems);
 
 	FightDetails calculateFightResult(BotMonster monster);
+
+	OptimizeResult optimizeEquipements(BotMonster monster,
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, boolean ignoreEquiped, int characterHpWithoutEqt);
 }
