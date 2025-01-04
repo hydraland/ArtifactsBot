@@ -135,7 +135,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		simulatorListener.stopInnerCall();
 		BotFight botFight = new BotFight();
 		botFight.setTurns(calculateFightResult.nbTurn());
-		botFight.setResult(calculateFightResult.eval() >= 1 ? "win" : "loss");
+		botFight.setResult(calculateFightResult.win() ? "win" : "loss");
 		if (botFight.isWin()) {
 			List<BotDropReceived> drops = generateDrop(monster.getDrops());
 			save(false);

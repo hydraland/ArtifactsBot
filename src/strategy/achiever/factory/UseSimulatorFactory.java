@@ -150,9 +150,9 @@ public abstract class UseSimulatorFactory {
 		eqtList.put(BotItemType.RING, newList(mergeSameRing(bestEqts[7], bestEqts[8])));
 		eqtList.put(BotItemType.UTILITY, utility);
 		eqtList.put(BotItemType.ARTIFACT, newList(bestEqts[11], bestEqts[12], bestEqts[13]));
-		OptimizeResult optimizeEquipements = simulatorManager.getFightService().optimizeEquipements(
-				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), eqtList, true, true);
-		if (optimizeEquipements.fightDetails().eval() >= 1) {
+		OptimizeResult optimizeEquipements = simulatorManager.getFightService()
+				.optimizeEquipements(simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), eqtList, true);
+		if (optimizeEquipements.fightDetails().win()) {
 			List<GoalAchieverInfo<ArtifactGoalAchiever>> cookingGoal = testGoals.stream()
 					.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())).toList();
 			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal = optimizeEquipements.bestEqt()[9] == null ? null

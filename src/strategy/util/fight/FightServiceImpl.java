@@ -34,7 +34,7 @@ import util.Combinator;
 import util.LimitedTimeCacheManager;
 
 public final class FightServiceImpl implements FightService {
-	private static final FightDetails DEFAULT_FIGHT_DETAILS = new FightDetails(0, GameConstants.MAX_FIGHT_TURN,
+	private static final FightDetails DEFAULT_FIGHT_DETAILS = new FightDetails(false, GameConstants.MAX_FIGHT_TURN,
 			GameConstants.MAX_FIGHT_TURN, Integer.MAX_VALUE, 0);
 	private final CharacterDAO characterDao;
 	private final CharacterService characterService;
@@ -49,7 +49,7 @@ public final class FightServiceImpl implements FightService {
 	private final ItemDAO itemDAO;
 	private final CacheManager<String, OptimizeResult> optimizeCacheManager;
 	private final ItemService itemService;
-	private final HashMap<String, UtilityStruct> useUtilityMap;
+	private final Set<String> noUseUtilityMonsterCode;
 	private final Set<String> oddItems;
 
 	public FightServiceImpl(CharacterDAO characterDao, BankDAO bankDao, ItemDAO itemDAO,
@@ -62,26 +62,24 @@ public final class FightServiceImpl implements FightService {
 		this.itemService = itemService;
 		// 1 semaine 3600*168
 		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 168);
-		this.useUtilityMap = new HashMap<>();
+		this.noUseUtilityMonsterCode = new HashSet<>();
 		this.oddItems = new HashSet<>();
 	}
 
 	@Override
 	public OptimizeResult optimizeEquipementsInInventory(BotMonster monster, Map<String, Integer> reservedItems) {
-		boolean useUtility = useUtilityMap.get(monster.getCode()) == null
-				|| useUtilityMap.get(monster.getCode()).utilityUsed();
+		boolean useUtility = !noUseUtilityMonsterCode.contains(monster.getCode());
 		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = characterService
 				.getEquipableCharacterEquipement(reservedItems, useUtility);
-		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility, false);
+		return optimizeEquipements(monster, equipableCharacterEquipement, false);
 	}
 
 	@Override
 	public OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems) {
-		boolean useUtility = useUtilityMap.get(monster.getCode()) == null
-				|| useUtilityMap.get(monster.getCode()).utilityUsed();
+		boolean useUtility = !noUseUtilityMonsterCode.contains(monster.getCode());
 		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = getAllCharacterEquipments(reservedItems,
 				useUtility);
-		return optimizeEquipements(monster, equipableCharacterEquipement, useUtility, false);
+		return optimizeEquipements(monster, equipableCharacterEquipement, false);
 	}
 
 	@Override
@@ -92,7 +90,7 @@ public final class FightServiceImpl implements FightService {
 		Map<String, OptimizeResult> result = new HashMap<>();
 		for (BotMonster monster : monsters) {
 			result.computeIfAbsent(monster.getCode(),
-					c -> optimizeEquipements(monster, equipableCharacterEquipement, true, false));
+					c -> optimizeEquipements(monster, equipableCharacterEquipement, false));
 		}
 		return result;
 	}
@@ -167,7 +165,7 @@ public final class FightServiceImpl implements FightService {
 
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, boolean useUtility,
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement,
 			boolean ignoreEquiped) {
 		// TODO Voir si tenir compte du vrai HP du perso (Peut être cela ne sert pas à
 		// grand chose)??
@@ -235,7 +233,7 @@ public final class FightServiceImpl implements FightService {
 				if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (currentFightDetails
 						.characterTurn() == maxFightDetails.characterTurn()
 						&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn()
-								&& currentFightDetails.eval() >= 1)
+								&& currentFightDetails.win())
 								|| (currentFightDetails.characterLossHP() < maxFightDetails.characterLossHP())))) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
@@ -254,8 +252,9 @@ public final class FightServiceImpl implements FightService {
 
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
 		optimizeCacheManager.add(key, result);
-		useUtilityMap.put(monster.getCode(),
-				new UtilityStruct(maxFightDetails.eval(), bestEquipements[9] != null || bestEquipements[10] != null));
+		if(maxFightDetails.win() && maxFightDetails.restoreTurn() == 0) {
+			noUseUtilityMonsterCode.add(monster.getCode());
+		}
 		return result;
 	}
 
@@ -299,7 +298,7 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private void addNullValueIfAbsent(List<BotItemInfo> botItemList) {
-		if (!botItemList.contains(null)) {
+		if (!botItemList.isEmpty() && !botItemList.contains(null)) {
 			botItemList.add(null);
 		}
 	}
@@ -398,7 +397,7 @@ public final class FightServiceImpl implements FightService {
 		}
 		if (characterTurn > maxCharacterTurn) {
 			// IL y a mieux donc on envoi un résultat par défaut
-			return new FightDetails(0d, characterTurn, characterTurn, Integer.MAX_VALUE, 0);
+			return new FightDetails(false, characterTurn, characterTurn, Integer.MAX_VALUE, 0);
 		}
 
 		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, effectMap, monster, characterTurn,
@@ -408,7 +407,7 @@ public final class FightServiceImpl implements FightService {
 		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
 		// Si le tour du monstre est inférieur à celui du perso on met 100 pour explorer
 		// d'autres possibilités
-		return new FightDetails(((double) monsterResult.monsterTurn()) / characterTurn, nbTurn,
+		return new FightDetails(monsterResult.monsterTurn() >= characterTurn, nbTurn,
 				nbTurn < characterTurn ? GameConstants.MAX_FIGHT_TURN : characterTurn,
 				nbTurn < characterTurn ? Integer.MAX_VALUE : monsterResult.characterLossHP(),
 				monsterResult.restoreTurn());
