@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -20,6 +22,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
+import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemReader;
 import hydra.model.BotItemType;
@@ -65,33 +68,29 @@ public class TestSimulation {
 		List<BotItemReader> viewItems = new ArrayList<>(simulatorManager.getBankDAOSimulator().viewItems());
 
 		long begin = System.currentTimeMillis();
-		/*simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
+		simulateCrafting(simulatorManager, character, simulatedGoalFactory, viewItems);
 		long inter1 = System.currentTimeMillis();
 		System.out.println("Duree Crafting:" + (inter1 - begin));
+		//viewItems = viewItems.stream().filter(bir -> !bir.getCode().equals("minor_health_potion")).toList();
+		//character.setWeaponSlot("copper_dagger");
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 		long inter2 = System.currentTimeMillis();
 		System.out.println("Duree Cook and Fight:" + (inter2 - inter1));
 		simulateDropItem(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 		long inter3 = System.currentTimeMillis();
 		System.out.println("Duree Drop:" + (inter3 - inter2));
-		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);*/
+		simulateFight(simulatorManager, character, simulatedGoalFactory, viewItems);
 		long end = System.currentTimeMillis();
-		//System.out.println("Duree fight:" + (end - inter3));
-		Map<BotItemType, List<BotItemInfo>> eqtList = new HashMap<>();
+		System.out.println("Duree fight:" + (end - inter3));
 		List<BotItemDetails> items = simulatorManager.getItemDAOSimulator().getItems();
-		eqtList.put(BotItemType.WEAPON, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.WEAPON)).map(bid -> new BotItemInfo(bid, 1)).toList()));
-		eqtList.put(BotItemType.BODY_ARMOR, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.BODY_ARMOR)).map(bid -> new BotItemInfo(bid, 1)).toList()));
-		eqtList.put(BotItemType.BOOTS, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.BOOTS)).map(bid -> new BotItemInfo(bid, 1)).toList()));
-		eqtList.put(BotItemType.HELMET, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.HELMET)).map(bid -> new BotItemInfo(bid, 1)).toList()));
-		eqtList.put(BotItemType.SHIELD, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.SHIELD)).map(bid -> new BotItemInfo(bid, 1)).toList()));
-		eqtList.put(BotItemType.LEG_ARMOR, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.LEG_ARMOR)).map(bid -> new BotItemInfo(bid, 1)).toList()));
-		eqtList.put(BotItemType.AMULET, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.AMULET)).map(bid -> new BotItemInfo(bid, 1)).toList()));
-		eqtList.put(BotItemType.RING, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.RING)).map(bid -> new BotItemInfo(bid, 2)).toList()));
-		eqtList.put(BotItemType.UTILITY, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.UTILITY)).map(bid -> new BotItemInfo(bid, 100)).toList()));
-		eqtList.put(BotItemType.ARTIFACT, new LinkedList<>(items.stream().filter(bid -> bid.getType().equals(BotItemType.ARTIFACT)).map(bid -> new BotItemInfo(bid, 1)).toList()));
+		viewItems = new LinkedList<>();
+		viewItems.addAll(items.stream().filter(bid -> !bid.getType().equals(BotItemType.UTILITY) && !bid.getType().equals(BotItemType.CONSUMABLE)).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
+		character.setLevel(40);
+		simulatorManager.setValue(character, viewItems);
 		for(BotMonster monster : simulatorManager.getMonsterDAOSimulator().getMonsters()) {
+			System.setOut(new PrintStream(new File(monster.getCode()+".txt")));
 			System.out.println(monster.getCode());
-			simulatorManager.getFightService().optimizeEquipements(monster, eqtList, true, 320);
+			simulatorManager.getFightService().optimizeEquipementsPossesed(monster, Collections.emptyMap());
 		}
 		System.out.println("Duree:" + (end - begin));
 	}
@@ -162,6 +161,8 @@ public class TestSimulation {
 		secondSimulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> System.out.println(methodName));
 		secondSimulatorManager.load(true);
+		secondSimulatorManager.setValue(character, viewItems);
+		simulatorManager.setValue(character, viewItems);
 
 		goalParameter.setHPRecoveryFactory(new HPRecoveryUseSimulatorFactory(
 				simulatorManager.getCharacterDAOSimulator(), simulatorManager.getItemDAOSimulator(),

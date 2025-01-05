@@ -227,11 +227,17 @@ public final class FightServiceImpl implements FightService {
 				// Evaluation
 				FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHpWithoutEqt,
 						maxFightDetails.characterTurn());
-				if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (currentFightDetails
+
+				if (!maxFightDetails.win() && !currentFightDetails.win() && currentFightDetails.characterTurn() < maxFightDetails.characterTurn()) {
+					// pas de victoire encore trouvé on maximise les characterTurn
+					maxFightDetails = currentFightDetails;
+					bestEquipements = botItemInfos.clone();
+				}
+				else if ((!maxFightDetails.win() && currentFightDetails.win()) || (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (currentFightDetails
 						.characterTurn() == maxFightDetails.characterTurn()
 						&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn()
 								&& currentFightDetails.win())
-								|| (currentFightDetails.characterLossHP() < maxFightDetails.characterLossHP())))) {
+								|| (currentFightDetails.characterLossHP() < maxFightDetails.characterLossHP()))))) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
 					if (maxFightDetails.characterTurn() == 1 && currentFightDetails.restoreTurn() == 0) {
@@ -244,11 +250,11 @@ public final class FightServiceImpl implements FightService {
 		}
 
 		if (bestEquipements == null) {
-			// Possible que si le perso à 0 équipement.
-			bestEquipements = new BotItemInfo[14];
+			bestEquipements = initBestEquipments(characterDao.getCharacter());
 
 			// Evaluation
-			maxFightDetails = DEFAULT_FIGHT_DETAILS;
+			maxFightDetails = initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
+					characterHpWithoutEqt);
 		}
 
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
@@ -413,12 +419,8 @@ public final class FightServiceImpl implements FightService {
 		// Le calcul fait que l'on privilégie la non utilisation de potion quand cela
 		// est possible
 		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
-		// Si le tour du monstre est inférieur à celui du perso on met 100 pour explorer
-		// d'autres possibilités
-		return new FightDetails(monsterResult.monsterTurn() >= characterTurn, nbTurn,
-				nbTurn < characterTurn ? GameConstants.MAX_FIGHT_TURN : characterTurn,
-				nbTurn < characterTurn ? Integer.MAX_VALUE : monsterResult.characterLossHP(),
-				monsterResult.restoreTurn());
+		return new FightDetails(monsterResult.monsterTurn() >= characterTurn, nbTurn, characterTurn,
+				monsterResult.characterLossHP(), monsterResult.restoreTurn());
 	}
 
 	private List<RestoreStruct> getRestoreValue(Map<Integer, Integer> effectMap) {
