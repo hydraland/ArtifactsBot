@@ -1,4 +1,5 @@
 package strategy.util.fight;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -161,17 +162,26 @@ public final class FightServiceImpl implements FightService {
 		if (optimizeCacheManager.contains(key)) {
 			return optimizeCacheManager.get(key);
 		}
-		List<BotItemInfo> weaponCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.WEAPON));
-		List<BotItemInfo> bodyArmorCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.BODY_ARMOR));
-		List<BotItemInfo> bootsCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.BOOTS));
-		List<BotItemInfo> helmetCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.HELMET));
-		List<BotItemInfo> shieldCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.SHIELD));
-		List<BotItemInfo> legArmorCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.LEG_ARMOR));
-		List<BotItemInfo> amulerCharacter = filterOdd(equipableCharacterEquipement.get(BotItemType.AMULET));
+		List<BotItemInfo> weaponCharacter = sortItemsByLevel(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.WEAPON)));
+		List<BotItemInfo> bodyArmorCharacter = sortItemsByLevel(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.BODY_ARMOR)));
+		List<BotItemInfo> bootsCharacter = sortItemsByLevel(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.BOOTS)));
+		List<BotItemInfo> helmetCharacter = sortItemsByLevel(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.HELMET)));
+		List<BotItemInfo> shieldCharacter = sortItemsByLevel(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.SHIELD)));
+		List<BotItemInfo> legArmorCharacter = sortItemsByLevel(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.LEG_ARMOR)));
+		List<BotItemInfo> amulerCharacter = sortItemsByLevel(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.AMULET)));
 		List<BotItemInfo> ring1Character = new LinkedList<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.RING)));
-		List<BotItemInfo> utility1Character = equipableCharacterEquipement.get(BotItemType.UTILITY);
-		List<BotItemInfo> artifact1Character = equipableCharacterEquipement.get(BotItemType.ARTIFACT);
+				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.RING))));
+		List<BotItemInfo> utility1Character = new LinkedList<>(
+				sortItemsByLevel(equipableCharacterEquipement.get(BotItemType.UTILITY)));
+		List<BotItemInfo> artifact1Character = new LinkedList<>(
+				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.ARTIFACT))));
 
 		// On ajoute null pour les items multiples, à faire sur les autres si la notion
 		// d'item mauvais apparait
@@ -179,7 +189,9 @@ public final class FightServiceImpl implements FightService {
 			addNullValueIfAbsent(ring1Character);
 		}
 		addNullValueIfAbsent(utility1Character);
-		addNullValueIfAbsent(artifact1Character);
+		if (artifact1Character.size() < 3) {
+			addNullValueIfAbsent(artifact1Character);
+		}
 
 		List<BotItemInfo> ring2Character = new LinkedList<>(ring1Character);
 		List<BotItemInfo> utility2Character = new LinkedList<>(utility1Character);
@@ -225,6 +237,10 @@ public final class FightServiceImpl implements FightService {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
 				}
+				if (maxFightDetails.characterTurn() == 1 && currentFightDetails.restoreTurn() == 0) {
+					// On a trouvé 1 solution idéale, on arrête la recherche
+					break;
+				}
 				effectMap = resetEffectMap();
 			}
 		}
@@ -245,24 +261,34 @@ public final class FightServiceImpl implements FightService {
 		return result;
 	}
 
+	private List<BotItemInfo> sortItemsByLevel(List<BotItemInfo> filterOdd) {
+		return filterOdd.stream()
+				.sorted((a, b) -> Integer.compare(b.botItemDetails().getLevel(), a.botItemDetails().getLevel()))
+				.toList();
+	}
+
 	private List<BotItemInfo> filterOdd(List<BotItemInfo> items) {
 		List<BotItemInfo> filteredItem = items.stream()
 				.filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList();
 		Map<String, Map<Integer, Integer>> itemsMap = new HashMap<>();
 		for (BotItemInfo item : filteredItem) {
-			Map<Integer, Integer> effectMap = resetEffectMap();
-			updateEffectInMap(effectMap, item.botItemDetails(), 1);
-			itemsMap.put(item.botItemDetails().getCode(), effectMap);
+			if (!item.botItemDetails().getType().equals(BotItemType.RING) || item.quantity() > 1) {
+				Map<Integer, Integer> effectMap = resetEffectMap();
+				updateEffectInMap(effectMap, item.botItemDetails(), 1);
+				itemsMap.put(item.botItemDetails().getCode(), effectMap);
+			}
 		}
 		boolean oddItemAdded = false;
 		for (BotItemInfo item : filteredItem) {
 			String itemCode = item.botItemDetails().getCode();
 			Map<Integer, Integer> effectMap = itemsMap.get(itemCode);
-			for (Entry<String, Map<Integer, Integer>> entry : itemsMap.entrySet()) {
-				if (!entry.getKey().equals(itemCode) && upperEffects(effectMap, entry.getValue())) {
-					oddItems.add(itemCode);
-					oddItemAdded = true;
-					break;
+			if (effectMap != null) {
+				for (Entry<String, Map<Integer, Integer>> entry : itemsMap.entrySet()) {
+					if (!entry.getKey().equals(itemCode) && upperEffects(effectMap, entry.getValue())) {
+						oddItems.add(itemCode);
+						oddItemAdded = true;
+						break;
+					}
 				}
 			}
 		}
