@@ -272,9 +272,6 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private boolean upperEffects(Map<Integer, Integer> effectMap, Map<Integer, Integer> effectMapToCompare) {
-		if (effectMap.size() != effectMapToCompare.size()) {
-			return false;
-		}
 		for (Entry<Integer, Integer> entry : effectMap.entrySet()) {
 			Integer effect = effectMapToCompare.get(entry.getKey());
 			if (effect == null || entry.getValue() > effect) {
