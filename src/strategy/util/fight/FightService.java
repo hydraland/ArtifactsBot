@@ -20,5 +20,5 @@ public interface FightService {
 	FightDetails calculateFightResult(BotMonster monster);
 
 	OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, boolean ignoreEquiped, int characterHpWithoutEqt);
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, int characterHpWithoutEqt);
 }

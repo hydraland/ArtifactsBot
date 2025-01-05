@@ -150,13 +150,12 @@ public final class FightServiceImpl implements FightService {
 	private OptimizeResult optimizeEquipements(BotMonster monster,
 			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement) {
 		int characterHp = characterService.getCharacterHPWithoutEquipment();
-		return optimizeEquipements(monster, equipableCharacterEquipement, false, characterHp);
+		return optimizeEquipements(monster, equipableCharacterEquipement, characterHp);
 	}
 
 	@Override
 	public OptimizeResult optimizeEquipements(BotMonster monster,
-			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, boolean ignoreEquiped,
-			int characterHpWithoutEqt) {
+			Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement, int characterHpWithoutEqt) {
 		String key = FightServiceUtils.createKey(characterHpWithoutEqt, monster.getCode(),
 				equipableCharacterEquipement);
 		if (optimizeCacheManager.contains(key)) {
@@ -214,9 +213,8 @@ public final class FightServiceImpl implements FightService {
 		combinator.set(12, artifact2Character);
 		combinator.set(13, artifact3Character);
 
-		BotItemInfo[] bestEquipements = ignoreEquiped ? null : initBestEquipments(characterDao.getCharacter());
-		FightDetails maxFightDetails = ignoreEquiped ? DEFAULT_FIGHT_DETAILS
-				: initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHpWithoutEqt);
+		BotItemInfo[] bestEquipements = null;
+		FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
 		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
 			if (validCombinaison(botItemInfos)) {
@@ -236,10 +234,10 @@ public final class FightServiceImpl implements FightService {
 								|| (currentFightDetails.characterLossHP() < maxFightDetails.characterLossHP())))) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
-				}
-				if (maxFightDetails.characterTurn() == 1 && currentFightDetails.restoreTurn() == 0) {
-					// On a trouvé 1 solution idéale, on arrête la recherche
-					break;
+					if (maxFightDetails.characterTurn() == 1 && currentFightDetails.restoreTurn() == 0) {
+						// On a trouvé 1 solution idéale, on arrête la recherche
+						break;
+					}
 				}
 				effectMap = resetEffectMap();
 			}

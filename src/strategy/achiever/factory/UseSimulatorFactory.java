@@ -151,7 +151,7 @@ public abstract class UseSimulatorFactory {
 		eqtList.put(BotItemType.UTILITY, utility);
 		eqtList.put(BotItemType.ARTIFACT, newList(bestEqts[11], bestEqts[12], bestEqts[13]));
 		OptimizeResult optimizeEquipements = simulatorManager.getFightService().optimizeEquipements(
-				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), eqtList, true,
+				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), eqtList,
 				simulatorManager.getCharacterServiceSimulator().getCharacterHPWithoutEquipment());
 		if (optimizeEquipements.fightDetails().win()) {
 			List<GoalAchieverInfo<ArtifactGoalAchiever>> cookingGoal = testGoals.stream()
