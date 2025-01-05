@@ -100,8 +100,7 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 				simulatedmonstersGoals.get(code), false, true);
 		GoalAchiever goalAchiever = simulatorFactoryCreator
 				.createGoalAchieverTwoStep(simDepositNoReservedItemGoalAchiever, goalAchieverTwoStep, false, true);
-		simGoalAchiever = factoryCreator.createGoalAchieverLoop(goalAchiever,
-				Math.min(total, Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems())), false);
+		simGoalAchiever = factoryCreator.createGoalAchieverLoop(goalAchiever, total, false);
 		return initSimulation(botCharacter);
 	}
 

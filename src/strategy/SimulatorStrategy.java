@@ -199,6 +199,7 @@ public class SimulatorStrategy implements Strategy {
 			return allGoals.stream().filter(predicate).filter(predicateFilterPossesed).map(GoalAchieverInfo::getGoal)
 					.toList();
 		}
+		//TODO a revoir si on a pas le temps d'avoir tous les équipements
 		if (craftingLevel % GameConstants.STEP_LEVEL == 0) {
 			Bornes bornes = new Bornes(craftingLevel, craftingLevel, craftingLevel + 1);
 			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils
@@ -221,9 +222,10 @@ public class SimulatorStrategy implements Strategy {
 		SumAccumulator accumulator = new SumAccumulator();
 		simulatorManager.getSimulatorListener()
 				.setInnerListener((className, methodName, cooldown, error) -> accumulator.accumulate(cooldown));
+		boolean upOptimization = craftingLevel < maxLevel;
 		for (GoalAchieverInfo<ArtifactGoalAchiever> simGoal : simGoals) {
 			boolean success = true;
-			optimize(simGoal);
+			optimize(simGoal, upOptimization);
 			accumulator.reset();
 			try {
 				for (int i = 0; i < NUMBER_OF_SIMULATE; i++) {
@@ -252,13 +254,10 @@ public class SimulatorStrategy implements Strategy {
 				.filter(aga -> aga.getItemCode().equals(goalCodeFound)).findFirst();
 		List<ArtifactGoalAchiever> result = new ArrayList<>();
 		if (searchRealGoal.isPresent()) {
-			optimize(searchRealGoal.get());
+			optimize(searchRealGoal.get(), upOptimization);
 			ArtifactGoalAchiever itemRecycleGoalAchiever = goalFactory.addItemRecycleGoalAchiever(searchRealGoal.get(),
 					Strategy.calculMinItemPreserve(searchRealGoal.get()));
 			result.add(itemRecycleGoalAchiever);
-			if (craftingLevel < maxLevel) {
-				result.add(itemRecycleGoalAchiever);
-			}
 		}
 		return result;
 	}
@@ -347,16 +346,24 @@ public class SimulatorStrategy implements Strategy {
 	public GoalAchiever getEventGoalAchiever() {
 		return eventGoal;
 	}
-
+	
 	private void optimize(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever) {
+		optimize(goalAchiever, false);
+	}
+
+	private void optimize(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever, boolean upOptimization) {
 		if (!goalAchiever.isNeedTaskMasterResource() && !goalAchiever.isNeedRareResource()) {
-			optimize(goalAchiever.getGoal());
+			optimize(goalAchiever.getGoal(), upOptimization);
 		} else {
 			goalAverageOptimizer.optimize(goalAchiever.getGoal(), 1, 1f);
 		}
 	}
 
 	private void optimize(ArtifactGoalAchiever goalAchiever) {
-		goalAverageOptimizer.optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT, 0.9f);
+		optimize(goalAchiever, false);
+	}
+	
+	private void optimize(ArtifactGoalAchiever goalAchiever, boolean upOptimization) {
+		goalAverageOptimizer.optimize(goalAchiever, MAX_MULTIPLIER_COEFFICIENT * (upOptimization ? 2 : 1), 0.9f);
 	}
 }
