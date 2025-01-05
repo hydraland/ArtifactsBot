@@ -89,7 +89,7 @@ public final class CharacterDAOSimulator implements CharacterDAO, Simulator<BotC
 		this.resourceDAO = resourceDAO;
 		this.characterService = new FilteredCallCharacterService(simulatorListener,
 				new CharacterServiceImpl(this, itemDAO));
-		this.fightService = new FightServiceImpl(this, null, itemDAO, characterService, null, null);
+		this.fightService = new FightServiceImpl(this, null, itemDAO, characterService, null);
 		this.random = new SplittableRandom();
 		memoryStream = new ByteArrayOutputStream();
 		this.monsterBoxCache = new PermanentCacheManager<>();

@@ -116,8 +116,9 @@ public final class SimulatorManagerImpl implements SimulatorManager {
 		moveService = new MoveServiceImpl(characterDAOSimulator, mapDAOSimulator,
 				characterDAOSimulator.getCharacterService(), itemService);
 		fightService = new FightServiceImpl(characterDAOSimulator, bankDAOSimulator, itemDAOSimulator,
-				characterDAOSimulator.getCharacterService(), moveService, itemService);
-		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService);
+				characterDAOSimulator.getCharacterService(), itemService);
+		MonsterEquipementService monsterEquipementService = new MonsterEquipementServiceImpl(fightService,
+				characterDAOSimulator, bankDAOSimulator, characterDAOSimulator.getCharacterService(), moveService);
 		goalFactoryCreator = new GoalFactoryCreatorImpl(characterDAOSimulator, bankDAOSimulator, itemDAOSimulator,
 				grandExchangeDAOSimulator, taskDAOSimulator, mapDAOSimulator, moveService,
 				getCharacterServiceSimulator(), itemService, fightService, monsterEquipementService, goalParameter);
