@@ -126,7 +126,7 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 		for (DiffStruct<Integer> equipedStruct : equipedEqtDiff) {
 			DiffStruct<Void> bestStruct = bestEqtDiff.removeFirst();
 			String bestStructCode = bestStruct.code();
-			if (!"".equals(bestStructCode)) {
+			if (!"".equals(equipedStruct.code())) {
 				response = characterDao.unequip(SLOTS[equipedStruct.value()], 1);
 				if (!response.ok()) {
 					return false;
@@ -136,9 +136,11 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 					&& (!moveService.moveToBank() || !bankDao.withdraw(bestStructCode, 1))) {
 				return false;
 			}
-			response = characterDao.equip(bestStructCode, SLOTS[equipedStruct.value()], 1);
-			if (!response.ok()) {
-				return false;
+			if (!"".equals(bestStructCode)) {
+				response = characterDao.equip(bestStructCode, SLOTS[equipedStruct.value()], 1);
+				if (!response.ok()) {
+					return false;
+				}
 			}
 		}
 		return true;
