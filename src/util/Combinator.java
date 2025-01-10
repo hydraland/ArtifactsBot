@@ -1,8 +1,8 @@
 package util;
 
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 public class Combinator<T> implements Iterator<T[]>, Iterable<T[]> {
 
@@ -17,9 +17,13 @@ public class Combinator<T> implements Iterator<T[]>, Iterable<T[]> {
 		this.currentNext = nbList - 1;
 	}
 
-	public void set(int index, List<T> aList) {
-		this.elements[index] = new Element<>(aList);
+	public void set(int index, Collection<T> aCollection) {
+		this.elements[index] = new Element<>(aCollection);
 		this.currentCombinaison[index] = this.elements[index].reset(index == elements.length-1);
+	}
+	
+	public int size(int index) {
+		return this.elements[index].aCollection.size();
 	}
 
 	@Override
@@ -44,11 +48,11 @@ public class Combinator<T> implements Iterator<T[]>, Iterable<T[]> {
 
 	public final class Element<E> implements Iterator<E> {
 
-		private List<E> aList;
+		private Collection<E> aCollection;
 		private Iterator<E> innerIter;
 
-		public Element(List<E> aList) {
-			this.aList = aList;
+		public Element(Collection<E> aCollection) {
+			this.aCollection = aCollection;
 		}
 
 		@Override
@@ -62,8 +66,8 @@ public class Combinator<T> implements Iterator<T[]>, Iterable<T[]> {
 		}
 
 		public E reset(boolean initOnly) {
-			innerIter = aList.iterator();
-			if(initOnly || aList.isEmpty()) {
+			innerIter = aCollection.iterator();
+			if(initOnly || aCollection.isEmpty()) {
 				return null;
 			}
 			return innerIter.next();
