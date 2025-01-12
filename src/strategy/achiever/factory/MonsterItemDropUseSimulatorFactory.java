@@ -83,7 +83,7 @@ public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory impl
 				simulatedDropItemGoals.get(createKey(dropGoalInfo)), false, true);
 		simGoalAchiever = new GoalAchieverForLoop(goalAchieverTwoStep,
 				BinomialProbability.calculateNbTentative(0.9, 1, dropGoalInfo.getGoal().getRate(),
-						Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems()) + 1));
+						100));
 		return initSimulation(botCharacter);
 	}
 

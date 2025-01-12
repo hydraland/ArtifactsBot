@@ -13,7 +13,6 @@ import hydra.model.BotCharacter;
 import hydra.model.BotItemType;
 import strategy.achiever.EventNotification;
 import strategy.achiever.GoalAchiever;
-import strategy.achiever.GoalAchieverConditional;
 import strategy.achiever.factory.GoalFactory;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
@@ -125,11 +124,11 @@ public interface Strategy {
 		if (EventNotification.MONSTER_EVENT_TYPE.equals(type)) {
 			MonsterGoalAchiever goalAchiever = monsterGoals.stream().filter(mga -> code.equals(mga.getMonsterCode()))
 					.findFirst().get();
-			return new GoalAchieverConditional(goalAchiever, () -> false, true);
+			return goalFactory.addUsefullGoalToEventGoal(goalFactory.addDepositNoReservedItemGoalAchiever(goalAchiever));
 		} else if (EventNotification.RESOURCE_EVENT_TYPE.equals(type)) {
 			GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever = itemGoals.stream().filter(aga -> aga.isMatchBoxCode(code)).findFirst()
 					.get();
-			return goalFactory.addUsefullGoalToEventGoal(goalAchiever);
+			return goalFactory.addUsefullGoalToEventGoal(goalAchiever.getGoal());
 		}
 		return NOTHING_GOAL;
 	}

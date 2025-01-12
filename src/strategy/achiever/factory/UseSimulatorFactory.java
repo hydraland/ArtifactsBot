@@ -12,7 +12,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import hydra.dao.ItemDAO;
-import hydra.dao.simulate.CharacterDAOSimulator;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.dao.simulate.StopSimulationException;
 import hydra.model.BotCharacter;
@@ -181,7 +180,8 @@ public abstract class UseSimulatorFactory {
 			for (GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA : combinator) {
 
 				simulatorManager.setValue(botCharacter, botItems);
-				GoalAchiever testGoal = createGoals(artifactGA, simulatorManager.getCharacterServiceSimulator(),
+				accumulator.setMax(Integer.MAX_VALUE);// Pour ne pas planter dans l'optimisation
+				GoalAchiever testGoal = createGoals(artifactGA, simulatorManager.getCharacterServiceSimulator(),simulateGoalAverageOptimizer,
 						maxCookOrPotionTask);
 				accumulator.reset();
 				accumulator.setMax(minTime);
@@ -226,21 +226,21 @@ public abstract class UseSimulatorFactory {
 	protected abstract int getMaxSimulationTime();
 
 	protected final GoalAchiever createGoals(GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA,
-			CharacterService aCharacterService, int optimizeValue) {
+			CharacterService aCharacterService,GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(
 				character -> Arrays.stream(artifactGA).filter(aga -> aga.getGoal().isRealisable(character))
 						.<Boolean>map(aga -> !aCharacterService.inventoryConstaints(aga.getItemCode(), 1))
 						.reduce(false, (v1, v2) -> v1 || v2));
-		genericGoalAchiever.setExecutableGoalAchiever(ri -> Arrays.stream(artifactGA).map(aga -> {
-			boolean val = !aCharacterService.inventoryConstaints(aga.getItemCode(), 1)
-					&& ((CharacterDAOSimulator) simulatorManager.getCharacterDAOSimulator())
-							.checkDepositInInventory(aga.getItemCode(), optimizeValue);
-			if (val) {
-				((CharacterDAOSimulator) simulatorManager.getCharacterDAOSimulator())
-						.depositInInventory(aga.getItemCode(), optimizeValue);
-			}
-			return val;
-		}).reduce(false, (v1, v2) -> v1 || v2));
+		Arrays.stream(artifactGA).forEach(aga -> aGoalAverageOptimizer.optimize(aga.getGoal(), optimizeValue, 0.9f));
+		genericGoalAchiever.setExecutableGoalAchiever(ri -> {
+			boolean resultExec = Arrays.stream(artifactGA).filter(aga -> {
+				aga.getGoal().clear();
+				return true;
+			}).map(aga -> !aCharacterService.inventoryConstaints(aga.getItemCode(), 1) && aga.getGoal().execute(ri))
+					.reduce(false, (v1, v2) -> v1 || v2);
+			ri.clear();
+			return resultExec;
+		});
 		genericGoalAchiever.setValue(artifactGA);
 		return new ForceExecuteGoalAchiever(simGoalAchiever);
 	}

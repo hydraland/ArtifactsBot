@@ -32,5 +32,5 @@ public interface GoalFactory {
 		EVENT, NO_EVENT, ALL
 	}
 
-	GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo<ArtifactGoalAchiever> goalAchiever);
+	GoalAchiever addUsefullGoalToEventGoal(GoalAchiever goalAchiever);
 }

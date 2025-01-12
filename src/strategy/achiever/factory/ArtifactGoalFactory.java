@@ -482,7 +482,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 	}
 
 	@Override
-	public GoalAchiever addUsefullGoalToEventGoal(GoalAchieverInfo<ArtifactGoalAchiever> goalAchieverInfo) {
-		return factoryCreator.createGoalAchieverConditional(goalAchieverInfo.getGoal(), () -> false, true);
+	public GoalAchiever addUsefullGoalToEventGoal(GoalAchiever goalAchiever) {
+		return factoryCreator.createGoalAchieverConditional(goalAchiever, () -> false, true);
 	}
 }
