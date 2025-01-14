@@ -135,7 +135,7 @@ public abstract class UseSimulatorFactory {
 				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), new HashMap<>());
 		Map<BotItemType, List<BotItemInfo>> eqtList = new EnumMap<>(BotItemType.class);
 		List<BotItemInfo> utility = testGoals.stream()
-				.filter(aga -> BotCraftSkill.ALCHEMY.equals(aga.getBotCraftSkill()))
+				.filter(aga -> BotItemType.UTILITY.equals(itemDAO.getItem(aga.getItemCode()).getType()))
 				.map(aga -> new BotItemInfo(itemDAO.getItem(aga.getItemCode()), maxCookOrPotionTask))
 				.collect(Collectors.toList());
 		BotItemInfo[] bestEqts = optimizeEquipementsPossesed.bestEqt();
