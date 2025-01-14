@@ -84,10 +84,11 @@ public class TestSimulation {
 		System.out.println("Duree fight:" + (inter4 - inter3));
 		List<BotItemDetails> items = simulatorManager.getItemDAOSimulator().getItems();
 		viewItems = new LinkedList<>();
-		viewItems.addAll(items.stream().filter(bid -> !bid.getType().equals(BotItemType.CONSUMABLE)).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
+		viewItems.addAll(items.stream().filter(bid -> /*!bid.getType().equals(BotItemType.UTILITY) &&*/ !bid.getType().equals(BotItemType.CONSUMABLE)).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
 		character.setLevel(40);
 		simulatorManager.setValue(character, viewItems);
 		for(BotMonster monster : simulatorManager.getMonsterDAOSimulator().getMonsters()) {
+		//BotMonster monster = simulatorManager.getMonsterDAOSimulator().getMonster("mushmush");
 			System.out.println(monster.getCode());
 			System.out.println(simulatorManager.getFightService().optimizeEquipementsPossesed(monster, Collections.emptyMap()));
 		}

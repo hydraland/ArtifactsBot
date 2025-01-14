@@ -33,7 +33,7 @@ import util.LimitedTimeCacheManager;
 public final class FightServiceImpl implements FightService {
 	private static final int MAX_COMBINATORICS_BEFORE_ACTIVATE_REDUCTION = 10000;
 	private static final FightDetails DEFAULT_FIGHT_DETAILS = new FightDetails(false, GameConstants.MAX_FIGHT_TURN,
-			GameConstants.MAX_FIGHT_TURN, Integer.MAX_VALUE, 0, 0);
+			GameConstants.MAX_FIGHT_TURN, Integer.MAX_VALUE, 0, 0, 0);
 	private static final long MAX_COMBINATORICS_TO_ACTIVATE_REDUCTION = 1000000;
 	private final CharacterDAO characterDao;
 	private final CharacterService characterService;
@@ -199,11 +199,11 @@ public final class FightServiceImpl implements FightService {
 		// On ajoute null pour les items multiples, à faire sur les autres si la notion
 		// d'item mauvais apparait
 		if (rings1.size() == 1 && rings1.getFirst().quantity() == 1) {
-			addNullValueIfAbsent(rings1);
+			addNullValueIfAbsent(rings1, true);
 		}
-		addNullValueIfAbsent(utilities1);
+		addNullValueIfAbsent(utilities1, false);
 		if (artifacts1.size() < 3) {
-			addNullValueIfAbsent(artifacts1);
+			addNullValueIfAbsent(artifacts1, true);
 		}
 
 		List<BotItemInfo> rings2 = new LinkedList<>(rings1);
@@ -212,17 +212,17 @@ public final class FightServiceImpl implements FightService {
 		List<BotItemInfo> artifacts3 = new LinkedList<>(artifacts1);
 
 		Combinator<BotItemInfo> combinator = new Combinator<>(BotItemInfo.class, 14);
-		combinator.set(0, weapons);
-		combinator.set(1, bodyArmors);
-		combinator.set(2, boots);
-		combinator.set(3, helmets);
-		combinator.set(4, shields);
-		combinator.set(5, legArmors);
-		combinator.set(6, amulets);
-		combinator.set(7, rings1);
-		combinator.set(8, rings2);
-		combinator.set(9, utilities1);
-		combinator.set(10, utilities2);
+		combinator.set(0, utilities1);
+		combinator.set(1, utilities2);
+		combinator.set(2, weapons);
+		combinator.set(3, bodyArmors);
+		combinator.set(4, boots);
+		combinator.set(5, helmets);
+		combinator.set(6, shields);
+		combinator.set(7, legArmors);
+		combinator.set(8, amulets);
+		combinator.set(9, rings1);
+		combinator.set(10, rings2);
 		combinator.set(11, artifacts1);
 		combinator.set(12, artifacts2);
 		combinator.set(13, artifacts3);
@@ -231,7 +231,7 @@ public final class FightServiceImpl implements FightService {
 		FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
 		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
-			if (validCombinaison(botItemInfos)) {
+			if (validCombinaison(botItemInfos, 9, 10, 0, 1, 11, 12, 13)) {
 				for (BotItemInfo botItemInfo : botItemInfos) {
 					if (botItemInfo != null) {
 						updateEffectInMap(effectMap, botItemInfo.botItemDetails(), botItemInfo.quantity());
@@ -243,23 +243,21 @@ public final class FightServiceImpl implements FightService {
 						maxFightDetails.characterTurn());
 
 				// TODO sortir dans une fonction d'évaluation
-				if (!maxFightDetails.win() && !currentFightDetails.win()
-						&& currentFightDetails.characterTurn() < maxFightDetails.characterTurn()) {
-					// pas de victoire encore trouvé on maximise les characterTurn
+				if ((!maxFightDetails.win() && !currentFightDetails.win()
+						&& currentFightDetails.characterTurn() < maxFightDetails.characterTurn())
+						|| ((!maxFightDetails.win() && currentFightDetails.win())
+								|| ((!maxFightDetails.win() || currentFightDetails.win())
+										&& currentFightDetails.characterTurn() < maxFightDetails.characterTurn())
+								|| (currentFightDetails.win() && maxFightDetails.win()
+										&& currentFightDetails.characterTurn() == maxFightDetails.characterTurn()
+										&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn())
+												|| (currentFightDetails.restoreTurn() == maxFightDetails.restoreTurn()
+														&& currentFightDetails.characterLossHP() < maxFightDetails
+																.characterLossHP()))))) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
-				} else if ((!maxFightDetails.win() && currentFightDetails.win())
-						|| ((!maxFightDetails.win() || currentFightDetails.win())
-								&& currentFightDetails.characterTurn() < maxFightDetails.characterTurn())
-						|| (currentFightDetails.win() && maxFightDetails.win()
-								&& currentFightDetails.characterTurn() == maxFightDetails.characterTurn()
-								&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn())
-										|| (currentFightDetails.restoreTurn() == maxFightDetails.restoreTurn()
-												&& currentFightDetails.characterLossHP() < maxFightDetails
-														.characterLossHP())))) {
-					maxFightDetails = currentFightDetails;
-					bestEquipements = botItemInfos.clone();
-					if (maxFightDetails.characterTurn() == 1 && currentFightDetails.restoreTurn() == 0) {
+					if (maxFightDetails.characterTurn() == 1 && bestEquipements[0] == null
+							&& bestEquipements[1] == null) {
 						// On a trouvé 1 solution idéale, on arrête la recherche
 						break;
 					}
@@ -278,7 +276,7 @@ public final class FightServiceImpl implements FightService {
 
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
 		optimizeCacheManager.add(key, result);
-		if (maxFightDetails.win() && maxFightDetails.restoreTurn() == 0) {
+		if (maxFightDetails.win() && bestEquipements[0] == null && bestEquipements[1] == null) {
 			noUseUtilityMonsterCode.add(monster.getCode());
 		}
 		return result;
@@ -292,10 +290,10 @@ public final class FightServiceImpl implements FightService {
 		List<List<BotItemInfo>> sources = Arrays.asList(weapons, bodyArmors, boots, helmets, shields, legArmors,
 				amulets, rings, artifacts, utilities);
 		if (rings.size() == 1 && rings.getFirst().quantity() == 1) {
-			addNullValueIfAbsent(rings);
+			addNullValueIfAbsent(rings, true);
 		}
 		if (artifacts.size() < 3) {
-			addNullValueIfAbsent(artifacts);
+			addNullValueIfAbsent(artifacts, true);
 		}
 
 		// Séparation des utilities en restore et autre
@@ -308,7 +306,7 @@ public final class FightServiceImpl implements FightService {
 				iterator.remove();
 			}
 		}
-		addNullValueIfAbsent(utilities);
+		addNullValueIfAbsent(utilities, false);
 
 		List<Set<BotItemInfo>> tempList = new ArrayList<>();
 		List<Set<BotItemInfo>> resultList = new ArrayList<>();
@@ -358,7 +356,7 @@ public final class FightServiceImpl implements FightService {
 			Map<Integer, Integer> effectMap = resetEffectMap();
 			Set<BotItemInfo> itemsSetTemp;
 			for (BotItemInfo[] botItemInfos : combinator) {
-				if (validCombinaison(botItemInfos)) {
+				if (validCombinaison(botItemInfos, 7, 8, 9, 10, 11, 12, 13)) {
 					for (BotItemInfo botItemInfo : botItemInfos) {
 						if (botItemInfo != null) {
 							updateEffectInMap(effectMap, botItemInfo.botItemDetails(), botItemInfo.quantity());
@@ -371,9 +369,7 @@ public final class FightServiceImpl implements FightService {
 					// Hypothèse aucun équipement ne fait de récupération de PV
 					if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (combinatoricsTooHigh
 							&& currentFightDetails.characterTurn() == maxFightDetails.characterTurn()
-							&& (currentFightDetails.characterLossHP() < maxFightDetails.characterLossHP()
-									|| (currentFightDetails.characterLossHP() == maxFightDetails.characterLossHP()
-											&& currentFightDetails.characterDmg() > maxFightDetails.characterDmg())))) {
+							&& (currentFightDetails.diffPower() > maxFightDetails.diffPower()))) {
 						maxFightDetails = currentFightDetails;
 						for (int j = 0; j <= i; j++) {
 							itemsSetTemp = tempList.get(j);
@@ -382,14 +378,14 @@ public final class FightServiceImpl implements FightService {
 								itemsSetTemp.add(botItemInfos[j]);
 							}
 						}
-						if (maxFightDetails.characterTurn() == 1) {
+						if (maxFightDetails.characterTurn() == 1 && botItemInfos[12] == null
+								&& botItemInfos[13] == null) {
 							// On a trouvé 1 solution idéale, on arrête la recherche
 							break;
 						}
 					} else if ((currentFightDetails.characterTurn() == maxFightDetails.characterTurn())
 							&& (!combinatoricsTooHigh
-									|| (currentFightDetails.characterLossHP() == maxFightDetails.characterLossHP()
-											&& currentFightDetails.characterDmg() == maxFightDetails.characterDmg()))) {
+									|| (currentFightDetails.diffPower() == maxFightDetails.diffPower()))) {
 						for (int j = 0; j <= i; j++) {
 							if (botItemInfos[j] != null) {
 								itemsSetTemp = tempList.get(j);
@@ -484,9 +480,13 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	private void addNullValueIfAbsent(List<BotItemInfo> botItemList) {
+	private void addNullValueIfAbsent(List<BotItemInfo> botItemList, boolean after) {
 		if (!botItemList.isEmpty() && !botItemList.contains(null)) {
-			botItemList.add(null);
+			if (after) {
+				botItemList.addLast(null);
+			} else {
+				botItemList.addFirst(null);
+			}
 		}
 	}
 
@@ -541,9 +541,10 @@ public final class FightServiceImpl implements FightService {
 		}
 	}
 
-	private boolean validCombinaison(BotItemInfo[] botItemInfos) {
+	private boolean validCombinaison(BotItemInfo[] botItemInfos, int ringIndex1, int ringIndex2,
+			int... uniqueItemIndex) {
 		Set<String> uniqueEquipItem = new HashSet<>();
-		for (int i = 9; i < botItemInfos.length; i++) {
+		for (int i : uniqueItemIndex) {
 			if (botItemInfos[i] != null) {
 				if (uniqueEquipItem.contains(botItemInfos[i].botItemDetails().getCode())) {
 					return false;
@@ -554,9 +555,9 @@ public final class FightServiceImpl implements FightService {
 		}
 
 		// cas ou les rings sont dans l'inventaire, à la bank ou les 2
-		if (botItemInfos[7] != null && botItemInfos[8] != null
-				&& botItemInfos[7].botItemDetails().getCode().equals(botItemInfos[8].botItemDetails().getCode())) {
-			return botItemInfos[7].quantity() > 1;
+		if (botItemInfos[ringIndex1] != null && botItemInfos[ringIndex2] != null && botItemInfos[ringIndex1]
+				.botItemDetails().getCode().equals(botItemInfos[ringIndex2].botItemDetails().getCode())) {
+			return botItemInfos[ringIndex1].quantity() > 1;
 		}
 		return true;
 	}
@@ -584,7 +585,7 @@ public final class FightServiceImpl implements FightService {
 		}
 		if (characterTurn > maxCharacterTurn) {
 			// IL y a mieux donc on envoi un résultat par défaut
-			return new FightDetails(false, characterTurn, characterTurn, Integer.MAX_VALUE, 0, 0);
+			return new FightDetails(false, characterTurn, characterTurn, Integer.MAX_VALUE, 0, 0, 0);
 		}
 
 		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, effectMap, monster, characterTurn,
@@ -593,7 +594,7 @@ public final class FightServiceImpl implements FightService {
 		// est possible
 		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
 		return new FightDetails(monsterResult.monsterTurn() >= characterTurn, nbTurn, characterTurn,
-				monsterResult.characterLossHP(), monsterResult.restoreTurn(), characterDmg);
+				monsterResult.characterLossHP(), monsterResult.restoreTurn(), characterDmg, monsterResult.monsterDmg());
 	}
 
 	private List<RestoreStruct> getRestoreValue(Map<Integer, Integer> effectMap) {
@@ -631,12 +632,13 @@ public final class FightServiceImpl implements FightService {
 
 			int monsterTotalDmg = monsterDmg * (monsterTurn > maxCharacterTurn ? (maxCharacterTurn - 1) : monsterTurn);
 			return new MonsterCalculStruct(monsterTurn, 0,
-					Math.max(0, monsterTotalDmg - (characterMaxHpWithBoost - characterMaxHp)));
+					Math.max(0, monsterTotalDmg - (characterMaxHpWithBoost - characterMaxHp)), monsterDmg);
 		}
 		int halfMonsterTurn = calculTurns(halfCharacterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
 		if (halfMonsterTurn >= maxCharacterTurn) {
 			return new MonsterCalculStruct(halfMonsterTurn * 2, 0,
-					Math.max(0, (maxCharacterTurn - 1) * monsterDmg - (characterMaxHpWithBoost - characterMaxHp)));
+					Math.max(0, (maxCharacterTurn - 1) * monsterDmg - (characterMaxHpWithBoost - characterMaxHp)),
+					monsterDmg);
 		}
 		int monsterTurn = halfMonsterTurn;
 		int characterHP = characterMaxHpWithBoost - halfMonsterTurn * monsterDmg;
@@ -656,7 +658,8 @@ public final class FightServiceImpl implements FightService {
 				characterHP -= monsterDmg;
 			}
 		}
-		return new MonsterCalculStruct(monsterTurn, restoreTurn, Math.max(0, (characterMaxHp - characterHP)));
+		return new MonsterCalculStruct(monsterTurn, restoreTurn, Math.max(0, (characterMaxHp - characterHP)),
+				monsterDmg);
 	}
 
 	private int getRestoreValue(List<RestoreStruct> restoreValues, int restoreTurn) {
@@ -669,18 +672,18 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private int calculMonsterDamage(Map<Integer, Integer> effectMap, BotMonster monster) {
-		int monsterEartDmg = monster.getAttackEarth()
-				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_EARTH.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_EARTH.ordinal(), 0)) / 100f);
-		int monsterAirDmg = monster.getAttackAir()
-				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_AIR.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_AIR.ordinal(), 0)) / 100f);
-		int monsterWaterDmg = monster.getAttackWater()
-				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_WATER.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_WATER.ordinal(), 0)) / 100f);
-		int monsterFireDmg = monster.getAttackFire()
-				* (int) Math.rint(1 - (effectMap.getOrDefault(BotEffect.RES_FIRE.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_FIRE.ordinal(), 0)) / 100f);
+		int monsterEartDmg = (int) Math
+				.rint(monster.getAttackEarth() * (1 - (effectMap.getOrDefault(BotEffect.RES_EARTH.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_EARTH.ordinal(), 0)) / 100f));
+		int monsterAirDmg = (int) Math
+				.rint(monster.getAttackAir() * (1 - (effectMap.getOrDefault(BotEffect.RES_AIR.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_AIR.ordinal(), 0)) / 100f));
+		int monsterWaterDmg = (int) Math
+				.rint(monster.getAttackWater() * (1 - (effectMap.getOrDefault(BotEffect.RES_WATER.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_WATER.ordinal(), 0)) / 100f));
+		int monsterFireDmg = (int) Math
+				.rint(monster.getAttackFire() * (1 - (effectMap.getOrDefault(BotEffect.RES_FIRE.ordinal(), 0)
+						+ effectMap.getOrDefault(BotEffect.BOOST_RES_FIRE.ordinal(), 0)) / 100f));
 		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
 	}
 
@@ -704,7 +707,8 @@ public final class FightServiceImpl implements FightService {
 		return (int) Math.rint((attackDmg * ((100d + dmgPercent + dmgBoost) * (100d - monsterRes)) / 10000));
 	}
 
-	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterLossHP) {
+	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterLossHP,
+			int monsterDmg) {
 	}
 
 	private static final record RestoreStruct(int value, int quantity) {

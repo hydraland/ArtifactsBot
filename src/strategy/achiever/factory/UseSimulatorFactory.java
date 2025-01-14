@@ -139,14 +139,14 @@ public abstract class UseSimulatorFactory {
 				.map(aga -> new BotItemInfo(itemDAO.getItem(aga.getItemCode()), maxCookOrPotionTask))
 				.collect(Collectors.toList());
 		BotItemInfo[] bestEqts = optimizeEquipementsPossesed.bestEqt();
-		eqtList.put(BotItemType.WEAPON, newList(bestEqts[0]));
-		eqtList.put(BotItemType.BODY_ARMOR, newList(bestEqts[1]));
-		eqtList.put(BotItemType.BOOTS, newList(bestEqts[2]));
-		eqtList.put(BotItemType.HELMET, newList(bestEqts[3]));
-		eqtList.put(BotItemType.SHIELD, newList(bestEqts[4]));
-		eqtList.put(BotItemType.LEG_ARMOR, newList(bestEqts[5]));
-		eqtList.put(BotItemType.AMULET, newList(bestEqts[6]));
-		eqtList.put(BotItemType.RING, newList(mergeSameRing(bestEqts[7], bestEqts[8])));
+		eqtList.put(BotItemType.WEAPON, newList(bestEqts[2]));
+		eqtList.put(BotItemType.BODY_ARMOR, newList(bestEqts[3]));
+		eqtList.put(BotItemType.BOOTS, newList(bestEqts[4]));
+		eqtList.put(BotItemType.HELMET, newList(bestEqts[5]));
+		eqtList.put(BotItemType.SHIELD, newList(bestEqts[6]));
+		eqtList.put(BotItemType.LEG_ARMOR, newList(bestEqts[7]));
+		eqtList.put(BotItemType.AMULET, newList(bestEqts[8]));
+		eqtList.put(BotItemType.RING, newList(mergeSameRing(bestEqts[9], bestEqts[10])));
 		eqtList.put(BotItemType.UTILITY, utility);
 		eqtList.put(BotItemType.ARTIFACT, newList(bestEqts[11], bestEqts[12], bestEqts[13]));
 		OptimizeResult optimizeEquipements = simulatorManager.getFightService().optimizeEquipements(
@@ -155,15 +155,15 @@ public abstract class UseSimulatorFactory {
 		if (optimizeEquipements.fightDetails().win()) {
 			List<GoalAchieverInfo<ArtifactGoalAchiever>> cookingGoal = testGoals.stream()
 					.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())).toList();
-			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal = optimizeEquipements.bestEqt()[9] == null ? null
+			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal = optimizeEquipements.bestEqt()[0] == null ? null
 					: testGoals.stream()
 							.filter(aga -> aga.getItemCode()
-									.equals(optimizeEquipements.bestEqt()[9].botItemDetails().getCode()))
+									.equals(optimizeEquipements.bestEqt()[0].botItemDetails().getCode()))
 							.findFirst().get();
-			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal2 = optimizeEquipements.bestEqt()[10] == null ? null
+			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal2 = optimizeEquipements.bestEqt()[1] == null ? null
 					: testGoals.stream()
 							.filter(aga -> aga.getItemCode()
-									.equals(optimizeEquipements.bestEqt()[10].botItemDetails().getCode()))
+									.equals(optimizeEquipements.bestEqt()[1].botItemDetails().getCode()))
 							.findFirst().get();
 			int nbCombinator = 1 + (potionGoal == null ? 0 : 1) + (potionGoal2 == null ? 0 : 1);
 			@SuppressWarnings({ "unchecked", "rawtypes" })

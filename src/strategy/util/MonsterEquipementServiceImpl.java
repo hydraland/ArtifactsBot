@@ -22,10 +22,10 @@ import strategy.util.fight.FightService;
 public final class MonsterEquipementServiceImpl implements MonsterEquipementService {
 
 	private static final BotCharacterInventorySlot[] SLOTS = new BotCharacterInventorySlot[] {
-			BotCharacterInventorySlot.WEAPON, BotCharacterInventorySlot.BODY_ARMOR, BotCharacterInventorySlot.BOOTS,
-			BotCharacterInventorySlot.HELMET, BotCharacterInventorySlot.SHIELD, BotCharacterInventorySlot.LEG_ARMOR,
-			BotCharacterInventorySlot.AMULET, BotCharacterInventorySlot.RING1, BotCharacterInventorySlot.RING2,
-			BotCharacterInventorySlot.UTILITY1, BotCharacterInventorySlot.UTILITY2, BotCharacterInventorySlot.ARTIFACT1,
+			BotCharacterInventorySlot.UTILITY1, BotCharacterInventorySlot.UTILITY2, BotCharacterInventorySlot.WEAPON,
+			BotCharacterInventorySlot.BODY_ARMOR, BotCharacterInventorySlot.BOOTS, BotCharacterInventorySlot.HELMET,
+			BotCharacterInventorySlot.SHIELD, BotCharacterInventorySlot.LEG_ARMOR, BotCharacterInventorySlot.AMULET,
+			BotCharacterInventorySlot.RING1, BotCharacterInventorySlot.RING2, BotCharacterInventorySlot.ARTIFACT1,
 			BotCharacterInventorySlot.ARTIFACT2, BotCharacterInventorySlot.ARTIFACT3 };
 
 	private final FightService fightService;
@@ -58,15 +58,15 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 	private boolean equipEquipements(BotItemInfo[] bestEqts) {
 		BotCharacter character = characterDao.getCharacter();
 		// equipement du perso
-		String[] equipedEqt = new String[] { character.getWeaponSlot(), character.getBodyArmorSlot(),
-				character.getBootsSlot(), character.getHelmetSlot(), character.getShieldSlot(),
-				character.getLegArmorSlot(), character.getAmuletSlot(), character.getRing1Slot(),
-				character.getRing2Slot(), character.getUtility1Slot(), character.getUtility2Slot(),
+		String[] equipedEqt = new String[] { character.getUtility1Slot(), character.getUtility2Slot(),
+				character.getWeaponSlot(), character.getBodyArmorSlot(), character.getBootsSlot(),
+				character.getHelmetSlot(), character.getShieldSlot(), character.getLegArmorSlot(),
+				character.getAmuletSlot(), character.getRing1Slot(), character.getRing2Slot(),
 				character.getArtifact1Slot(), character.getArtifact2Slot(), character.getArtifact3Slot() };
 
 		EquipResponse response = null;
 		// Traitement équipement ne posant pas de problème d'unicité
-		for (int i = 0; i < 7; i++) {
+		for (int i = 2; i < 9; i++) {
 			if (bestEqts[i] != null) {
 				if (!equipedEqt[i].equals(bestEqts[i].botItemDetails().getCode())
 						&& !characterService.inventoryConstaints(bestEqts[i].botItemDetails().getCode(), 1)
@@ -93,7 +93,7 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 		}
 
 		// Traitement des rings
-		if (!equipedRingOrArtefact(bestEqts, equipedEqt, 7, 9)) {
+		if (!equipedRingOrArtefact(bestEqts, equipedEqt, 9, 11)) {
 			return false;
 		}
 
@@ -151,12 +151,12 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 		EquipResponse response;
 		List<DiffStruct<Integer>> equipedEqtDiff = new LinkedList<>();
 		List<DiffStruct<Integer>> equipedEqtSame = new LinkedList<>();
-		for (int i = 9; i <= 10; i++) {
+		for (int i = 0; i <= 1; i++) {
 			equipedEqtDiff.add(new DiffStruct<>(equipedEqt[i], i));
 		}
 
 		List<DiffStruct<Void>> bestEqtDiff = new LinkedList<>();
-		for (int i = 9; i <= 10; i++) {
+		for (int i = 0; i <= 1; i++) {
 			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
 			SearchDiffStruct searchStruct = new SearchDiffStruct(code);
 			if (equipedEqtDiff.contains(searchStruct)) {
