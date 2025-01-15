@@ -139,16 +139,18 @@ public abstract class UseSimulatorFactory {
 				.map(aga -> new BotItemInfo(itemDAO.getItem(aga.getItemCode()), maxCookOrPotionTask))
 				.collect(Collectors.toList());
 		BotItemInfo[] bestEqts = optimizeEquipementsPossesed.bestEqt();
-		eqtList.put(BotItemType.WEAPON, newList(bestEqts[2]));
-		eqtList.put(BotItemType.BODY_ARMOR, newList(bestEqts[3]));
-		eqtList.put(BotItemType.BOOTS, newList(bestEqts[4]));
-		eqtList.put(BotItemType.HELMET, newList(bestEqts[5]));
-		eqtList.put(BotItemType.SHIELD, newList(bestEqts[6]));
-		eqtList.put(BotItemType.LEG_ARMOR, newList(bestEqts[7]));
-		eqtList.put(BotItemType.AMULET, newList(bestEqts[8]));
-		eqtList.put(BotItemType.RING, newList(mergeSameRing(bestEqts[9], bestEqts[10])));
+		eqtList.put(BotItemType.WEAPON, newList(bestEqts[OptimizeResult.WEAPON_INDEX]));
+		eqtList.put(BotItemType.BODY_ARMOR, newList(bestEqts[OptimizeResult.BODY_ARMOR_INDEX]));
+		eqtList.put(BotItemType.BOOTS, newList(bestEqts[OptimizeResult.BOOTS_INDEX]));
+		eqtList.put(BotItemType.HELMET, newList(bestEqts[OptimizeResult.HELMET_INDEX]));
+		eqtList.put(BotItemType.SHIELD, newList(bestEqts[OptimizeResult.SHIELD_INDEX]));
+		eqtList.put(BotItemType.LEG_ARMOR, newList(bestEqts[OptimizeResult.LEG_ARMOR_INDEX]));
+		eqtList.put(BotItemType.AMULET, newList(bestEqts[OptimizeResult.AMULET_INDEX]));
+		eqtList.put(BotItemType.RING,
+				newList(mergeSameRing(bestEqts[OptimizeResult.RING1_INDEX], bestEqts[OptimizeResult.RING2_INDEX])));
 		eqtList.put(BotItemType.UTILITY, utility);
-		eqtList.put(BotItemType.ARTIFACT, newList(bestEqts[11], bestEqts[12], bestEqts[13]));
+		eqtList.put(BotItemType.ARTIFACT, newList(bestEqts[OptimizeResult.ARTIFACT1_INDEX],
+				bestEqts[OptimizeResult.ARTIFACT2_INDEX], bestEqts[OptimizeResult.ARTIFACT3_INDEX]));
 		OptimizeResult optimizeEquipements = simulatorManager.getFightService().optimizeEquipements(
 				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), eqtList,
 				simulatorManager.getCharacterServiceSimulator().getCharacterHPWithoutEquipment());
@@ -181,8 +183,8 @@ public abstract class UseSimulatorFactory {
 
 				simulatorManager.setValue(botCharacter, botItems);
 				accumulator.setMax(Integer.MAX_VALUE);// Pour ne pas planter dans l'optimisation
-				GoalAchiever testGoal = createGoals(artifactGA, simulatorManager.getCharacterServiceSimulator(),simulateGoalAverageOptimizer,
-						maxCookOrPotionTask);
+				GoalAchiever testGoal = createGoals(artifactGA, simulatorManager.getCharacterServiceSimulator(),
+						simulateGoalAverageOptimizer, maxCookOrPotionTask);
 				accumulator.reset();
 				accumulator.setMax(minTime);
 				try {
@@ -226,7 +228,7 @@ public abstract class UseSimulatorFactory {
 	protected abstract int getMaxSimulationTime();
 
 	protected final GoalAchiever createGoals(GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA,
-			CharacterService aCharacterService,GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
+			CharacterService aCharacterService, GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(
 				character -> Arrays.stream(artifactGA).filter(aga -> aga.getGoal().isRealisable(character))
 						.<Boolean>map(aga -> !aCharacterService.inventoryConstaints(aga.getItemCode(), 1))

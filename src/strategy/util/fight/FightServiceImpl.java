@@ -212,26 +212,28 @@ public final class FightServiceImpl implements FightService {
 		List<BotItemInfo> artifacts3 = new LinkedList<>(artifacts1);
 
 		Combinator<BotItemInfo> combinator = new Combinator<>(BotItemInfo.class, 14);
-		combinator.set(0, utilities1);
-		combinator.set(1, utilities2);
-		combinator.set(2, weapons);
-		combinator.set(3, bodyArmors);
-		combinator.set(4, boots);
-		combinator.set(5, helmets);
-		combinator.set(6, shields);
-		combinator.set(7, legArmors);
-		combinator.set(8, amulets);
-		combinator.set(9, rings1);
-		combinator.set(10, rings2);
-		combinator.set(11, artifacts1);
-		combinator.set(12, artifacts2);
-		combinator.set(13, artifacts3);
+		combinator.set(OptimizeResult.UTILITY1_INDEX, utilities1);
+		combinator.set(OptimizeResult.UTILITY2_INDEX, utilities2);
+		combinator.set(OptimizeResult.WEAPON_INDEX, weapons);
+		combinator.set(OptimizeResult.BODY_ARMOR_INDEX, bodyArmors);
+		combinator.set(OptimizeResult.BOOTS_INDEX, boots);
+		combinator.set(OptimizeResult.HELMET_INDEX, helmets);
+		combinator.set(OptimizeResult.SHIELD_INDEX, shields);
+		combinator.set(OptimizeResult.LEG_ARMOR_INDEX, legArmors);
+		combinator.set(OptimizeResult.AMULET_INDEX, amulets);
+		combinator.set(OptimizeResult.RING1_INDEX, rings1);
+		combinator.set(OptimizeResult.RING2_INDEX, rings2);
+		combinator.set(OptimizeResult.ARTIFACT1_INDEX, artifacts1);
+		combinator.set(OptimizeResult.ARTIFACT2_INDEX, artifacts2);
+		combinator.set(OptimizeResult.ARTIFACT3_INDEX, artifacts3);
 
 		BotItemInfo[] bestEquipements = null;
 		FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
 		Map<Integer, Integer> effectMap = resetEffectMap();
 		for (BotItemInfo[] botItemInfos : combinator) {
-			if (validCombinaison(botItemInfos, 9, 10, 0, 1, 11, 12, 13)) {
+			if (validCombinaison(botItemInfos, OptimizeResult.RING1_INDEX, OptimizeResult.RING2_INDEX,
+					OptimizeResult.UTILITY1_INDEX, OptimizeResult.UTILITY2_INDEX, OptimizeResult.ARTIFACT1_INDEX,
+					OptimizeResult.ARTIFACT2_INDEX, OptimizeResult.ARTIFACT3_INDEX)) {
 				for (BotItemInfo botItemInfo : botItemInfos) {
 					if (botItemInfo != null) {
 						updateEffectInMap(effectMap, botItemInfo.botItemDetails(), botItemInfo.quantity());
@@ -282,6 +284,7 @@ public final class FightServiceImpl implements FightService {
 		return result;
 	}
 
+	//TODO mettre dans une classe et mettre index en constante
 	private void reduceCombinatorics(List<BotItemInfo> weapons, List<BotItemInfo> bodyArmors, List<BotItemInfo> boots,
 			List<BotItemInfo> helmets, List<BotItemInfo> shields, List<BotItemInfo> legArmors,
 			List<BotItemInfo> amulets, List<BotItemInfo> rings, List<BotItemInfo> artifacts,

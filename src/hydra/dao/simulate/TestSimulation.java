@@ -199,7 +199,7 @@ public class TestSimulation {
 				0.3f);
 
 		long beginSimu = System.currentTimeMillis();
-		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("cyclops", 100);
+		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("vampire", 100);
 		long endSimu = System.currentTimeMillis();
 		System.out.println("Durée simu : "+(endSimu-beginSimu));
 		simulatorManager.setValue(character, viewItems);

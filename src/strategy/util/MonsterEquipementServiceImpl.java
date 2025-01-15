@@ -21,12 +21,24 @@ import strategy.util.fight.FightService;
 
 public final class MonsterEquipementServiceImpl implements MonsterEquipementService {
 
-	private static final BotCharacterInventorySlot[] SLOTS = new BotCharacterInventorySlot[] {
-			BotCharacterInventorySlot.UTILITY1, BotCharacterInventorySlot.UTILITY2, BotCharacterInventorySlot.WEAPON,
-			BotCharacterInventorySlot.BODY_ARMOR, BotCharacterInventorySlot.BOOTS, BotCharacterInventorySlot.HELMET,
-			BotCharacterInventorySlot.SHIELD, BotCharacterInventorySlot.LEG_ARMOR, BotCharacterInventorySlot.AMULET,
-			BotCharacterInventorySlot.RING1, BotCharacterInventorySlot.RING2, BotCharacterInventorySlot.ARTIFACT1,
-			BotCharacterInventorySlot.ARTIFACT2, BotCharacterInventorySlot.ARTIFACT3 };
+	private static final BotCharacterInventorySlot[] SLOTS = new BotCharacterInventorySlot[14];
+
+	static {
+		SLOTS[OptimizeResult.UTILITY1_INDEX] = BotCharacterInventorySlot.UTILITY1;
+		SLOTS[OptimizeResult.UTILITY2_INDEX] = BotCharacterInventorySlot.UTILITY2;
+		SLOTS[OptimizeResult.WEAPON_INDEX] = BotCharacterInventorySlot.WEAPON;
+		SLOTS[OptimizeResult.BODY_ARMOR_INDEX] = BotCharacterInventorySlot.BODY_ARMOR;
+		SLOTS[OptimizeResult.BOOTS_INDEX] = BotCharacterInventorySlot.BOOTS;
+		SLOTS[OptimizeResult.HELMET_INDEX] = BotCharacterInventorySlot.HELMET;
+		SLOTS[OptimizeResult.SHIELD_INDEX] = BotCharacterInventorySlot.SHIELD;
+		SLOTS[OptimizeResult.LEG_ARMOR_INDEX] = BotCharacterInventorySlot.LEG_ARMOR;
+		SLOTS[OptimizeResult.AMULET_INDEX] = BotCharacterInventorySlot.AMULET;
+		SLOTS[OptimizeResult.RING1_INDEX] = BotCharacterInventorySlot.RING1;
+		SLOTS[OptimizeResult.RING2_INDEX] = BotCharacterInventorySlot.RING2;
+		SLOTS[OptimizeResult.ARTIFACT1_INDEX] = BotCharacterInventorySlot.ARTIFACT1;
+		SLOTS[OptimizeResult.ARTIFACT2_INDEX] = BotCharacterInventorySlot.ARTIFACT2;
+		SLOTS[OptimizeResult.ARTIFACT3_INDEX] = BotCharacterInventorySlot.ARTIFACT3;
+	}
 
 	private final FightService fightService;
 	private final MoveService moveService;
@@ -58,15 +70,27 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 	private boolean equipEquipements(BotItemInfo[] bestEqts) {
 		BotCharacter character = characterDao.getCharacter();
 		// equipement du perso
-		String[] equipedEqt = new String[] { character.getUtility1Slot(), character.getUtility2Slot(),
-				character.getWeaponSlot(), character.getBodyArmorSlot(), character.getBootsSlot(),
-				character.getHelmetSlot(), character.getShieldSlot(), character.getLegArmorSlot(),
-				character.getAmuletSlot(), character.getRing1Slot(), character.getRing2Slot(),
-				character.getArtifact1Slot(), character.getArtifact2Slot(), character.getArtifact3Slot() };
+		String[] equipedEqt = new String[14];
+		equipedEqt[OptimizeResult.UTILITY1_INDEX] = character.getUtility1Slot();
+		equipedEqt[OptimizeResult.UTILITY2_INDEX] = character.getUtility2Slot();
+		equipedEqt[OptimizeResult.WEAPON_INDEX] = character.getWeaponSlot();
+		equipedEqt[OptimizeResult.BODY_ARMOR_INDEX] = character.getBodyArmorSlot();
+		equipedEqt[OptimizeResult.BOOTS_INDEX] = character.getBootsSlot();
+		equipedEqt[OptimizeResult.HELMET_INDEX] = character.getHelmetSlot();
+		equipedEqt[OptimizeResult.SHIELD_INDEX] = character.getShieldSlot();
+		equipedEqt[OptimizeResult.LEG_ARMOR_INDEX] = character.getLegArmorSlot();
+		equipedEqt[OptimizeResult.AMULET_INDEX] = character.getAmuletSlot();
+		equipedEqt[OptimizeResult.RING1_INDEX] = character.getRing1Slot();
+		equipedEqt[OptimizeResult.RING2_INDEX] = character.getRing2Slot();
+		equipedEqt[OptimizeResult.ARTIFACT1_INDEX] = character.getArtifact1Slot();
+		equipedEqt[OptimizeResult.ARTIFACT2_INDEX] = character.getArtifact2Slot();
+		equipedEqt[OptimizeResult.ARTIFACT3_INDEX] = character.getArtifact3Slot();
 
 		EquipResponse response = null;
 		// Traitement équipement ne posant pas de problème d'unicité
-		for (int i = 2; i < 9; i++) {
+		for (int i : new int[] { OptimizeResult.WEAPON_INDEX, OptimizeResult.BODY_ARMOR_INDEX,
+				OptimizeResult.BOOTS_INDEX, OptimizeResult.HELMET_INDEX, OptimizeResult.SHIELD_INDEX,
+				OptimizeResult.LEG_ARMOR_INDEX, OptimizeResult.AMULET_INDEX }) {
 			if (bestEqts[i] != null) {
 				if (!equipedEqt[i].equals(bestEqts[i].botItemDetails().getCode())
 						&& !characterService.inventoryConstaints(bestEqts[i].botItemDetails().getCode(), 1)
@@ -93,12 +117,13 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 		}
 
 		// Traitement des rings
-		if (!equipedRingOrArtefact(bestEqts, equipedEqt, 9, 11)) {
+		if (!equipedRingOrArtefact(bestEqts, equipedEqt, OptimizeResult.RING1_INDEX, OptimizeResult.RING2_INDEX)) {
 			return false;
 		}
 
 		// Traitement des artéfacts
-		if (!equipedRingOrArtefact(bestEqts, equipedEqt, 11, bestEqts.length)) {
+		if (!equipedRingOrArtefact(bestEqts, equipedEqt, OptimizeResult.ARTIFACT1_INDEX, OptimizeResult.ARTIFACT2_INDEX,
+				OptimizeResult.ARTIFACT3_INDEX)) {
 			return false;
 		}
 
@@ -107,16 +132,15 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 	}
 
 	@SuppressWarnings("unlikely-arg-type")
-	private boolean equipedRingOrArtefact(BotItemInfo[] bestEqts, String[] equipedEqt, int minRange,
-			int maxExcludeRange) {
+	private boolean equipedRingOrArtefact(BotItemInfo[] bestEqts, String[] equipedEqt, int... itemIndex) {
 		EquipResponse response;
 		List<DiffStruct<Integer>> equipedEqtDiff = new LinkedList<>();
-		for (int i = minRange; i < maxExcludeRange; i++) {
+		for (int i : itemIndex) {
 			equipedEqtDiff.add(new DiffStruct<>(equipedEqt[i], i));
 		}
 
 		List<DiffStruct<Void>> bestEqtDiff = new LinkedList<>();
-		for (int i = minRange; i < maxExcludeRange; i++) {
+		for (int i : itemIndex) {
 			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
 			if (!equipedEqtDiff.remove(new SearchDiffStruct(code))) {
 				bestEqtDiff.add(new DiffStruct<>(code, null));
@@ -151,12 +175,13 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 		EquipResponse response;
 		List<DiffStruct<Integer>> equipedEqtDiff = new LinkedList<>();
 		List<DiffStruct<Integer>> equipedEqtSame = new LinkedList<>();
-		for (int i = 0; i <= 1; i++) {
+		final int[] utilitiesIndex = new int[] { OptimizeResult.UTILITY1_INDEX, OptimizeResult.UTILITY2_INDEX };
+		for (int i : utilitiesIndex) {
 			equipedEqtDiff.add(new DiffStruct<>(equipedEqt[i], i));
 		}
 
 		List<DiffStruct<Void>> bestEqtDiff = new LinkedList<>();
-		for (int i = 0; i <= 1; i++) {
+		for (int i : utilitiesIndex) {
 			String code = bestEqts[i] == null ? "" : bestEqts[i].botItemDetails().getCode();
 			SearchDiffStruct searchStruct = new SearchDiffStruct(code);
 			if (equipedEqtDiff.contains(searchStruct)) {
