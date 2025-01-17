@@ -43,6 +43,7 @@ public final class FightServiceImpl implements FightService {
 	private final ItemService itemService;
 	private final Set<String> noUseUtilityMonsterCode;
 	private final Set<String> oddItems;
+	private final EffectCumulator effectCumulator;
 
 	public FightServiceImpl(CharacterDAO characterDao, BankDAO bankDao, ItemDAO itemDAO,
 			CharacterService characterService, ItemService itemService) {
@@ -55,6 +56,7 @@ public final class FightServiceImpl implements FightService {
 		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 168);
 		this.noUseUtilityMonsterCode = new HashSet<>();
 		this.oddItems = new HashSet<>();
+		this.effectCumulator = new EffectCumulatorImpl();
 	}
 
 	@Override
@@ -90,8 +92,6 @@ public final class FightServiceImpl implements FightService {
 		Map<String, Integer> ignoreItems = new HashMap<>(reservedItems);
 		// On ignore les items dépassé
 		addIgnoreItems(ignoreItems, oddItems);
-		// On ignore les tools, ne sont pas fait pour le combat
-		addIgnoreItems(ignoreItems, itemService.getToolsCode());
 		Map<BotItemType, List<BotItemInfo>> equipableCharacterEquipement = characterService
 				.getEquipableCharacterEquipement(ignoreItems, useUtility);
 		// On ignore les équipements que l'on a dans l'inventaire ou sur le perso avec
@@ -229,19 +229,19 @@ public final class FightServiceImpl implements FightService {
 
 		BotItemInfo[] bestEquipements = null;
 		FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
-		Map<Integer, Integer> effectMap = resetEffectMap();
+		effectCumulator.reset();
 		for (BotItemInfo[] botItemInfos : combinator) {
 			if (validCombinaison(botItemInfos, OptimizeResult.RING1_INDEX, OptimizeResult.RING2_INDEX,
 					OptimizeResult.UTILITY1_INDEX, OptimizeResult.UTILITY2_INDEX, OptimizeResult.ARTIFACT1_INDEX,
 					OptimizeResult.ARTIFACT2_INDEX, OptimizeResult.ARTIFACT3_INDEX)) {
 				for (BotItemInfo botItemInfo : botItemInfos) {
 					if (botItemInfo != null) {
-						updateEffectInMap(effectMap, botItemInfo.botItemDetails(), botItemInfo.quantity());
+						updateEffectInMap(botItemInfo.botItemDetails(), botItemInfo.quantity());
 					}
 				}
 
 				// Evaluation
-				FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHpWithoutEqt,
+				FightDetails currentFightDetails = optimizeVictory(monster, characterHpWithoutEqt,
 						maxFightDetails.characterTurn());
 
 				// TODO sortir dans une fonction d'évaluation
@@ -258,13 +258,13 @@ public final class FightServiceImpl implements FightService {
 																.characterLossHP()))))) {
 					maxFightDetails = currentFightDetails;
 					bestEquipements = botItemInfos.clone();
-					if (maxFightDetails.characterTurn() == 1 && bestEquipements[0] == null
-							&& bestEquipements[1] == null) {
+					if (maxFightDetails.characterTurn() == 1 && bestEquipements[OptimizeResult.UTILITY1_INDEX] == null
+							&& bestEquipements[OptimizeResult.UTILITY2_INDEX] == null) {
 						// On a trouvé 1 solution idéale, on arrête la recherche
 						break;
 					}
 				}
-				effectMap = resetEffectMap();
+				effectCumulator.reset();
 			}
 		}
 
@@ -276,15 +276,42 @@ public final class FightServiceImpl implements FightService {
 					characterHpWithoutEqt);
 		}
 
+		addUsefullArtifacts(bestEquipements);
+
 		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
 		optimizeCacheManager.add(key, result);
-		if (maxFightDetails.win() && bestEquipements[0] == null && bestEquipements[1] == null) {
+		if (maxFightDetails.win() && bestEquipements[OptimizeResult.UTILITY1_INDEX] == null
+				&& bestEquipements[OptimizeResult.UTILITY2_INDEX] == null) {
 			noUseUtilityMonsterCode.add(monster.getCode());
 		}
 		return result;
 	}
 
-	//TODO mettre dans une classe et mettre index en constante
+	private void addUsefullArtifacts(BotItemInfo[] bestEquipements) {
+		if (bestEquipements[OptimizeResult.ARTIFACT1_INDEX] == null
+				|| bestEquipements[OptimizeResult.ARTIFACT2_INDEX] == null
+				|| bestEquipements[OptimizeResult.ARTIFACT3_INDEX] == null) {
+			List<BotItemDetails> usefullArtifacts = itemService.getUsefullArtifacts();
+			List<BotItemInfo> artifactsEquipable = new LinkedList<>();
+			for (BotItemDetails artifact : usefullArtifacts) {
+				if (characterService.isPossess(artifact.getCode(), bankDao) && oddItems.contains(artifact.getCode())) {
+					artifactsEquipable.add(new BotItemInfo(artifact, 1));
+				}
+			}
+
+			for (BotItemInfo artifactInfo : artifactsEquipable) {
+				if (bestEquipements[OptimizeResult.ARTIFACT1_INDEX] == null) {
+					bestEquipements[OptimizeResult.ARTIFACT1_INDEX] = artifactInfo;
+				} else if (bestEquipements[OptimizeResult.ARTIFACT2_INDEX] == null) {
+					bestEquipements[OptimizeResult.ARTIFACT2_INDEX] = artifactInfo;
+				} else if (bestEquipements[OptimizeResult.ARTIFACT3_INDEX] == null) {
+					bestEquipements[OptimizeResult.ARTIFACT3_INDEX] = artifactInfo;
+				}
+			}
+		}
+	}
+
+	// TODO mettre dans une classe et mettre index en constante
 	private void reduceCombinatorics(List<BotItemInfo> weapons, List<BotItemInfo> bodyArmors, List<BotItemInfo> boots,
 			List<BotItemInfo> helmets, List<BotItemInfo> shields, List<BotItemInfo> legArmors,
 			List<BotItemInfo> amulets, List<BotItemInfo> rings, List<BotItemInfo> artifacts,
@@ -356,18 +383,18 @@ public final class FightServiceImpl implements FightService {
 					combinator.size(10), combinator.size(11), combinator.size(12), combinator.size(13));
 			maxEvaluate = i;
 			FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
-			Map<Integer, Integer> effectMap = resetEffectMap();
+			effectCumulator.reset();
 			Set<BotItemInfo> itemsSetTemp;
 			for (BotItemInfo[] botItemInfos : combinator) {
 				if (validCombinaison(botItemInfos, 7, 8, 9, 10, 11, 12, 13)) {
 					for (BotItemInfo botItemInfo : botItemInfos) {
 						if (botItemInfo != null) {
-							updateEffectInMap(effectMap, botItemInfo.botItemDetails(), botItemInfo.quantity());
+							updateEffectInMap(botItemInfo.botItemDetails(), botItemInfo.quantity());
 						}
 					}
 
 					// Evaluation
-					FightDetails currentFightDetails = optimizeVictory(effectMap, monster, characterHpWithoutEqt,
+					FightDetails currentFightDetails = optimizeVictory(monster, characterHpWithoutEqt,
 							maxFightDetails.characterTurn());
 					// Hypothèse aucun équipement ne fait de récupération de PV
 					if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (combinatoricsTooHigh
@@ -396,7 +423,7 @@ public final class FightServiceImpl implements FightService {
 							}
 						}
 					}
-					effectMap = resetEffectMap();
+					effectCumulator.reset();
 				}
 			}
 
@@ -446,21 +473,21 @@ public final class FightServiceImpl implements FightService {
 	private List<BotItemInfo> filterOdd(List<BotItemInfo> items) {
 		List<BotItemInfo> filteredItem = items.stream()
 				.filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList();
-		Map<String, Map<Integer, Integer>> itemsMap = new HashMap<>();
+		Map<String, EffectCumulator> itemsMap = new HashMap<>();
 		for (BotItemInfo item : filteredItem) {
 			if (!item.botItemDetails().getType().equals(BotItemType.RING) || item.quantity() > 1) {
-				Map<Integer, Integer> effectMap = resetEffectMap();
-				updateEffectInMap(effectMap, item.botItemDetails(), 1);
-				itemsMap.put(item.botItemDetails().getCode(), effectMap);
+				EffectCumulator effectCumulator = new EffectCumulatorImpl();
+				updateEffectInMap(effectCumulator, item.botItemDetails(), 1);
+				itemsMap.put(item.botItemDetails().getCode(), effectCumulator);
 			}
 		}
 		boolean oddItemAdded = false;
 		for (BotItemInfo item : filteredItem) {
 			String itemCode = item.botItemDetails().getCode();
-			Map<Integer, Integer> effectMap = itemsMap.get(itemCode);
-			if (effectMap != null) {
-				for (Entry<String, Map<Integer, Integer>> entry : itemsMap.entrySet()) {
-					if (!entry.getKey().equals(itemCode) && upperEffects(effectMap, entry.getValue())) {
+			EffectCumulator effectCumulator = itemsMap.get(itemCode);
+			if (effectCumulator != null) {
+				for (Entry<String, EffectCumulator> entry : itemsMap.entrySet()) {
+					if (!entry.getKey().equals(itemCode) && entry.getValue().isUpper(effectCumulator)) {
 						oddItems.add(itemCode);
 						oddItemAdded = true;
 						break;
@@ -471,16 +498,6 @@ public final class FightServiceImpl implements FightService {
 		return oddItemAdded
 				? filteredItem.stream().filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList()
 				: filteredItem;
-	}
-
-	private boolean upperEffects(Map<Integer, Integer> effectMap, Map<Integer, Integer> effectMapToCompare) {
-		for (Entry<Integer, Integer> entry : effectMap.entrySet()) {
-			Integer effect = effectMapToCompare.get(entry.getKey());
-			if (effect == null || entry.getValue() > effect) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	private void addNullValueIfAbsent(List<BotItemInfo> botItemList, boolean after) {
@@ -500,13 +517,14 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private BotItemInfo[] initBestEquipments(BotCharacter character) {
-		return new BotItemInfo[] { initBestEquipement(character.getWeaponSlot(), 1),
-				initBestEquipement(character.getBodyArmorSlot(), 1), initBestEquipement(character.getBootsSlot(), 1),
-				initBestEquipement(character.getHelmetSlot(), 1), initBestEquipement(character.getShieldSlot(), 1),
-				initBestEquipement(character.getLegArmorSlot(), 1), initBestEquipement(character.getAmuletSlot(), 1),
-				initBestEquipement(character.getRing1Slot(), 1), initBestEquipement(character.getRing2Slot(), 1),
-				initBestEquipement(character.getUtility1Slot(), character.getUtility1SlotQuantity()),
+		return new BotItemInfo[] { initBestEquipement(character.getUtility1Slot(), character.getUtility1SlotQuantity()),
 				initBestEquipement(character.getUtility2Slot(), character.getUtility2SlotQuantity()),
+				initBestEquipement(character.getWeaponSlot(), 1), initBestEquipement(character.getBodyArmorSlot(), 1),
+				initBestEquipement(character.getBootsSlot(), 1), initBestEquipement(character.getHelmetSlot(), 1),
+				initBestEquipement(character.getShieldSlot(), 1), initBestEquipement(character.getLegArmorSlot(), 1),
+				initBestEquipement(character.getAmuletSlot(), 1), initBestEquipement(character.getRing1Slot(), 1),
+				initBestEquipement(character.getRing2Slot(), 1),
+
 				initBestEquipement(character.getArtifact1Slot(), 1),
 				initBestEquipement(character.getArtifact2Slot(), 1),
 				initBestEquipement(character.getArtifact3Slot(), 1) };
@@ -518,29 +536,29 @@ public final class FightServiceImpl implements FightService {
 
 	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster,
 			int characterHp) {
-		Map<Integer, Integer> effectMap = resetEffectMap();
+		effectCumulator.reset();
 
-		updateEffectInMapForEquipedEqt(character.getWeaponSlot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getBodyArmorSlot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getBootsSlot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getHelmetSlot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getShieldSlot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getLegArmorSlot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getAmuletSlot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getRing1Slot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getRing2Slot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getUtility1Slot(), effectMap, character.getUtility1SlotQuantity());
-		updateEffectInMapForEquipedEqt(character.getUtility2Slot(), effectMap, character.getUtility2SlotQuantity());
-		updateEffectInMapForEquipedEqt(character.getArtifact1Slot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getArtifact2Slot(), effectMap, 1);
-		updateEffectInMapForEquipedEqt(character.getArtifact3Slot(), effectMap, 1);
+		updateEffectInMapForEquipedEqt(character.getWeaponSlot(), 1);
+		updateEffectInMapForEquipedEqt(character.getBodyArmorSlot(), 1);
+		updateEffectInMapForEquipedEqt(character.getBootsSlot(), 1);
+		updateEffectInMapForEquipedEqt(character.getHelmetSlot(), 1);
+		updateEffectInMapForEquipedEqt(character.getShieldSlot(), 1);
+		updateEffectInMapForEquipedEqt(character.getLegArmorSlot(), 1);
+		updateEffectInMapForEquipedEqt(character.getAmuletSlot(), 1);
+		updateEffectInMapForEquipedEqt(character.getRing1Slot(), 1);
+		updateEffectInMapForEquipedEqt(character.getRing2Slot(), 1);
+		updateEffectInMapForEquipedEqt(character.getUtility1Slot(), character.getUtility1SlotQuantity());
+		updateEffectInMapForEquipedEqt(character.getUtility2Slot(), character.getUtility2SlotQuantity());
+		updateEffectInMapForEquipedEqt(character.getArtifact1Slot(), 1);
+		updateEffectInMapForEquipedEqt(character.getArtifact2Slot(), 1);
+		updateEffectInMapForEquipedEqt(character.getArtifact3Slot(), 1);
 
-		return optimizeVictory(effectMap, monster, characterHp, GameConstants.MAX_FIGHT_TURN);
+		return optimizeVictory(monster, characterHp, GameConstants.MAX_FIGHT_TURN);
 	}
 
-	private void updateEffectInMapForEquipedEqt(String slot, Map<Integer, Integer> effectMap, int quantity) {
+	private void updateEffectInMapForEquipedEqt(String slot, int quantity) {
 		if (!"".equals(slot)) {
-			updateEffectInMap(effectMap, itemDAO.getItem(slot), quantity);
+			updateEffectInMap(itemDAO.getItem(slot), quantity);
 		}
 	}
 
@@ -565,21 +583,23 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	private void updateEffectInMap(Map<Integer, Integer> effectMap, BotItemDetails botItemDetail, int quantity) {
+	private void updateEffectInMap(BotItemDetails botItemDetail, int quantity) {
+		updateEffectInMap(effectCumulator, botItemDetail, quantity);
+	}
+
+	private void updateEffectInMap(EffectCumulator aEffectCumulator, BotItemDetails botItemDetail, int quantity) {
 		botItemDetail.getEffects().stream().forEach(effect -> {
 			if (BotEffect.RESTORE.equals(effect.getName())) {
-				addRestore(effectMap, effect.getValue(), quantity);
+				aEffectCumulator.addRestoreEffectValues(effect.getValue(), quantity);
 			} else {
-				effectMap.put(effect.getName().ordinal(),
-						effect.getValue() + effectMap.getOrDefault(effect.getName().ordinal(), 0));
+				aEffectCumulator.addEffectValue(effect.getName(), effect.getValue());
 			}
 		});
 	}
 
 	// On ignore les blocks
-	private FightDetails optimizeVictory(Map<Integer, Integer> effectMap, BotMonster monster, int characterHp,
-			int maxCharacterTurn) {
-		int characterDmg = calculCharacterDamage(effectMap, monster);
+	private FightDetails optimizeVictory(BotMonster monster, int characterHp, int maxCharacterTurn) {
+		int characterDmg = calculCharacterDamage(monster);
 		int characterTurn = calculTurns(monster.getHp(), characterDmg);
 		if (characterTurn >= GameConstants.MAX_FIGHT_TURN) {
 			// l'hypothèse c'est que l'on ne doit pas se retrouver dans ce cas, d'ou hp
@@ -591,8 +611,7 @@ public final class FightServiceImpl implements FightService {
 			return new FightDetails(false, characterTurn, characterTurn, Integer.MAX_VALUE, 0, 0, 0);
 		}
 
-		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, effectMap, monster, characterTurn,
-				characterDmg);
+		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, monster, characterTurn, characterDmg);
 		// Le calcul fait que l'on privilégie la non utilisation de potion quand cela
 		// est possible
 		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
@@ -600,44 +619,24 @@ public final class FightServiceImpl implements FightService {
 				monsterResult.characterLossHP(), monsterResult.restoreTurn(), characterDmg, monsterResult.monsterDmg());
 	}
 
-	private List<RestoreStruct> getRestoreValue(Map<Integer, Integer> effectMap) {
-		List<RestoreStruct> result = new LinkedList<>();
-		int index = -1;
-		while (effectMap.containsKey(index)) {
-			result.add(new RestoreStruct(effectMap.get(index), effectMap.get(index - 1)));
-			index -= 2;
-		}
-		return result;
-	}
-
-	private void addRestore(Map<Integer, Integer> effectMap, int value, int quantity) {
-		int index = -1;
-		while (effectMap.containsKey(index)) {
-			index -= 2;
-		}
-		effectMap.put(index, value);
-		effectMap.put(index - 1, quantity);
-	}
-
 	private int calculTurns(int hp, int dmg) {
 		return dmg == 0 ? GameConstants.MAX_FIGHT_TURN : hp / dmg + (hp % dmg == 0 ? 0 : 1);
 	}
 
-	private MonsterCalculStruct calculMonsterTurns(int characterHp, Map<Integer, Integer> effectMap, BotMonster monster,
-			int maxCharacterTurn, int characterDmg) {
-		List<RestoreStruct> restoreValues = getRestoreValue(effectMap);
-		int monsterDmg = calculMonsterDamage(effectMap, monster);
-		int characterMaxHp = characterHp + effectMap.getOrDefault(BotEffect.HP.ordinal(), 0);
-		int characterMaxHpWithBoost = characterMaxHp + effectMap.getOrDefault(BotEffect.BOOST_HP.ordinal(), 0);
+	private MonsterCalculStruct calculMonsterTurns(int characterHp, BotMonster monster, int maxCharacterTurn,
+			int characterDmg) {
+		int monsterDmg = calculMonsterDamage(monster);
+		int characterMaxHp = characterHp + effectCumulator.getEffectValue(BotEffect.HP);
+		int characterMaxHpWithBoost = characterMaxHp + effectCumulator.getEffectValue(BotEffect.BOOST_HP);
 		int halfCharacterMaxHpWithBoost = characterMaxHpWithBoost / 2;
-		if (restoreValues.isEmpty()) {
-			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
+		if (!effectCumulator.isRestore()) {
+			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(monster));
 
 			int monsterTotalDmg = monsterDmg * (monsterTurn > maxCharacterTurn ? (maxCharacterTurn - 1) : monsterTurn);
 			return new MonsterCalculStruct(monsterTurn, 0,
 					Math.max(0, monsterTotalDmg - (characterMaxHpWithBoost - characterMaxHp)), monsterDmg);
 		}
-		int halfMonsterTurn = calculTurns(halfCharacterMaxHpWithBoost, calculMonsterDamage(effectMap, monster));
+		int halfMonsterTurn = calculTurns(halfCharacterMaxHpWithBoost, calculMonsterDamage(monster));
 		if (halfMonsterTurn >= maxCharacterTurn) {
 			return new MonsterCalculStruct(halfMonsterTurn * 2, 0,
 					Math.max(0, (maxCharacterTurn - 1) * monsterDmg - (characterMaxHpWithBoost - characterMaxHp)),
@@ -649,7 +648,7 @@ public final class FightServiceImpl implements FightService {
 		int restoreTurn = 0;
 		while (characterHP >= 0 && monsterHP >= 0) {
 			if (characterHP < halfCharacterMaxHpWithBoost) {
-				int restoreValue = getRestoreValue(restoreValues, restoreTurn);
+				int restoreValue = effectCumulator.getRestoreEffectValue(restoreTurn);
 				if (restoreValue > 0) {
 					restoreTurn++;
 				}
@@ -665,44 +664,35 @@ public final class FightServiceImpl implements FightService {
 				monsterDmg);
 	}
 
-	private int getRestoreValue(List<RestoreStruct> restoreValues, int restoreTurn) {
-		return restoreValues.stream().filter(rs -> rs.quantity() > restoreTurn).map(RestoreStruct::value).reduce(0,
-				(a, b) -> a + b);
-	}
-
-	private Map<Integer, Integer> resetEffectMap() {
-		return HashMap.newHashMap(BotEffect.values().length);
-	}
-
-	private int calculMonsterDamage(Map<Integer, Integer> effectMap, BotMonster monster) {
+	private int calculMonsterDamage(BotMonster monster) {
 		int monsterEartDmg = (int) Math
-				.rint(monster.getAttackEarth() * (1 - (effectMap.getOrDefault(BotEffect.RES_EARTH.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_EARTH.ordinal(), 0)) / 100f));
+				.rint(monster.getAttackEarth() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_EARTH)
+						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_EARTH)) / 100f));
 		int monsterAirDmg = (int) Math
-				.rint(monster.getAttackAir() * (1 - (effectMap.getOrDefault(BotEffect.RES_AIR.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_AIR.ordinal(), 0)) / 100f));
+				.rint(monster.getAttackAir() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_AIR)
+						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_AIR)) / 100f));
 		int monsterWaterDmg = (int) Math
-				.rint(monster.getAttackWater() * (1 - (effectMap.getOrDefault(BotEffect.RES_WATER.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_WATER.ordinal(), 0)) / 100f));
+				.rint(monster.getAttackWater() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_WATER)
+						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_WATER)) / 100f));
 		int monsterFireDmg = (int) Math
-				.rint(monster.getAttackFire() * (1 - (effectMap.getOrDefault(BotEffect.RES_FIRE.ordinal(), 0)
-						+ effectMap.getOrDefault(BotEffect.BOOST_RES_FIRE.ordinal(), 0)) / 100f));
+				.rint(monster.getAttackFire() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_FIRE)
+						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_FIRE)) / 100f));
 		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
 	}
 
-	private int calculCharacterDamage(Map<Integer, Integer> effectMap, BotMonster monster) {
-		int characterEartDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_EARTH.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.DMG_EARTH.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.BOOST_DMG_EARTH.ordinal(), 0), monster.getResEarth());
-		int characterAirDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_AIR.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.DMG_AIR.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.BOOST_DMG_AIR.ordinal(), 0), monster.getResAir());
-		int characterWaterDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_WATER.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.DMG_WATER.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.BOOST_DMG_WATER.ordinal(), 0), monster.getResWater());
-		int characterFireDmg = calculEffectDamage(effectMap.getOrDefault(BotEffect.ATTACK_FIRE.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.DMG_FIRE.ordinal(), 0),
-				effectMap.getOrDefault(BotEffect.BOOST_DMG_FIRE.ordinal(), 0), monster.getResFire());
+	private int calculCharacterDamage(BotMonster monster) {
+		int characterEartDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_EARTH),
+				effectCumulator.getEffectValue(BotEffect.DMG_EARTH),
+				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_EARTH), monster.getResEarth());
+		int characterAirDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_AIR),
+				effectCumulator.getEffectValue(BotEffect.DMG_AIR),
+				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_AIR), monster.getResAir());
+		int characterWaterDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_WATER),
+				effectCumulator.getEffectValue(BotEffect.DMG_WATER),
+				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_WATER), monster.getResWater());
+		int characterFireDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_FIRE),
+				effectCumulator.getEffectValue(BotEffect.DMG_FIRE),
+				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_FIRE), monster.getResFire());
 		return characterEartDmg + characterAirDmg + characterWaterDmg + characterFireDmg;
 	}
 
@@ -712,8 +702,5 @@ public final class FightServiceImpl implements FightService {
 
 	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterLossHP,
 			int monsterDmg) {
-	}
-
-	private static final record RestoreStruct(int value, int quantity) {
 	}
 }

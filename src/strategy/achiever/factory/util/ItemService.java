@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import hydra.model.BotCharacterInventorySlot;
+import hydra.model.BotItemDetails;
 import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 
@@ -47,4 +48,6 @@ public interface ItemService {
 	List<String> getToolsCode();
 
 	Set<String> getAllTeleportItemCode();
+
+	List<BotItemDetails> getUsefullArtifacts();
 }

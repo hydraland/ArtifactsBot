@@ -20,12 +20,14 @@ public final class ItemServiceImpl implements ItemService {
 			BotEffect.WOODCUTTING, BotEffect.ALCHEMY);
 	private final Map<String, ToolStruct> toolsItemCache;
 	private final Map<String, Coordinate> teleportItemCache;
+	private final List<BotItemDetails> usefullArtifactsCache;
 
 	public ItemServiceImpl(ItemDAO itemDao) {
 		toolsItemCache = new HashMap<>();
 		initTools(itemDao);
 		teleportItemCache = itemDao.getItems().stream()
 				.filter(bid -> bid.getEffects().stream().anyMatch(bie -> BotEffect.TELEPORT_X.equals(bie.getName()))).collect(Collectors.toMap(BotItemDetails::getCode, this::createCoordinate));
+		usefullArtifactsCache = itemDao.getItems().stream().filter(bid -> bid.getEffects().stream().anyMatch(bie -> BotEffect.INVENTORY_SPACE.equals(bie.getName()) && bie.getValue() > 0)).toList();
 	}
 
 	private void initTools(ItemDAO itemDao) {
@@ -123,5 +125,10 @@ public final class ItemServiceImpl implements ItemService {
 		int x = item.getEffects().stream().filter(bie -> BotEffect.TELEPORT_X.equals(bie.getName())).map(bie -> bie.getValue()).findFirst().get();
 		int y = item.getEffects().stream().filter(bie -> BotEffect.TELEPORT_Y.equals(bie.getName())).map(bie -> bie.getValue()).findFirst().get();
 		return new Coordinate(x, y);
+	}
+
+	@Override
+	public List<BotItemDetails> getUsefullArtifacts() {
+		return usefullArtifactsCache;
 	}
 }

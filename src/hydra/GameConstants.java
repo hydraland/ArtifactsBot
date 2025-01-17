@@ -21,4 +21,5 @@ public interface GameConstants {
 	public static final int EVENT_RESOURCE_LEVEL = 35;
 	public static final int STEP_LEVEL = 5;
 	public static final int MAX_FIGHT_TURN = 100;
+	public static final int MAX_RESTORE_EQUIPED_ITEMS = 2;
 }

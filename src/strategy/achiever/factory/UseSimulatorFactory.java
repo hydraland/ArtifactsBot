@@ -157,15 +157,15 @@ public abstract class UseSimulatorFactory {
 		if (optimizeEquipements.fightDetails().win()) {
 			List<GoalAchieverInfo<ArtifactGoalAchiever>> cookingGoal = testGoals.stream()
 					.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())).toList();
-			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal = optimizeEquipements.bestEqt()[0] == null ? null
+			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal = optimizeEquipements.bestEqt()[OptimizeResult.UTILITY1_INDEX] == null ? null
 					: testGoals.stream()
 							.filter(aga -> aga.getItemCode()
-									.equals(optimizeEquipements.bestEqt()[0].botItemDetails().getCode()))
+									.equals(optimizeEquipements.bestEqt()[OptimizeResult.UTILITY1_INDEX].botItemDetails().getCode()))
 							.findFirst().get();
-			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal2 = optimizeEquipements.bestEqt()[1] == null ? null
+			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal2 = optimizeEquipements.bestEqt()[OptimizeResult.UTILITY2_INDEX] == null ? null
 					: testGoals.stream()
 							.filter(aga -> aga.getItemCode()
-									.equals(optimizeEquipements.bestEqt()[1].botItemDetails().getCode()))
+									.equals(optimizeEquipements.bestEqt()[OptimizeResult.UTILITY2_INDEX].botItemDetails().getCode()))
 							.findFirst().get();
 			int nbCombinator = 1 + (potionGoal == null ? 0 : 1) + (potionGoal2 == null ? 0 : 1);
 			@SuppressWarnings({ "unchecked", "rawtypes" })
