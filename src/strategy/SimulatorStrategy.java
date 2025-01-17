@@ -196,8 +196,10 @@ public class SimulatorStrategy implements Strategy {
 			Bornes bornes = new Bornes(minSkillLevel, minSkillLevel, craftingLevel + 1);
 			Predicate<GoalAchieverInfo<ArtifactGoalAchiever>> predicate = StrategySkillUtils
 					.createFilterCraftPredicate(craftSkill, bornes);
-			return allGoals.stream().filter(predicate).filter(predicateFilterPossesed).map(GoalAchieverInfo::getGoal)
+			List<ArtifactGoalAchiever> resultList = allGoals.stream().filter(predicate).filter(predicateFilterPossesed).map(GoalAchieverInfo::getGoal)
 					.toList();
+			resultList.forEach(aga -> goalAverageOptimizer.optimize(aga, 1, 1f));
+			return resultList;
 		}
 		//TODO a revoir si on a pas le temps d'avoir tous les équipements
 		if (craftingLevel % GameConstants.STEP_LEVEL == 0) {
@@ -207,6 +209,7 @@ public class SimulatorStrategy implements Strategy {
 			List<ArtifactGoalAchiever> resultList = allGoals.stream().filter(predicate).filter(predicateFilterPossesed)
 					.map(GoalAchieverInfo::getGoal).filter(aga -> aga.isRealisableAfterSetRoot(character)).toList();
 			if (!resultList.isEmpty()) {
+				resultList.forEach(aga -> goalAverageOptimizer.optimize(aga, 1, 1f));
 				return resultList;
 			}
 		}
