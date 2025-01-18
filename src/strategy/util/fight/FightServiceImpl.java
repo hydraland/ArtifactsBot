@@ -291,10 +291,18 @@ public final class FightServiceImpl implements FightService {
 		if (bestEquipements[OptimizeResult.ARTIFACT1_INDEX] == null
 				|| bestEquipements[OptimizeResult.ARTIFACT2_INDEX] == null
 				|| bestEquipements[OptimizeResult.ARTIFACT3_INDEX] == null) {
+			List<String> bestArtifactsFound = new LinkedList<>();
+			for (int i : new int[] { OptimizeResult.ARTIFACT1_INDEX, OptimizeResult.ARTIFACT2_INDEX,
+					OptimizeResult.ARTIFACT3_INDEX }) {
+				if (bestEquipements[i] != null) {
+					bestArtifactsFound.add(bestEquipements[i].botItemDetails().getCode());
+				}
+			}
 			List<BotItemDetails> usefullArtifacts = itemService.getUsefullArtifacts();
 			List<BotItemInfo> artifactsEquipable = new LinkedList<>();
 			for (BotItemDetails artifact : usefullArtifacts) {
-				if (characterService.isPossess(artifact.getCode(), bankDao) && oddItems.contains(artifact.getCode())) {
+				if (characterService.isPossess(artifact.getCode(), bankDao)
+						&& !bestArtifactsFound.contains(artifact.getCode())) {
 					artifactsEquipable.add(new BotItemInfo(artifact, 1));
 				}
 			}
