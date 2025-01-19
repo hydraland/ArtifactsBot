@@ -325,8 +325,8 @@ public final class FightServiceImpl implements FightService {
 			List<BotItemInfo> amulets, List<BotItemInfo> rings, List<BotItemInfo> artifacts,
 			List<BotItemInfo> utilities, BotMonster monster, int characterHpWithoutEqt) {
 
-		List<List<BotItemInfo>> sources = Arrays.asList(weapons, bodyArmors, boots, helmets, shields, legArmors,
-				amulets, rings, artifacts, utilities);
+		List<List<BotItemInfo>> sources = Arrays.asList(weapons, bodyArmors, amulets, helmets, legArmors, rings, boots,
+				shields, artifacts, utilities);
 		if (rings.size() == 1 && rings.getFirst().quantity() == 1) {
 			addNullValueIfAbsent(rings, true);
 		}
@@ -335,7 +335,7 @@ public final class FightServiceImpl implements FightService {
 		}
 
 		// Séparation des utilities en restore et autre
-		List<BotItemInfo> restoreUtilities = new LinkedList<BotItemInfo>();
+		List<BotItemInfo> restoreUtilities = new LinkedList<>();
 		for (Iterator<BotItemInfo> iterator = utilities.iterator(); iterator.hasNext();) {
 			BotItemInfo botItemInfo = iterator.next();
 			if (botItemInfo.botItemDetails().getEffects().stream()
@@ -349,7 +349,7 @@ public final class FightServiceImpl implements FightService {
 		List<Set<BotItemInfo>> tempList = new ArrayList<>();
 		List<Set<BotItemInfo>> resultList = new ArrayList<>();
 		for (int i = 0; i < sources.size(); i++) {
-			if (i == 7 || i == 9) {
+			if (i == 5 || i == 9) {
 				tempList.add(new HashSet<>());
 				resultList.add(new HashSet<>(sources.get(i)));
 			} else if (i == 8) {
@@ -370,8 +370,8 @@ public final class FightServiceImpl implements FightService {
 			combinator.set(3, i == 3 ? sources.get(3) : (i < 3 ? Collections.emptyList() : resultList.get(3)));
 			combinator.set(4, i == 4 ? sources.get(4) : (i < 4 ? Collections.emptyList() : resultList.get(4)));
 			combinator.set(5, i == 5 ? sources.get(5) : (i < 5 ? Collections.emptyList() : resultList.get(5)));
-			combinator.set(6, i == 6 ? sources.get(6) : (i < 6 ? Collections.emptyList() : resultList.get(6)));
-			combinator.set(7, i == 7 ? sources.get(7) : (i < 7 ? Collections.emptyList() : resultList.get(7)));
+			combinator.set(6, i == 6 ? sources.get(5) : (i < 6 ? Collections.emptyList() : resultList.get(6)));
+			combinator.set(7, i == 7 ? sources.get(6) : (i < 7 ? Collections.emptyList() : resultList.get(7)));
 			combinator.set(8, i == 8 ? sources.get(7) : (i < 8 ? Collections.emptyList() : resultList.get(8)));
 			combinator.set(9, i == 9 ? sources.get(8) : (i < 9 ? Collections.emptyList() : resultList.get(9)));
 			combinator.set(10, i == 10 ? sources.get(8) : (i < 10 ? Collections.emptyList() : resultList.get(10)));
@@ -394,7 +394,7 @@ public final class FightServiceImpl implements FightService {
 			effectCumulator.reset();
 			Set<BotItemInfo> itemsSetTemp;
 			for (BotItemInfo[] botItemInfos : combinator) {
-				if (validCombinaison(botItemInfos, 7, 8, 9, 10, 11, 12, 13)) {
+				if (validCombinaison(botItemInfos, 5, 6, 9, 10, 11, 12, 13)) {
 					for (BotItemInfo botItemInfo : botItemInfos) {
 						if (botItemInfo != null) {
 							updateEffectInMap(botItemInfo.botItemDetails(), botItemInfo.quantity());
@@ -444,19 +444,24 @@ public final class FightServiceImpl implements FightService {
 		for (int j = 0; j <= maxEvaluate && j < sources.size(); j++) {
 			List<BotItemInfo> itemsSetTemp = sources.get(j);
 			itemsSetTemp.clear();
-			if (j == 7) {
-				itemsSetTemp.addAll(resultList.get(j));
-				itemsSetTemp.addAll(resultList.get(j + 1));
-			} else if (j == 8) {
-				itemsSetTemp.addAll(resultList.get(j + 1));
-				itemsSetTemp.addAll(resultList.get(j + 2));
-				itemsSetTemp.addAll(resultList.get(j + 3));
-			} else if (j == 9) {
-				itemsSetTemp.addAll(resultList.get(j + 3));
-				itemsSetTemp.addAll(resultList.get(j + 4));
+			switch (j) {
+			case 5 -> {
+				itemsSetTemp.addAll(resultList.get(5));
+				itemsSetTemp.addAll(resultList.get(6));
+			}
+			case 6 -> itemsSetTemp.addAll(resultList.get(7));
+			case 7 -> itemsSetTemp.addAll(resultList.get(8));
+			case 8 -> {
+				itemsSetTemp.addAll(resultList.get(9));
+				itemsSetTemp.addAll(resultList.get(10));
+				itemsSetTemp.addAll(resultList.get(11));
+			}
+			case 9 -> {
+				itemsSetTemp.addAll(resultList.get(12));
+				itemsSetTemp.addAll(resultList.get(13));
 				itemsSetTemp.addAll(restoreUtilities);
-			} else {
-				itemsSetTemp.addAll(resultList.get(j));
+			}
+			default -> itemsSetTemp.addAll(resultList.get(j));
 			}
 		}
 	}
@@ -484,18 +489,18 @@ public final class FightServiceImpl implements FightService {
 		Map<String, EffectCumulator> itemsMap = new HashMap<>();
 		for (BotItemInfo item : filteredItem) {
 			if (!item.botItemDetails().getType().equals(BotItemType.RING) || item.quantity() > 1) {
-				EffectCumulator effectCumulator = new EffectCumulatorImpl();
-				updateEffectInMap(effectCumulator, item.botItemDetails(), 1);
-				itemsMap.put(item.botItemDetails().getCode(), effectCumulator);
+				EffectCumulator aEffectCumulator = new EffectCumulatorImpl();
+				updateEffectInMap(aEffectCumulator, item.botItemDetails(), 1);
+				itemsMap.put(item.botItemDetails().getCode(), aEffectCumulator);
 			}
 		}
 		boolean oddItemAdded = false;
 		for (BotItemInfo item : filteredItem) {
 			String itemCode = item.botItemDetails().getCode();
-			EffectCumulator effectCumulator = itemsMap.get(itemCode);
-			if (effectCumulator != null) {
+			EffectCumulator aEffectCumulator = itemsMap.get(itemCode);
+			if (aEffectCumulator != null) {
 				for (Entry<String, EffectCumulator> entry : itemsMap.entrySet()) {
-					if (!entry.getKey().equals(itemCode) && entry.getValue().isUpper(effectCumulator)) {
+					if (!entry.getKey().equals(itemCode) && entry.getValue().isUpper(aEffectCumulator)) {
 						oddItems.add(itemCode);
 						oddItemAdded = true;
 						break;
