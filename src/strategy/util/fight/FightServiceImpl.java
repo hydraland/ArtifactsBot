@@ -29,6 +29,7 @@ import strategy.util.OptimizeResult;
 import util.CacheManager;
 import util.Combinator;
 import util.LimitedTimeCacheManager;
+import util.PermanentCacheManager;
 
 public final class FightServiceImpl implements FightService {
 	private static final int MAX_COMBINATORICS_BEFORE_ACTIVATE_REDUCTION = 10000;
@@ -43,7 +44,8 @@ public final class FightServiceImpl implements FightService {
 	private final ItemService itemService;
 	private final Set<String> noUseUtilityMonsterCode;
 	private final Set<String> oddItems;
-	private final EffectCumulator effectCumulator;
+	private final EffectCumulator effectsCumulator;
+	private final CacheManager<String, ItemEffects> effectCacheManager;
 
 	public FightServiceImpl(CharacterDAO characterDao, BankDAO bankDao, ItemDAO itemDAO,
 			CharacterService characterService, ItemService itemService) {
@@ -56,7 +58,8 @@ public final class FightServiceImpl implements FightService {
 		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 168);
 		this.noUseUtilityMonsterCode = new HashSet<>();
 		this.oddItems = new HashSet<>();
-		this.effectCumulator = new EffectCumulatorImpl();
+		this.effectsCumulator = new EffectCumulatorImpl();
+		this.effectCacheManager = new PermanentCacheManager<>();
 	}
 
 	@Override
@@ -229,14 +232,14 @@ public final class FightServiceImpl implements FightService {
 
 		BotItemInfo[] bestEquipements = null;
 		FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
-		effectCumulator.reset();
+		effectsCumulator.reset();
 		for (BotItemInfo[] botItemInfos : combinator) {
 			if (validCombinaison(botItemInfos, OptimizeResult.RING1_INDEX, OptimizeResult.RING2_INDEX,
 					OptimizeResult.UTILITY1_INDEX, OptimizeResult.UTILITY2_INDEX, OptimizeResult.ARTIFACT1_INDEX,
 					OptimizeResult.ARTIFACT2_INDEX, OptimizeResult.ARTIFACT3_INDEX)) {
 				for (BotItemInfo botItemInfo : botItemInfos) {
 					if (botItemInfo != null) {
-						updateEffectInMap(botItemInfo.botItemDetails(), botItemInfo.quantity());
+						updateEffectsCumulator(botItemInfo.botItemDetails(), botItemInfo.quantity());
 					}
 				}
 
@@ -264,7 +267,7 @@ public final class FightServiceImpl implements FightService {
 						break;
 					}
 				}
-				effectCumulator.reset();
+				effectsCumulator.reset();
 			}
 		}
 
@@ -391,13 +394,13 @@ public final class FightServiceImpl implements FightService {
 					combinator.size(10), combinator.size(11), combinator.size(12), combinator.size(13));
 			maxEvaluate = i;
 			FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
-			effectCumulator.reset();
+			effectsCumulator.reset();
 			Set<BotItemInfo> itemsSetTemp;
 			for (BotItemInfo[] botItemInfos : combinator) {
 				if (validCombinaison(botItemInfos, 5, 6, 9, 10, 11, 12, 13)) {
 					for (BotItemInfo botItemInfo : botItemInfos) {
 						if (botItemInfo != null) {
-							updateEffectInMap(botItemInfo.botItemDetails(), botItemInfo.quantity());
+							updateEffectsCumulator(botItemInfo.botItemDetails(), botItemInfo.quantity());
 						}
 					}
 
@@ -431,7 +434,7 @@ public final class FightServiceImpl implements FightService {
 							}
 						}
 					}
-					effectCumulator.reset();
+					effectsCumulator.reset();
 				}
 			}
 
@@ -486,21 +489,20 @@ public final class FightServiceImpl implements FightService {
 	private List<BotItemInfo> filterOdd(List<BotItemInfo> items) {
 		List<BotItemInfo> filteredItem = items.stream()
 				.filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList();
-		Map<String, EffectCumulator> itemsMap = new HashMap<>();
+		Map<String, ItemEffects> itemsMap = new HashMap<>();
 		for (BotItemInfo item : filteredItem) {
 			if (!item.botItemDetails().getType().equals(BotItemType.RING) || item.quantity() > 1) {
-				EffectCumulator aEffectCumulator = new EffectCumulatorImpl();
-				updateEffectInMap(aEffectCumulator, item.botItemDetails(), 1);
-				itemsMap.put(item.botItemDetails().getCode(), aEffectCumulator);
+				ItemEffects itemEffects = getEffects(item.botItemDetails());
+				itemsMap.put(item.botItemDetails().getCode(), itemEffects);
 			}
 		}
 		boolean oddItemAdded = false;
 		for (BotItemInfo item : filteredItem) {
 			String itemCode = item.botItemDetails().getCode();
-			EffectCumulator aEffectCumulator = itemsMap.get(itemCode);
-			if (aEffectCumulator != null) {
-				for (Entry<String, EffectCumulator> entry : itemsMap.entrySet()) {
-					if (!entry.getKey().equals(itemCode) && entry.getValue().isUpper(aEffectCumulator)) {
+			ItemEffects itemEffects = itemsMap.get(itemCode);
+			if (itemEffects != null) {
+				for (Entry<String, ItemEffects> entry : itemsMap.entrySet()) {
+					if (!entry.getKey().equals(itemCode) && entry.getValue().isUpper(itemEffects)) {
 						oddItems.add(itemCode);
 						oddItemAdded = true;
 						break;
@@ -549,7 +551,7 @@ public final class FightServiceImpl implements FightService {
 
 	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster,
 			int characterHp) {
-		effectCumulator.reset();
+		effectsCumulator.reset();
 
 		updateEffectInMapForEquipedEqt(character.getWeaponSlot(), 1);
 		updateEffectInMapForEquipedEqt(character.getBodyArmorSlot(), 1);
@@ -571,7 +573,7 @@ public final class FightServiceImpl implements FightService {
 
 	private void updateEffectInMapForEquipedEqt(String slot, int quantity) {
 		if (!"".equals(slot)) {
-			updateEffectInMap(itemDAO.getItem(slot), quantity);
+			updateEffectsCumulator(itemDAO.getItem(slot), quantity);
 		}
 	}
 
@@ -596,18 +598,22 @@ public final class FightServiceImpl implements FightService {
 		return true;
 	}
 
-	private void updateEffectInMap(BotItemDetails botItemDetail, int quantity) {
-		updateEffectInMap(effectCumulator, botItemDetail, quantity);
+	private ItemEffects getEffects(BotItemDetails botItemDetail) {
+		ItemEffects cacheEffectCumulator;
+		if (effectCacheManager.contains(botItemDetail.getCode())) {
+			cacheEffectCumulator = effectCacheManager.get(botItemDetail.getCode());
+		} else {
+			cacheEffectCumulator = new ItemEffectsImpl();
+			botItemDetail.getEffects().stream().forEach(effect -> {
+				cacheEffectCumulator.setEffectValue(effect.getName(), effect.getValue());
+			});
+			effectCacheManager.add(botItemDetail.getCode(), cacheEffectCumulator);
+		}
+		return cacheEffectCumulator;
 	}
 
-	private void updateEffectInMap(EffectCumulator aEffectCumulator, BotItemDetails botItemDetail, int quantity) {
-		botItemDetail.getEffects().stream().forEach(effect -> {
-			if (BotEffect.RESTORE.equals(effect.getName())) {
-				aEffectCumulator.addRestoreEffectValues(effect.getValue(), quantity);
-			} else {
-				aEffectCumulator.addEffectValue(effect.getName(), effect.getValue());
-			}
-		});
+	private void updateEffectsCumulator(BotItemDetails botItemDetail, int quantity) {
+		effectsCumulator.accumulate(getEffects(botItemDetail), quantity);
 	}
 
 	// On ignore les blocks
@@ -639,10 +645,10 @@ public final class FightServiceImpl implements FightService {
 	private MonsterCalculStruct calculMonsterTurns(int characterHp, BotMonster monster, int maxCharacterTurn,
 			int characterDmg) {
 		int monsterDmg = calculMonsterDamage(monster);
-		int characterMaxHp = characterHp + effectCumulator.getEffectValue(BotEffect.HP);
-		int characterMaxHpWithBoost = characterMaxHp + effectCumulator.getEffectValue(BotEffect.BOOST_HP);
+		int characterMaxHp = characterHp + effectsCumulator.getEffectValue(BotEffect.HP);
+		int characterMaxHpWithBoost = characterMaxHp + effectsCumulator.getEffectValue(BotEffect.BOOST_HP);
 		int halfCharacterMaxHpWithBoost = characterMaxHpWithBoost / 2;
-		if (!effectCumulator.isRestore()) {
+		if (!effectsCumulator.isRestore()) {
 			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(monster));
 
 			int monsterTotalDmg = monsterDmg * (monsterTurn > maxCharacterTurn ? (maxCharacterTurn - 1) : monsterTurn);
@@ -658,10 +664,10 @@ public final class FightServiceImpl implements FightService {
 		int monsterTurn = halfMonsterTurn;
 		int characterHP = characterMaxHpWithBoost - halfMonsterTurn * monsterDmg;
 		int monsterHP = monster.getHp() - halfMonsterTurn * characterDmg;
-		int restoreTurn = 0;
+		int restoreTurn = 1;
 		while (characterHP >= 0 && monsterHP >= 0) {
 			if (characterHP < halfCharacterMaxHpWithBoost) {
-				int restoreValue = effectCumulator.getRestoreEffectValue(restoreTurn);
+				int restoreValue = effectsCumulator.getRestoreEffectValue(restoreTurn);
 				if (restoreValue > 0) {
 					restoreTurn++;
 				}
@@ -673,39 +679,39 @@ public final class FightServiceImpl implements FightService {
 				characterHP -= monsterDmg;
 			}
 		}
-		return new MonsterCalculStruct(monsterTurn, restoreTurn, Math.max(0, (characterMaxHp - characterHP)),
+		return new MonsterCalculStruct(monsterTurn, restoreTurn-1, Math.max(0, (characterMaxHp - characterHP)),
 				monsterDmg);
 	}
 
 	private int calculMonsterDamage(BotMonster monster) {
 		int monsterEartDmg = (int) Math
-				.rint(monster.getAttackEarth() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_EARTH)
-						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_EARTH)) / 100f));
+				.rint(monster.getAttackEarth() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_EARTH)
+						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_EARTH)) / 100f));
 		int monsterAirDmg = (int) Math
-				.rint(monster.getAttackAir() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_AIR)
-						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_AIR)) / 100f));
+				.rint(monster.getAttackAir() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_AIR)
+						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_AIR)) / 100f));
 		int monsterWaterDmg = (int) Math
-				.rint(monster.getAttackWater() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_WATER)
-						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_WATER)) / 100f));
+				.rint(monster.getAttackWater() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_WATER)
+						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_WATER)) / 100f));
 		int monsterFireDmg = (int) Math
-				.rint(monster.getAttackFire() * (1 - (effectCumulator.getEffectValue(BotEffect.RES_FIRE)
-						+ effectCumulator.getEffectValue(BotEffect.BOOST_RES_FIRE)) / 100f));
+				.rint(monster.getAttackFire() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_FIRE)
+						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_FIRE)) / 100f));
 		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
 	}
 
 	private int calculCharacterDamage(BotMonster monster) {
-		int characterEartDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_EARTH),
-				effectCumulator.getEffectValue(BotEffect.DMG_EARTH),
-				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_EARTH), monster.getResEarth());
-		int characterAirDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_AIR),
-				effectCumulator.getEffectValue(BotEffect.DMG_AIR),
-				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_AIR), monster.getResAir());
-		int characterWaterDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_WATER),
-				effectCumulator.getEffectValue(BotEffect.DMG_WATER),
-				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_WATER), monster.getResWater());
-		int characterFireDmg = calculEffectDamage(effectCumulator.getEffectValue(BotEffect.ATTACK_FIRE),
-				effectCumulator.getEffectValue(BotEffect.DMG_FIRE),
-				effectCumulator.getEffectValue(BotEffect.BOOST_DMG_FIRE), monster.getResFire());
+		int characterEartDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_EARTH),
+				effectsCumulator.getEffectValue(BotEffect.DMG_EARTH),
+				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_EARTH), monster.getResEarth());
+		int characterAirDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_AIR),
+				effectsCumulator.getEffectValue(BotEffect.DMG_AIR),
+				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_AIR), monster.getResAir());
+		int characterWaterDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_WATER),
+				effectsCumulator.getEffectValue(BotEffect.DMG_WATER),
+				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_WATER), monster.getResWater());
+		int characterFireDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_FIRE),
+				effectsCumulator.getEffectValue(BotEffect.DMG_FIRE),
+				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_FIRE), monster.getResFire());
 		return characterEartDmg + characterAirDmg + characterWaterDmg + characterFireDmg;
 	}
 

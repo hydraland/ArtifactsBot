@@ -31,87 +31,13 @@ public final class EffectCumulatorImpl implements EffectCumulator {
 	private int boostResFire;
 	private int boostResAir;
 	private int boostResEarth;
+	private int quantity;
 
 	public EffectCumulatorImpl() {
 		restore = new int[2][GameConstants.MAX_RESTORE_EQUIPED_ITEMS];
 	}
 
-	@Override
-	public void addEffectValue(BotEffect effect, int value) {
-		switch (effect) {
-		case ATTACK_AIR:
-			attackAir += value;
-			break;
-		case ATTACK_EARTH:
-			attackEarth += value;
-			break;
-		case ATTACK_FIRE:
-			attackFire += value;
-			break;
-		case ATTACK_WATER:
-			attackWater += value;
-			break;
-		case BOOST_DMG_AIR:
-			boostDmgAir += value;
-			break;
-		case BOOST_DMG_EARTH:
-			boostDmgEarth += value;
-			break;
-		case BOOST_DMG_FIRE:
-			boostDmgFire += value;
-			break;
-		case BOOST_DMG_WATER:
-			boostDmgWater += value;
-			break;
-		case BOOST_HP:
-			boostHp += value;
-			break;
-		case BOOST_RES_AIR:
-			boostResAir += value;
-			break;
-		case BOOST_RES_EARTH:
-			boostResEarth += value;
-			break;
-		case BOOST_RES_FIRE:
-			boostResFire += value;
-			break;
-		case BOOST_RES_WATER:
-			boostResWater += value;
-			break;
-		case DMG_AIR:
-			dmgAir += value;
-			break;
-		case DMG_EARTH:
-			dmgEarth += value;
-			break;
-		case DMG_FIRE:
-			dmgFire += value;
-			break;
-		case DMG_WATER:
-			dmgWater += value;
-			break;
-		case HP:
-			hp += value;
-			break;
-		case RES_AIR:
-			resAir += value;
-			break;
-		case RES_EARTH:
-			resEarth += value;
-			break;
-		case RES_FIRE:
-			resFire += value;
-			break;
-		case RES_WATER:
-			resWater += value;
-			break;
-		default:
-			break;
-		}
-	}
-
-	@Override
-	public void addRestoreEffectValues(int value, int quantity) {
+	private void addRestoreEffectValues(int value, int quantity) {
 		for (int i = 0; i < restore[VALUE_INDEX].length; i++) {
 			if (restore[QUANTITY_INDEX][i] == 0) {
 				restore[VALUE_INDEX][i] = value;
@@ -177,7 +103,7 @@ public final class EffectCumulatorImpl implements EffectCumulator {
 	public int getRestoreEffectValue(int quantity) {
 		int value = 0;
 		for (int i = 0; i < restore[VALUE_INDEX].length; i++) {
-			if (restore[QUANTITY_INDEX][i] <= quantity) {
+			if (restore[QUANTITY_INDEX][i] >= quantity) {
 				value += restore[VALUE_INDEX][i];
 			}
 		}
@@ -213,23 +139,128 @@ public final class EffectCumulatorImpl implements EffectCumulator {
 	}
 
 	@Override
-	public boolean isUpper(EffectCumulator effectCumulator) {
-		if (effectCumulator instanceof EffectCumulatorImpl ec) {
-			return resWater >= ec.resWater && resEarth >= ec.resEarth && resFire >= ec.resFire && resAir >= ec.resAir
-					&& dmgWater >= ec.dmgWater && dmgEarth >= ec.dmgEarth && dmgFire >= ec.dmgFire
-					&& dmgAir >= ec.dmgAir && attackWater >= ec.attackWater && attackEarth >= ec.attackEarth
-					&& attackFire >= ec.attackFire && attackAir >= ec.attackAir && hp >= ec.hp && boostHp >= ec.boostHp
-					&& boostDmgAir >= ec.boostDmgAir && boostDmgWater >= ec.boostDmgWater
-					&& boostDmgEarth >= ec.boostDmgEarth && boostDmgFire >= ec.boostDmgFire
-					&& boostResWater >= ec.boostResWater && boostResFire >= ec.boostResFire
-					&& boostResAir >= ec.boostResAir && boostResEarth >= ec.boostResEarth
-					&& restore[VALUE_INDEX][0] >= ec.restore[VALUE_INDEX][0];
-		}
-		return false;
+	public boolean isRestore() {
+		return restore[QUANTITY_INDEX][0] > 0;
 	}
 
 	@Override
-	public boolean isRestore() {
-		return restore[QUANTITY_INDEX][0] > 0;
+	public void accumulate(ItemEffects itemEffects, int quantity) {
+		this.quantity = quantity;
+		itemEffects.addIn(this);
+	}
+
+	@Override
+	public void addResWater(int value) {
+		resWater += value;
+	}
+
+	@Override
+	public void addResEarth(int value) {
+		resEarth += value;
+	}
+
+	@Override
+	public void addResFire(int value) {
+		resFire += value;
+	}
+
+	@Override
+	public void addResAir(int value) {
+		resAir += value;
+	}
+
+	@Override
+	public void addDmgWater(int value) {
+		dmgWater += value;
+	}
+
+	@Override
+	public void addDmgEarth(int value) {
+		dmgEarth += value;
+	}
+
+	@Override
+	public void addDmgFire(int value) {
+		dmgFire += value;
+	}
+
+	@Override
+	public void addDmgAir(int value) {
+		dmgAir += value;
+	}
+
+	@Override
+	public void addAttackWater(int value) {
+		attackWater += value;
+	}
+
+	@Override
+	public void addAttackEarth(int value) {
+		attackEarth += value;
+	}
+
+	@Override
+	public void addAttackFire(int value) {
+		attackFire += value;
+	}
+
+	@Override
+	public void addAttackAir(int value) {
+		attackAir += value;
+	}
+
+	@Override
+	public void addHp(int value) {
+		hp += value;
+	}
+
+	@Override
+	public void addRestore(int value) {
+		addRestoreEffectValues(value, quantity);
+	}
+
+	@Override
+	public void addBoostHp(int value) {
+		boostHp += value;
+	}
+
+	@Override
+	public void addBoostDmgAir(int value) {
+		boostDmgAir += value;
+	}
+
+	@Override
+	public void addBoostDmgWater(int value) {
+		boostDmgWater += value;
+	}
+
+	@Override
+	public void addBoostDmgEarth(int value) {
+		boostDmgEarth += value;
+	}
+
+	@Override
+	public void addBoostDmgFire(int value) {
+		boostDmgFire += value;
+	}
+
+	@Override
+	public void addBoostResWater(int value) {
+		boostResWater += value;
+	}
+
+	@Override
+	public void addBoostResFire(int value) {
+		boostResFire += value;
+	}
+
+	@Override
+	public void addBoostResAir(int value) {
+		boostResAir += value;
+	}
+
+	@Override
+	public void addBoostResEarth(int value) {
+		boostResEarth += value;
 	}
 }

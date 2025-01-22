@@ -212,7 +212,7 @@ public class TestSimulation {
 		});
 		if (simLoopGoal.isRealisableAfterSetRoot(character)) {
 			simLoopGoal.clear();
-			System.out.println("Execute cyclops task");
+			System.out.println("Execute vampire task");
 			boolean result = simLoopGoal.execute(new HashMap<>());
 			System.out.println("time :" + accumulator.get() + " : " + result);
 		}
@@ -280,8 +280,7 @@ public class TestSimulation {
 						}
 					} else {
 						success = false;
-						// System.out.println("NONREALISABLE : " +
-						// simulatedGoalFactory.getInfos(simGoal).getItemCode());
+						//System.out.println("NONREALISABLE : " + simGoal.getItemCode());
 						break;
 					}
 				}
