@@ -3,7 +3,6 @@ package strategy.util.fight;
 import java.util.Arrays;
 
 import hydra.GameConstants;
-import hydra.model.BotEffect;
 
 public final class EffectCumulatorImpl implements EffectCumulator {
 	private static final int VALUE_INDEX = 0;
@@ -44,58 +43,6 @@ public final class EffectCumulatorImpl implements EffectCumulator {
 				restore[QUANTITY_INDEX][i] = quantity;
 				break;
 			}
-		}
-	}
-
-	@Override
-	public int getEffectValue(BotEffect effect) {
-		switch (effect) {
-		case ATTACK_AIR:
-			return attackAir;
-		case ATTACK_EARTH:
-			return attackEarth;
-		case ATTACK_FIRE:
-			return attackFire;
-		case ATTACK_WATER:
-			return attackWater;
-		case BOOST_DMG_AIR:
-			return boostDmgAir;
-		case BOOST_DMG_EARTH:
-			return boostDmgEarth;
-		case BOOST_DMG_FIRE:
-			return boostDmgFire;
-		case BOOST_DMG_WATER:
-			return boostDmgWater;
-		case BOOST_HP:
-			return boostHp;
-		case BOOST_RES_AIR:
-			return boostResAir;
-		case BOOST_RES_EARTH:
-			return boostResEarth;
-		case BOOST_RES_FIRE:
-			return boostResFire;
-		case BOOST_RES_WATER:
-			return boostResWater;
-		case DMG_AIR:
-			return dmgAir;
-		case DMG_EARTH:
-			return dmgEarth;
-		case DMG_FIRE:
-			return dmgFire;
-		case DMG_WATER:
-			return dmgWater;
-		case HP:
-			return hp;
-		case RES_AIR:
-			return resAir;
-		case RES_EARTH:
-			return resEarth;
-		case RES_FIRE:
-			return resFire;
-		case RES_WATER:
-			return resWater;
-		default:
-			throw new IllegalArgumentException("Value  " + effect + " not authorize");
 		}
 	}
 
@@ -262,5 +209,115 @@ public final class EffectCumulatorImpl implements EffectCumulator {
 	@Override
 	public void addBoostResEarth(int value) {
 		boostResEarth += value;
+	}
+
+	@Override
+	public final int getResWater() {
+		return resWater;
+	}
+
+	@Override
+	public final int getResEarth() {
+		return resEarth;
+	}
+
+	@Override
+	public final int getResFire() {
+		return resFire;
+	}
+
+	@Override
+	public final int getResAir() {
+		return resAir;
+	}
+
+	@Override
+	public final int getDmgWater() {
+		return dmgWater;
+	}
+
+	@Override
+	public final int getDmgEarth() {
+		return dmgEarth;
+	}
+
+	@Override
+	public final int getDmgFire() {
+		return dmgFire;
+	}
+
+	@Override
+	public final int getDmgAir() {
+		return dmgAir;
+	}
+
+	@Override
+	public final int getAttackWater() {
+		return attackWater;
+	}
+
+	@Override
+	public final int getAttackEarth() {
+		return attackEarth;
+	}
+
+	@Override
+	public final int getAttackFire() {
+		return attackFire;
+	}
+
+	@Override
+	public final int getAttackAir() {
+		return attackAir;
+	}
+
+	@Override
+	public final int getHp() {
+		return hp;
+	}
+
+	@Override
+	public final int getBoostHp() {
+		return boostHp;
+	}
+
+	@Override
+	public final int getBoostDmgAir() {
+		return boostDmgAir;
+	}
+
+	@Override
+	public final int getBoostDmgWater() {
+		return boostDmgWater;
+	}
+
+	@Override
+	public final int getBoostDmgEarth() {
+		return boostDmgEarth;
+	}
+
+	@Override
+	public final int getBoostDmgFire() {
+		return boostDmgFire;
+	}
+
+	@Override
+	public final int getBoostResWater() {
+		return boostResWater;
+	}
+
+	@Override
+	public final int getBoostResFire() {
+		return boostResFire;
+	}
+
+	@Override
+	public final int getBoostResAir() {
+		return boostResAir;
+	}
+
+	@Override
+	public final int getBoostResEarth() {
+		return boostResEarth;
 	}
 }

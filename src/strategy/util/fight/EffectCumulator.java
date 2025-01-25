@@ -1,9 +1,6 @@
 package strategy.util.fight;
 
-import hydra.model.BotEffect;
-
 public interface EffectCumulator {
-	int getEffectValue(BotEffect effect);
 
 	int getRestoreEffectValue(int quantity);
 
@@ -13,50 +10,93 @@ public interface EffectCumulator {
 
 	void accumulate(ItemEffects itemEffects, int quantity);
 
-	public void addResWater(int value);
+	void addResWater(int value);
 
-	public void addResEarth(int value);
+	void addResEarth(int value);
 
-	public void addResFire(int value);
+	void addResFire(int value);
 
-	public void addResAir(int value);
+	void addResAir(int value);
 
-	public void addDmgWater(int value);
+	void addDmgWater(int value);
 
-	public void addDmgEarth(int value);
+	void addDmgEarth(int value);
 
-	public void addDmgFire(int value);
+	void addDmgFire(int value);
 
-	public void addDmgAir(int value);
+	void addDmgAir(int value);
 
-	public void addAttackWater(int value);
+	void addAttackWater(int value);
 
-	public void addAttackEarth(int value);
+	void addAttackEarth(int value);
 
-	public void addAttackFire(int value);
+	void addAttackFire(int value);
 
-	public void addAttackAir(int value);
+	void addAttackAir(int value);
 
-	public void addHp(int value);
+	void addHp(int value);
 
-	public void addRestore(int value);
+	void addRestore(int value);
 
-	public void addBoostHp(int value);
+	void addBoostHp(int value);
 
-	public void addBoostDmgAir(int value);
+	void addBoostDmgAir(int value);
 
-	public void addBoostDmgWater(int value);
+	void addBoostDmgWater(int value);
 
-	public void addBoostDmgEarth(int value);
+	void addBoostDmgEarth(int value);
 
-	public void addBoostDmgFire(int value);
+	void addBoostDmgFire(int value);
 
-	public void addBoostResWater(int value);
+	void addBoostResWater(int value);
 
-	public void addBoostResFire(int value);
+	void addBoostResFire(int value);
 
-	public void addBoostResAir(int value);
+	void addBoostResAir(int value);
 
-	public void addBoostResEarth(int value);
+	void addBoostResEarth(int value);
 
+	int getResWater();
+
+	int getResEarth();
+
+	int getResFire();
+
+	int getResAir();
+
+	int getDmgWater();
+
+	int getDmgEarth();
+
+	int getDmgFire();
+
+	int getDmgAir();
+
+	int getAttackWater();
+
+	int getAttackEarth();
+
+	int getAttackFire();
+
+	int getAttackAir();
+
+	int getHp();
+
+	int getBoostHp();
+
+	int getBoostDmgAir();
+
+	int getBoostDmgWater();
+
+	int getBoostDmgEarth();
+
+	int getBoostDmgFire();
+
+	int getBoostResWater();
+
+	int getBoostResFire();
+
+	int getBoostResAir();
+
+	int getBoostResEarth();
 }

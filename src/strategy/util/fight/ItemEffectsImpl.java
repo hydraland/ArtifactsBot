@@ -32,7 +32,7 @@ public final class ItemEffectsImpl implements ItemEffects {
 	private final List<EffectCumulatorAddFunction> addFunctions;
 
 	public ItemEffectsImpl() {
-		addFunctions = new ArrayList<EffectCumulatorAddFunction>();
+		addFunctions = new ArrayList<>();
 	}
 
 	@Override

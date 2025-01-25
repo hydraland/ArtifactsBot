@@ -645,8 +645,8 @@ public final class FightServiceImpl implements FightService {
 	private MonsterCalculStruct calculMonsterTurns(int characterHp, BotMonster monster, int maxCharacterTurn,
 			int characterDmg) {
 		int monsterDmg = calculMonsterDamage(monster);
-		int characterMaxHp = characterHp + effectsCumulator.getEffectValue(BotEffect.HP);
-		int characterMaxHpWithBoost = characterMaxHp + effectsCumulator.getEffectValue(BotEffect.BOOST_HP);
+		int characterMaxHp = characterHp + effectsCumulator.getHp();
+		int characterMaxHpWithBoost = characterMaxHp + effectsCumulator.getBoostHp();
 		int halfCharacterMaxHpWithBoost = characterMaxHpWithBoost / 2;
 		if (!effectsCumulator.isRestore()) {
 			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(monster));
@@ -684,39 +684,32 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private int calculMonsterDamage(BotMonster monster) {
-		int monsterEartDmg = (int) Math
-				.rint(monster.getAttackEarth() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_EARTH)
-						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_EARTH)) / 100f));
-		int monsterAirDmg = (int) Math
-				.rint(monster.getAttackAir() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_AIR)
-						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_AIR)) / 100f));
-		int monsterWaterDmg = (int) Math
-				.rint(monster.getAttackWater() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_WATER)
-						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_WATER)) / 100f));
-		int monsterFireDmg = (int) Math
-				.rint(monster.getAttackFire() * (1 - (effectsCumulator.getEffectValue(BotEffect.RES_FIRE)
-						+ effectsCumulator.getEffectValue(BotEffect.BOOST_RES_FIRE)) / 100f));
+		int monsterEartDmg = (int) Math.rint(monster.getAttackEarth()
+				* (1 - (effectsCumulator.getResEarth() + effectsCumulator.getBoostResEarth()) / 100d));
+		int monsterAirDmg = (int) Math.rint(monster.getAttackAir()
+				* (1 - (effectsCumulator.getResAir() + effectsCumulator.getBoostResAir()) / 100d));
+		int monsterWaterDmg = (int) Math.rint(monster.getAttackWater()
+				* (1 - (effectsCumulator.getResWater() + effectsCumulator.getBoostResWater()) / 100d));
+		int monsterFireDmg = (int) Math.rint(monster.getAttackFire()
+				* (1 - (effectsCumulator.getResFire() + effectsCumulator.getBoostResFire()) / 100d));
 		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
 	}
 
 	private int calculCharacterDamage(BotMonster monster) {
-		int characterEartDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_EARTH),
-				effectsCumulator.getEffectValue(BotEffect.DMG_EARTH),
-				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_EARTH), monster.getResEarth());
-		int characterAirDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_AIR),
-				effectsCumulator.getEffectValue(BotEffect.DMG_AIR),
-				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_AIR), monster.getResAir());
-		int characterWaterDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_WATER),
-				effectsCumulator.getEffectValue(BotEffect.DMG_WATER),
-				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_WATER), monster.getResWater());
-		int characterFireDmg = calculEffectDamage(effectsCumulator.getEffectValue(BotEffect.ATTACK_FIRE),
-				effectsCumulator.getEffectValue(BotEffect.DMG_FIRE),
-				effectsCumulator.getEffectValue(BotEffect.BOOST_DMG_FIRE), monster.getResFire());
+		int characterEartDmg = calculEffectDamage(effectsCumulator.getAttackEarth(), effectsCumulator.getDmgEarth(),
+				effectsCumulator.getBoostDmgEarth(), monster.getResEarth());
+		int characterAirDmg = calculEffectDamage(effectsCumulator.getAttackAir(), effectsCumulator.getDmgAir(),
+				effectsCumulator.getBoostDmgAir(), monster.getResAir());
+		int characterWaterDmg = calculEffectDamage(effectsCumulator.getAttackWater(), effectsCumulator.getDmgWater(),
+				effectsCumulator.getBoostDmgWater(), monster.getResWater());
+		int characterFireDmg = calculEffectDamage(effectsCumulator.getAttackFire(), effectsCumulator.getDmgFire(),
+				effectsCumulator.getBoostDmgFire(), monster.getResFire());
 		return characterEartDmg + characterAirDmg + characterWaterDmg + characterFireDmg;
 	}
 
 	private int calculEffectDamage(float attackDmg, float dmgPercent, float dmgBoost, float monsterRes) {
-		return (int) Math.rint((attackDmg * ((100d + dmgPercent + dmgBoost) * (100d - monsterRes)) / 10000));
+		return (int) Math
+				.rint(Math.rint((attackDmg * (1d + (dmgPercent + dmgBoost) / 100d))) * (1d - monsterRes / 100d));
 	}
 
 	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterLossHP,
