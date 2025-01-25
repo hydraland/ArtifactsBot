@@ -17,6 +17,7 @@ public class GoalParameter {
 	private ItemTaskFactory itemTaskFactory;
 	private HPRecoveryFactory hPRecoveryFactory;
 	private MonsterItemDropFactory monsterItemDropFactory;
+	private boolean forceUseUtilities;
 
 	public GoalParameter(int minFreeSlot, int rareItemSeuil, int coinReserve, int minFreeInventorySpace) {
 		this.minFreeSlot = minFreeSlot;
@@ -88,6 +89,7 @@ public class GoalParameter {
 		builder.append("rareItemSeuil", rareItemSeuil);
 		builder.append("coinReserve", coinReserve);
 		builder.append("minFreeInventorySpace", minFreeInventorySpace);
+		builder.append("forceUseUtilities", forceUseUtilities);
 		return builder.toString();
 	}
 
@@ -97,5 +99,13 @@ public class GoalParameter {
 
 	public final void setMonsterItemDropFactory(MonsterItemDropFactory monsterItemDropFactory) {
 		this.monsterItemDropFactory = monsterItemDropFactory;
+	}
+
+	public boolean isUseUtilities(boolean eventMonster) {
+		return eventMonster || forceUseUtilities;
+	}
+	
+	public void setForceUseUtilities(boolean forceUseUtilities) {
+		this.forceUseUtilities = forceUseUtilities;
 	}
 }

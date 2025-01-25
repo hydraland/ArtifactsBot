@@ -15,16 +15,16 @@ import strategy.util.MonsterEquipementService;
 import strategy.util.MoveService;
 import strategy.util.fight.FightService;
 
-public class MonsterEventGoalAchiever extends MonsterGoalAchiever {
+public final class MonsterEventGoalAchiever extends MonsterGoalAchiever {
 
 	public MonsterEventGoalAchiever(CharacterDAO characterDAO, MapDAO mapDao, List<Coordinate> coordinates,
 			BotMonster monster, MonsterEquipementService monsterEquipementService,
 			StopChecker<FightResponse> stopCondition, FightService fightService, MoveService moveService,
 			GoalParameter goalParameter) {
-		super(characterDAO, mapDao, coordinates, monster, monsterEquipementService, stopCondition, fightService, moveService,
-				goalParameter);
+		super(characterDAO, mapDao, coordinates, monster, monsterEquipementService, stopCondition, fightService,
+				moveService, goalParameter);
 	}
-	
+
 	@Override
 	public boolean isRealisable(BotCharacter character) {
 		return super.isRealisable(character) && getCoordinates() != null;
@@ -48,5 +48,10 @@ public class MonsterEventGoalAchiever extends MonsterGoalAchiever {
 			this.coordinates = null;
 		}
 		return result;
+	}
+	
+	@Override
+	protected boolean isEventMonster() {
+		return true;
 	}
 }

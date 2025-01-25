@@ -11,6 +11,7 @@ import hydra.dao.ItemDAO;
 import hydra.dao.simulate.SimulatorManager;
 import hydra.model.BotCharacter;
 import strategy.achiever.GoalAchiever;
+import strategy.achiever.GoalParameter;
 import strategy.achiever.factory.GoalFactory.GoalFilter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.goals.ForceExecuteGoalAchiever;
@@ -33,14 +34,19 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 	private final float maxCookOrPotionTaskPercent;
 	private final GoalAchiever depositNoReservedItemGoalAchiever;
 	private final GoalFactoryCreator factoryCreator;
+	private final GoalParameter goalParameter;
+	private final GoalParameter simulatorGoalParameter;
 
 	public MonsterTaskUseSimulatorFactory(Map<String, MonsterGoalAchiever> monsterGoals,
 			Map<String, ArtifactGoalAchiever> cookAndAlchemyGoals, BankDAO bankDAO, CharacterDAO characterDAO,
 			ItemDAO itemDAO, GoalFactoryCreator factoryCreator, CharacterService characterService,
-			SimulatorManager simulatorManager, GoalFactory simulatedGoalFactory, float maxCookOrPotionTaskPercent) {
+			SimulatorManager simulatorManager, GoalFactory simulatedGoalFactory, float maxCookOrPotionTaskPercent,
+			GoalParameter simulatorGoalParameter, GoalParameter goalParameter) {
 		super(simulatorManager, factoryCreator, simulatedGoalFactory, maxCookOrPotionTaskPercent, cookAndAlchemyGoals,
 				itemDAO);
 		this.factoryCreator = factoryCreator;
+		this.simulatorGoalParameter = simulatorGoalParameter;
+		this.goalParameter = goalParameter;
 		this.goalAverageOptimizer = new GoalAverageOptimizerImpl(characterDAO);
 		this.maxCookOrPotionTaskPercent = maxCookOrPotionTaskPercent;
 		this.cookAndAlchemyGoals = cookAndAlchemyGoals;
@@ -79,8 +85,10 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 				int maxCookOrPotionTask = Math
 						.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);
 				updateGenericGoal(simCodeFound, characterService, goalAverageOptimizer, maxCookOrPotionTask);
+				ForceUseUtilitiesGoal forceGoal = new ForceUseUtilitiesGoal(subGoal, goalParameter);
+				forceGoal.forceUseUtilitiesState();
 				subGoal = factoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
-						new ForceExecuteGoalAchiever(subGoal), false, true);
+						new ForceExecuteGoalAchiever(forceGoal), false, true);
 			}
 
 			GoalAchiever goalAchiever = factoryCreator.createGoalAchieverTwoStep(depositNoReservedItemGoalAchiever,
@@ -96,12 +104,14 @@ public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implemen
 		GoalFactoryCreator simulatorFactoryCreator = simulatorManager.getGoalFactoryCreator();
 		GoalAchiever simDepositNoReservedItemGoalAchiever = simulatorFactoryCreator
 				.createDepositNoReservedItemGoalAchiever();
+		ForceUseUtilitiesGoal forceUseUtilitiesGoal = new ForceUseUtilitiesGoal(simulatedmonstersGoals.get(code),
+				simulatorGoalParameter);
 		GoalAchiever goalAchieverTwoStep = simulatorFactoryCreator.createGoalAchieverTwoStep(genericGoalAchiever,
-				simulatedmonstersGoals.get(code), false, true);
+				forceUseUtilitiesGoal, false, true);
 		GoalAchiever goalAchiever = simulatorFactoryCreator
 				.createGoalAchieverTwoStep(simDepositNoReservedItemGoalAchiever, goalAchieverTwoStep, false, true);
-		simGoalAchiever = factoryCreator.createGoalAchieverLoop(goalAchiever, total, false);
-		return initSimulation(botCharacter);
+		ArtifactGoalAchiever simGoalAchiever = factoryCreator.createGoalAchieverLoop(goalAchiever, total, false);
+		return initSimulation(botCharacter, simGoalAchiever, forceUseUtilitiesGoal);
 	}
 
 	@Override

@@ -56,8 +56,9 @@ public final class MonsterEquipementServiceImpl implements MonsterEquipementServ
 	}
 
 	@Override
-	public boolean equipBestEquipement(BotMonster monster, Map<String, Integer> reservedItems) {
-		BotItemInfo[] bestEqt = fightService.optimizeEquipementsPossesed(monster, reservedItems).bestEqt();
+	public boolean equipBestEquipement(BotMonster monster, Map<String, Integer> reservedItems, boolean useUtilities) {
+		BotItemInfo[] bestEqt = fightService.optimizeEquipementsPossesed(monster, reservedItems, useUtilities)
+				.bestEqt();
 		return equipEquipements(bestEqt);
 	}
 

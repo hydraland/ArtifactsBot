@@ -6,5 +6,5 @@ import hydra.model.BotMonster;
 
 public interface MonsterEquipementService {
 
-	boolean equipBestEquipement(BotMonster monster, Map<String, Integer> reservedItems);
+	boolean equipBestEquipement(BotMonster monster, Map<String, Integer> reservedItems, boolean useUtilities);
 }

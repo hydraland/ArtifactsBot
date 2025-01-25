@@ -73,6 +73,8 @@ public class TestSimulation {
 		System.out.println("Duree Crafting:" + (inter1 - begin));
 		//viewItems = viewItems.stream().filter(bir -> !bir.getCode().equals("minor_health_potion")).toList();
 		//character.setWeaponSlot("copper_dagger");
+		/*character.setLevel(40);
+		character.setAlchemyLevel(40);*/
 		simulateCookingAndFight(simulatorManager, character, simulatedGoalFactory, goalParameter, viewItems);
 		long inter2 = System.currentTimeMillis();
 		System.out.println("Duree Cook and Fight:" + (inter2 - inter1));
@@ -90,7 +92,7 @@ public class TestSimulation {
 		for(BotMonster monster : simulatorManager.getMonsterDAOSimulator().getMonsters()) {
 		//BotMonster monster = simulatorManager.getMonsterDAOSimulator().getMonster("mushmush");
 			System.out.println(monster.getCode());
-			System.out.println(simulatorManager.getFightService().optimizeEquipementsPossesed(monster, Collections.emptyMap()));
+			System.out.println(simulatorManager.getFightService().optimizeEquipementsPossesed(monster, Collections.emptyMap(), false));
 		}
 		long end = System.currentTimeMillis();
 		System.out.println("Duree:" + (end - begin));
@@ -130,7 +132,7 @@ public class TestSimulation {
 				simulatorManager.getBankDAOSimulator(), simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getGoalFactoryCreator(),
 				simulatorManager.getCharacterServiceSimulator(), secondSimulatorManager, secondSimulatedGoalFactory,
-				0.3f);
+				0.3f, simulateGoalParameter, goalParameter);
 		goalParameter.setMonsterItemDropFactory(factoryMonster);
 		// goalParameter.setMonsterItemDropFactory(new
 		// DefaultMonsterItemDropFactory(simulatorManager.getGoalFactoryCreator()));
@@ -196,7 +198,7 @@ public class TestSimulation {
 				simulatorManager.getBankDAOSimulator(), simulatorManager.getCharacterDAOSimulator(),
 				simulatorManager.getItemDAOSimulator(), simulatorManager.getGoalFactoryCreator(),
 				simulatorManager.getCharacterServiceSimulator(), secondSimulatorManager, secondSimulatedGoalFactory,
-				0.3f);
+				0.3f,simulateGoalParameter,goalParameter);
 
 		long beginSimu = System.currentTimeMillis();
 		GoalAchiever simLoopGoal = factoryMonster.createTaskGoalAchiever("vampire", 100);
@@ -212,7 +214,7 @@ public class TestSimulation {
 		});
 		if (simLoopGoal.isRealisableAfterSetRoot(character)) {
 			simLoopGoal.clear();
-			System.out.println("Execute vampire task");
+			System.out.println("Execute cyclops task");
 			boolean result = simLoopGoal.execute(new HashMap<>());
 			System.out.println("time :" + accumulator.get() + " : " + result);
 		}

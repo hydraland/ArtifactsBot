@@ -38,13 +38,14 @@ import util.Combinator;
 public abstract class UseSimulatorFactory {
 
 	protected final SimulatorManager simulatorManager;
-	protected GoalAchiever simGoalAchiever;
+	private GoalAchiever simGoalAchiever;
 	protected final GenericGoalAchiever genericGoalAchiever;
 	private final Collection<GoalAchieverInfo<ArtifactGoalAchiever>> cookAndAlchemySimulateGoals;
 	private final float maxCookOrPotionTaskPercent;
 	private final GoalAverageOptimizer simulateGoalAverageOptimizer;
 	private final Map<String, ArtifactGoalAchiever> cookAndAlchemyGoals;
 	private final ItemDAO itemDAO;
+	protected ForceUseUtilitiesGoal forceUseUtilitiesGoal;
 
 	protected UseSimulatorFactory(SimulatorManager simulatorManager, GoalFactoryCreator factoryCreator,
 			GoalFactory simulatedGoalFactory, float maxCookOrPotionTaskPercent,
@@ -59,7 +60,10 @@ public abstract class UseSimulatorFactory {
 		this.simulateGoalAverageOptimizer = new GoalAverageOptimizerImpl(simulatorManager.getCharacterDAOSimulator());
 	}
 
-	protected final List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(BotCharacter botCharacter) {
+	protected final List<GoalAchieverInfo<ArtifactGoalAchiever>> initSimulation(BotCharacter botCharacter,
+			GoalAchiever simGoalAchiever, ForceUseUtilitiesGoal forceUseUtilitiesGoal) {
+		this.simGoalAchiever = simGoalAchiever;
+		this.forceUseUtilitiesGoal = forceUseUtilitiesGoal;
 		genericGoalAchiever.setCheckRealisableGoalAchiever(character -> false);
 		genericGoalAchiever.setExecutableGoalAchiever(reservedItems -> false);
 		genericGoalAchiever.setValue("");
@@ -132,10 +136,11 @@ public abstract class UseSimulatorFactory {
 		int minTime = getMaxSimulationTime();
 		int maxCookOrPotionTask = Math.round(maxCookOrPotionTaskPercent * botCharacter.getInventoryMaxItems() / 3);
 		OptimizeResult optimizeEquipementsPossesed = simulatorManager.getFightService().optimizeEquipementsPossesed(
-				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), new HashMap<>());
+				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), new HashMap<>(), false);
 		Map<BotItemType, List<BotItemInfo>> eqtList = new EnumMap<>(BotItemType.class);
 		List<BotItemInfo> utility = testGoals.stream()
-				.filter(aga -> BotItemType.UTILITY.equals(itemDAO.getItem(aga.getItemCode()).getType()))
+				.filter(aga -> BotItemType.UTILITY.equals(itemDAO.getItem(aga.getItemCode()).getType())
+						&& aga.getGoal().isRealisable(botCharacter))
 				.map(aga -> new BotItemInfo(itemDAO.getItem(aga.getItemCode()), maxCookOrPotionTask))
 				.collect(Collectors.toList());
 		BotItemInfo[] bestEqts = optimizeEquipementsPossesed.bestEqt();
@@ -155,18 +160,25 @@ public abstract class UseSimulatorFactory {
 				simulatorManager.getMonsterDAOSimulator().getMonster(monsterCode), eqtList,
 				simulatorManager.getCharacterServiceSimulator().getCharacterHPWithoutEquipment());
 		if (optimizeEquipements.fightDetails().win()) {
+			forceUseUtilitiesGoal.forceUseUtilitiesState();
 			List<GoalAchieverInfo<ArtifactGoalAchiever>> cookingGoal = testGoals.stream()
 					.filter(aga -> BotCraftSkill.COOKING.equals(aga.getBotCraftSkill())).toList();
-			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal = optimizeEquipements.bestEqt()[OptimizeResult.UTILITY1_INDEX] == null ? null
-					: testGoals.stream()
-							.filter(aga -> aga.getItemCode()
-									.equals(optimizeEquipements.bestEqt()[OptimizeResult.UTILITY1_INDEX].botItemDetails().getCode()))
-							.findFirst().get();
-			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal2 = optimizeEquipements.bestEqt()[OptimizeResult.UTILITY2_INDEX] == null ? null
-					: testGoals.stream()
-							.filter(aga -> aga.getItemCode()
-									.equals(optimizeEquipements.bestEqt()[OptimizeResult.UTILITY2_INDEX].botItemDetails().getCode()))
-							.findFirst().get();
+			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal = optimizeEquipements
+					.bestEqt()[OptimizeResult.UTILITY1_INDEX] == null
+							? null
+							: testGoals.stream()
+									.filter(aga -> aga.getItemCode()
+											.equals(optimizeEquipements.bestEqt()[OptimizeResult.UTILITY1_INDEX]
+													.botItemDetails().getCode()))
+									.findFirst().get();
+			GoalAchieverInfo<ArtifactGoalAchiever> potionGoal2 = optimizeEquipements
+					.bestEqt()[OptimizeResult.UTILITY2_INDEX] == null
+							? null
+							: testGoals.stream()
+									.filter(aga -> aga.getItemCode()
+											.equals(optimizeEquipements.bestEqt()[OptimizeResult.UTILITY2_INDEX]
+													.botItemDetails().getCode()))
+									.findFirst().get();
 			int nbCombinator = 1 + (potionGoal == null ? 0 : 1) + (potionGoal2 == null ? 0 : 1);
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			Combinator<GoalAchieverInfo<ArtifactGoalAchiever>> combinator = new Combinator(GoalAchieverInfo.class,
@@ -227,7 +239,7 @@ public abstract class UseSimulatorFactory {
 
 	protected abstract int getMaxSimulationTime();
 
-	protected final GoalAchiever createGoals(GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA,
+	private final GoalAchiever createGoals(GoalAchieverInfo<ArtifactGoalAchiever>[] artifactGA,
 			CharacterService aCharacterService, GoalAverageOptimizer aGoalAverageOptimizer, int optimizeValue) {
 		genericGoalAchiever.setCheckRealisableGoalAchiever(
 				character -> Arrays.stream(artifactGA).filter(aga -> aga.getGoal().isRealisable(character))

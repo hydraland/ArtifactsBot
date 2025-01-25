@@ -35,7 +35,8 @@ public class MonsterGoalAchiever implements GoalAchiever {
 
 	public MonsterGoalAchiever(CharacterDAO characterDAO, MapDAO mapDao, List<Coordinate> coordinates,
 			BotMonster monster, MonsterEquipementService monsterEquipementService,
-			StopChecker<FightResponse> stopCondition, FightService fightService, MoveService moveService, GoalParameter goalParameter) {
+			StopChecker<FightResponse> stopCondition, FightService fightService, MoveService moveService,
+			GoalParameter goalParameter) {
 		this.mapDao = mapDao;
 		this.coordinates = coordinates;
 		this.monsterEquipementService = monsterEquipementService;
@@ -50,7 +51,8 @@ public class MonsterGoalAchiever implements GoalAchiever {
 
 	@Override
 	public boolean isRealisable(BotCharacter character) {
-		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS).fightDetails().win();
+		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS, goalParameter.isUseUtilities(isEventMonster())).fightDetails()
+				.win();
 	}
 
 	@Override
@@ -59,13 +61,14 @@ public class MonsterGoalAchiever implements GoalAchiever {
 			if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 				return false;
 			}
-			if (!monsterEquipementService.equipBestEquipement(monster, reservedItems)) {
+			if (!monsterEquipementService.equipBestEquipement(monster, reservedItems, goalParameter.isUseUtilities(isEventMonster()))) {
 				return false;
 			}
 			if (moveService.moveTo(coordinates)) {
 				FightResponse response = characterDAO.fight();
 				if (response.ok()) {
-					return goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems) && !stopCondition.isStop(response);
+					return goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)
+							&& !stopCondition.isStop(response);
 				}
 				goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems);
 			}
@@ -101,6 +104,10 @@ public class MonsterGoalAchiever implements GoalAchiever {
 
 	public String getMonsterCode() {
 		return monster.getCode();
+	}
+	
+	protected boolean isEventMonster() {
+		return false;
 	}
 
 	@Override

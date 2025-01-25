@@ -10,9 +10,9 @@ import strategy.util.OptimizeResult;
 
 public interface FightService {
 
-	OptimizeResult optimizeEquipementsInInventory(BotMonster monster, Map<String, Integer> reservedItems);
+	OptimizeResult optimizeEquipementsInInventory(BotMonster monster, Map<String, Integer> reservedItems, boolean useUtilities);
 
-	OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems);
+	OptimizeResult optimizeEquipementsPossesed(BotMonster monster, Map<String, Integer> reservedItems, boolean useUtilities);
 
 	Map<String, OptimizeResult> optimizeEquipementsPossesed(List<BotMonster> monsters,
 			Map<String, Integer> reservedItems);

@@ -205,8 +205,8 @@ public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 	}
 
 	@Override
-	public ResourceGoalAchiever createGatheringGoalAchiever(GoalAchiever equipToolGoal, String resourceCode,
-			int rate, List<Coordinate> coordinates, int level, BotResourceSkill skill, String boxCode, boolean event) {
+	public ResourceGoalAchiever createGatheringGoalAchiever(GoalAchiever equipToolGoal, String resourceCode, int rate,
+			List<Coordinate> coordinates, int level, BotResourceSkill skill, String boxCode, boolean event) {
 		return event
 				? new GatheringEventGoalAchiever(equipToolGoal, characterDAO, characterService, mapDAO, resourceCode,
 						rate, coordinates, level, skill, boxCode, moveService)

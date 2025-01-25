@@ -14,7 +14,7 @@ import strategy.util.MonsterEquipementService;
 import strategy.util.MoveService;
 import strategy.util.fight.FightService;
 
-public class ItemMonsterEventGoalAchiever extends ItemMonsterGoalAchiever {
+public final class ItemMonsterEventGoalAchiever extends ItemMonsterGoalAchiever {
 
 	public ItemMonsterEventGoalAchiever(CharacterDAO characterDAO, MapDAO mapDao, String resourceCode, int rate,
 			List<Coordinate> coordinates, BotMonster monster, MonsterEquipementService monsterEquipementService,
@@ -27,6 +27,11 @@ public class ItemMonsterEventGoalAchiever extends ItemMonsterGoalAchiever {
 	@Override
 	public boolean isRealisable(BotCharacter character) {
 		return super.isRealisable(character) && getCoordinates() != null;
+	}
+	
+	@Override
+	protected boolean isEventMonster() {
+		return true;
 	}
 
 	private List<Coordinate> getCoordinates() {

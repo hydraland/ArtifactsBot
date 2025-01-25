@@ -57,7 +57,12 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 
 	@Override
 	public boolean isRealisable(BotCharacter character) {
-		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS).fightDetails().win();
+		return fightService.optimizeEquipementsPossesed(monster, EMPTY_RESERVED_ITEMS, goalParameter.isUseUtilities(isEventMonster())).fightDetails()
+				.win();
+	}
+
+	protected boolean isEventMonster() {
+		return false;
 	}
 
 	@Override
@@ -72,7 +77,7 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 		if (!goalParameter.getHPRecoveryFactory().createHPRecovery().restoreHP(reservedItems)) {
 			return false;
 		}
-		if (!monsterEquipementService.equipBestEquipement(monster, reservedItems)) {
+		if (!monsterEquipementService.equipBestEquipement(monster, reservedItems, goalParameter.isUseUtilities(isEventMonster()))) {
 			return false;
 		}
 
