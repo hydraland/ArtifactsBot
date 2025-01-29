@@ -30,7 +30,7 @@ import hydra.model.BotRewards;
 import hydra.model.BotTask;
 import hydra.model.BotTaskDetail;
 
-public class TaskDAOImpl extends AbstractDAO implements TaskDAO {
+public final class TaskDAOImpl extends AbstractDAO implements TaskDAO {
 	private final String persoName;
 	private final CooldownManager cooldownManager;
 	private final CharacterCache characterCache;

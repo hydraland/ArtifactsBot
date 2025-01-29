@@ -2,7 +2,7 @@ package hydra.model;
 
 import java.io.Serializable;
 
-public class BotTask implements Serializable {
+public final class BotTask implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private String code;
 	private int total;

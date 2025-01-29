@@ -34,7 +34,7 @@ import strategy.util.Bornes;
 import strategy.util.CharacterService;
 import strategy.util.StrategySkillUtils;
 
-public class SimulatorStrategy implements Strategy {
+public final class SimulatorStrategy implements Strategy {
 
 	private static final int NUMBER_OF_SIMULATE = 2;
 	private static final int MAX_MULTIPLIER_COEFFICIENT = 5;

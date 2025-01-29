@@ -15,7 +15,7 @@ import hydra.model.BotMonster;
 import util.CacheManager;
 import util.PermanentCacheManager;
 
-public class MonsterDAOImpl extends AbstractDAO implements MonsterDAO {
+public final class MonsterDAOImpl extends AbstractDAO implements MonsterDAO {
 	private static final String MONSTERS_KEY_CACHE = "monsters";
 	private CacheManager<String, List<BotMonster>> cacheManager;
 	private final MonstersApi monstersApi;

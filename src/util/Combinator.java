@@ -4,7 +4,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Iterator;
 
-public class Combinator<T> implements Iterator<T[]>, Iterable<T[]> {
+public final class Combinator<T> implements Iterator<T[]>, Iterable<T[]> {
 
 	private Element<T>[] elements;
 	private T[] currentCombinaison;

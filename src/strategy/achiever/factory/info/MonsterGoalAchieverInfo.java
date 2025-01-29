@@ -4,7 +4,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotItemType;
 
-public class MonsterGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
+public final class MonsterGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
 
 	private final String monsterCode;
 

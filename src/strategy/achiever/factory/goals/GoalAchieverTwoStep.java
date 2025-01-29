@@ -10,7 +10,7 @@ import strategy.achiever.CheckRealisableGoalAchiever;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.util.Cumulator;
 
-public class GoalAchieverTwoStep implements ArtifactGoalAchiever {
+public final class GoalAchieverTwoStep implements ArtifactGoalAchiever {
 
 	private boolean finish;
 	private final GoalAchiever optionalSubGoal;

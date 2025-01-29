@@ -1,5 +1,5 @@
 package hydra.dao.response;
 
-public record TradeTaskResponse(boolean ok) {
+public final record TradeTaskResponse(boolean ok) {
 
 }

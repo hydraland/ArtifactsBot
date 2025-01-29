@@ -26,7 +26,7 @@ import strategy.util.BankRecorder;
 import util.CacheManager;
 import util.LimitedTimeCacheManager;
 
-public class BankDAOImpl extends AbstractDAO implements BankDAO {
+public final class BankDAOImpl extends AbstractDAO implements BankDAO {
 
 	private static final String BANK_DETAIL_CACHE_KEY = "detail";
 	private String persoName;

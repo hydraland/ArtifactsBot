@@ -91,45 +91,45 @@ public class GatheringGoalAchiever implements ResourceGoalAchiever {
 	}
 
 	@Override
-	public boolean isFinish() {
+	public final boolean isFinish() {
 		return finish;
 	}
 
 	@Override
-	public String getCode() {
+	public final String getCode() {
 		return resourceCode;
 	}
 
 	@Override
-	public void clear() {
+	public final void clear() {
 		finish = false;
 		equipTool = true;
 		equipToolGoal.clear();
 	}
 
 	@Override
-	public void setRoot() {
+	public final void setRoot() {
 		root = true;
 	}
 
 	@Override
-	public void unsetRoot() {
+	public final void unsetRoot() {
 		root = false;
 	}
 
 	@Override
-	public double getRate() {
+	public final double getRate() {
 		return (1d / rate);
 	}
 
 	@Override
-	public boolean acceptAndSetMultiplierCoefficient(int coefficient, Cumulator cumulator, int maxItem) {
+	public final boolean acceptAndSetMultiplierCoefficient(int coefficient, Cumulator cumulator, int maxItem) {
 		cumulator.addValue(1);
 		return coefficient == 1 && cumulator.getValue() <= maxItem;
 	}
 
 	@Override
-	public String toString() {
+	public final String toString() {
 		ToStringBuilder builder = new ToStringBuilder(this);
 		builder.append("resourceCode", resourceCode);
 		builder.append("level", level);

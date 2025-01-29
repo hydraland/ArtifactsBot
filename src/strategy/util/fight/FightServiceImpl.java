@@ -169,26 +169,26 @@ public final class FightServiceImpl implements FightService {
 			return optimizeCacheManager.get(key);
 		}
 
-		List<BotItemInfo> weapons = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.WEAPON))));
-		List<BotItemInfo> bodyArmors = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.BODY_ARMOR))));
-		List<BotItemInfo> boots = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.BOOTS))));
-		List<BotItemInfo> helmets = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.HELMET))));
-		List<BotItemInfo> shields = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.SHIELD))));
-		List<BotItemInfo> legArmors = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.LEG_ARMOR))));
-		List<BotItemInfo> amulets = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.AMULET))));
-		List<BotItemInfo> rings1 = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.RING))));
-		List<BotItemInfo> utilities1 = new LinkedList<>(
-				sortItemsByLevel(equipableCharacterEquipement.get(BotItemType.UTILITY)));
-		List<BotItemInfo> artifacts1 = new LinkedList<>(
-				sortItemsByLevel(filterOdd(equipableCharacterEquipement.get(BotItemType.ARTIFACT))));
+		Set<BotItemInfo> weapons = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.WEAPON)));
+		Set<BotItemInfo> bodyArmors = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.BODY_ARMOR)));
+		Set<BotItemInfo> boots = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.BOOTS)));
+		Set<BotItemInfo> helmets = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.HELMET)));
+		Set<BotItemInfo> shields = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.SHIELD)));
+		Set<BotItemInfo> legArmors = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.LEG_ARMOR)));
+		Set<BotItemInfo> amulets = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.AMULET)));
+		Set<BotItemInfo> rings1 = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.RING)));
+		Set<BotItemInfo> utilities1 = new HashSet<>(
+				equipableCharacterEquipement.get(BotItemType.UTILITY));
+		Set<BotItemInfo> artifacts1 = new HashSet<>(
+				filterOdd(equipableCharacterEquipement.get(BotItemType.ARTIFACT)));
 
 		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter(), !utilities1.isEmpty());
 		FightDetails maxFightDetails = initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
@@ -207,12 +207,12 @@ public final class FightServiceImpl implements FightService {
 
 			// On ajoute null pour les items multiples, à faire sur les autres si la notion
 			// d'item mauvais apparait
-			if (rings1.size() == 1 && rings1.getFirst().quantity() == 1) {
-				addNullValueIfAbsent(rings1, true);
+			if (rings1.size() == 1 && rings1.stream().findFirst().get().quantity() == 1) {
+				addNullValueIfAbsent(rings1);
 			}
-			addNullValueIfAbsent(utilities1, false);
+			addNullValueIfAbsent(utilities1);
 			if (artifacts1.size() < 3) {
-				addNullValueIfAbsent(artifacts1, true);
+				addNullValueIfAbsent(artifacts1);
 			}
 
 			List<BotItemInfo> rings2 = new LinkedList<>(rings1);
@@ -318,18 +318,18 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	// TODO mettre dans une classe et mettre index en constante
-	private void reduceCombinatorics(List<BotItemInfo> weapons, List<BotItemInfo> bodyArmors, List<BotItemInfo> boots,
-			List<BotItemInfo> helmets, List<BotItemInfo> shields, List<BotItemInfo> legArmors,
-			List<BotItemInfo> amulets, List<BotItemInfo> rings, List<BotItemInfo> artifacts,
-			List<BotItemInfo> utilities, BotMonster monster, int characterHpWithoutEqt) {
+	private void reduceCombinatorics(Set<BotItemInfo> weapons, Set<BotItemInfo> bodyArmors, Set<BotItemInfo> boots,
+			Set<BotItemInfo> helmets, Set<BotItemInfo> shields, Set<BotItemInfo> legArmors,
+			Set<BotItemInfo> amulets, Set<BotItemInfo> rings, Set<BotItemInfo> artifacts,
+			Set<BotItemInfo> utilities, BotMonster monster, int characterHpWithoutEqt) {
 
-		List<List<BotItemInfo>> sources = Arrays.asList(weapons, bodyArmors, amulets, helmets, legArmors, rings, boots,
+		List<Set<BotItemInfo>> sources = Arrays.asList(weapons, bodyArmors, amulets, helmets, legArmors, rings, boots,
 				shields, artifacts, utilities);
-		if (rings.size() == 1 && rings.getFirst().quantity() == 1) {
-			addNullValueIfAbsent(rings, true);
+		if (rings.size() == 1 && rings.stream().findFirst().get().quantity() == 1) {
+			addNullValueIfAbsent(rings);
 		}
 		if (artifacts.size() < 3) {
-			addNullValueIfAbsent(artifacts, true);
+			addNullValueIfAbsent(artifacts);
 		}
 
 		// Séparation des utilities en restore et autre
@@ -342,7 +342,7 @@ public final class FightServiceImpl implements FightService {
 				iterator.remove();
 			}
 		}
-		addNullValueIfAbsent(utilities, false);
+		addNullValueIfAbsent(utilities);
 
 		List<Set<BotItemInfo>> tempList = new ArrayList<>();
 		List<Set<BotItemInfo>> resultList = new ArrayList<>();
@@ -440,7 +440,7 @@ public final class FightServiceImpl implements FightService {
 			}
 		}
 		for (int j = 0; j <= maxEvaluate && j < sources.size(); j++) {
-			List<BotItemInfo> itemsSetTemp = sources.get(j);
+			Set<BotItemInfo> itemsSetTemp = sources.get(j);
 			itemsSetTemp.clear();
 			switch (j) {
 			case 5 -> {
@@ -475,11 +475,11 @@ public final class FightServiceImpl implements FightService {
 		return false;
 	}
 
-	private List<BotItemInfo> sortItemsByLevel(List<BotItemInfo> filterOdd) {
+	/*private List<BotItemInfo> sortItemsByLevel(List<BotItemInfo> filterOdd) {
 		return filterOdd.stream()
 				.sorted((a, b) -> Integer.compare(b.botItemDetails().getLevel(), a.botItemDetails().getLevel()))
 				.toList();
-	}
+	}*/
 
 	private List<BotItemInfo> filterOdd(List<BotItemInfo> items) {
 		List<BotItemInfo> filteredItem = items.stream()
@@ -510,13 +510,9 @@ public final class FightServiceImpl implements FightService {
 				: filteredItem;
 	}
 
-	private void addNullValueIfAbsent(List<BotItemInfo> botItemList, boolean after) {
+	private void addNullValueIfAbsent(Set<BotItemInfo> botItemList) {
 		if (!botItemList.isEmpty() && !botItemList.contains(null)) {
-			if (after) {
-				botItemList.addLast(null);
-			} else {
-				botItemList.addFirst(null);
-			}
+			botItemList.add(null);
 		}
 	}
 
@@ -708,8 +704,9 @@ public final class FightServiceImpl implements FightService {
 	}
 
 	private int calculEffectDamage(float attackDmg, float dmgPercent, float dmgBoost, float monsterRes) {
-		return (int) Math
-				.rint(Math.rint((attackDmg * (1d + (dmgPercent + dmgBoost) / 100d))) * (1d - monsterRes / 100d));
+		// On convertie le block en % de res
+		return (int) Math.rint(Math.rint((attackDmg * (1d + (dmgPercent + dmgBoost) / 100d)))
+				* (1d - (monsterRes + (monsterRes > 0 ? monsterRes * 0.1d : 0)) / 100d));
 	}
 
 	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterLossHP,

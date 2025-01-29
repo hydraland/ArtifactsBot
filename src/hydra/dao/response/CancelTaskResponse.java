@@ -1,4 +1,4 @@
 package hydra.dao.response;
 
-public record CancelTaskResponse(boolean ok) {
+public final record CancelTaskResponse(boolean ok) {
 }

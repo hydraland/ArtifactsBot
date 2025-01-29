@@ -7,7 +7,7 @@ import strategy.achiever.factory.MonsterItemDropFactory;
 import strategy.achiever.factory.MonsterTaskFactory;
 import strategy.util.fight.factory.HPRecoveryFactory;
 
-public class GoalParameter {
+public final class GoalParameter {
 
 	private int minFreeSlot;
 	private int rareItemSeuil;

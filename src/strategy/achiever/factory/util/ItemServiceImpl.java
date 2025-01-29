@@ -98,7 +98,7 @@ public final class ItemServiceImpl implements ItemService {
 		}
 	}
 
-	private record ToolStruct(BotResourceSkill botResourceSkill, int value, BotItemType type) {
+	private final record ToolStruct(BotResourceSkill botResourceSkill, int value, BotItemType type) {
 	}
 
 	@Override

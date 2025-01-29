@@ -14,7 +14,7 @@ import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.util.CharacterService;
 
-public class OptimizedItemTaskFactory extends DefaultItemTaskFactory {
+public final class OptimizedItemTaskFactory extends DefaultItemTaskFactory {
 
 	private final GoalAverageOptimizer goalAverageOptimizer;
 

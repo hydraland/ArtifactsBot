@@ -11,7 +11,7 @@ import hydra.model.BotInventoryItem;
 import strategy.achiever.factory.util.Cumulator;
 import strategy.util.CharacterService;
 
-public class ItemGetInventoryOrBankGoalAchiever implements ArtifactGoalAchiever {
+public final class ItemGetInventoryOrBankGoalAchiever implements ArtifactGoalAchiever {
 
 	private boolean finish;
 	private String code;

@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 import hydra.model.BotItem;
 import hydra.model.BotItemReader;
 
-public class BankRecorderImpl implements BankRecorder {
+public final class BankRecorderImpl implements BankRecorder {
 	private static final Logger LOGGER = Logger.getLogger(MethodHandles.lookup().lookupClass().getName());
 	private List<BotItem> items;
 	private File saveFile;

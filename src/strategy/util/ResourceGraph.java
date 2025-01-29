@@ -9,7 +9,7 @@ import hydra.model.BotCraft;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemReader;
 
-public class ResourceGraph {
+public final class ResourceGraph {
 
 	private final Map<String, ItemNode> graph;
 

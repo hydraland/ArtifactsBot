@@ -11,7 +11,7 @@ import hydra.model.BotCharacterInventorySlot;
 import strategy.achiever.factory.util.Cumulator;
 import strategy.achiever.factory.util.SlotMethod;
 
-public class UnequipFirstWeaponGoalAchiever implements ResourceGoalAchiever {
+public final class UnequipFirstWeaponGoalAchiever implements ResourceGoalAchiever {
 
 	private CharacterDAO characterDAO;
 	private SlotMethod method;

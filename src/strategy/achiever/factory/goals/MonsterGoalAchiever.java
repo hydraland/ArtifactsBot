@@ -79,30 +79,30 @@ public class MonsterGoalAchiever implements GoalAchiever {
 	}
 
 	@Override
-	public boolean isFinish() {
+	public final boolean isFinish() {
 		return this.finish;
 	}
 
 	@Override
-	public void clear() {
+	public final void clear() {
 		this.finish = false;
 	}
 
 	@Override
-	public void setRoot() {
+	public final void setRoot() {
 		// Le fait d'être noeud racine ou pas ne change pas l'implémentation
 	}
 
 	@Override
-	public void unsetRoot() {
+	public final void unsetRoot() {
 		// Le fait d'être noeud racine ou pas ne change pas l'implémentation
 	}
 
-	public int getMonsterLevel() {
+	public final int getMonsterLevel() {
 		return monster.getLevel();
 	}
 
-	public String getMonsterCode() {
+	public final String getMonsterCode() {
 		return monster.getCode();
 	}
 	
@@ -111,7 +111,7 @@ public class MonsterGoalAchiever implements GoalAchiever {
 	}
 
 	@Override
-	public String toString() {
+	public final String toString() {
 		ToStringBuilder builder = new ToStringBuilder(this);
 		builder.append("monster", monster);
 		return builder.toString();

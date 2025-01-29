@@ -234,7 +234,7 @@ public final class UselessEquipmentManagerGoalAchiever extends AbstractCustomGoa
 					&& !BotItemType.RESOURCE.equals(botItemDetail.getType())
 					&& !BotItemType.CONSUMABLE.equals(botItemDetail.getType())
 					&& !useEquipments.contains(botItem.getCode())
-					&& !itemDAO.useInCraft(botItem.getCode()).isUseInCraft()) {
+					&& !itemDAO.useInCraft(botItem.getCode()).useInCraft()) {
 				if (botItemDetail.getCraft() == null) {
 					if (botItemDetail.isTradeable() && sellPossible) {
 						sellItems.add(botItem);

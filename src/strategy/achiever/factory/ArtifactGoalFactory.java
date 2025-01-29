@@ -77,7 +77,7 @@ public final class ArtifactGoalFactory implements GoalFactory {
 		this.characterService = characterService;
 		this.factoryCreator = factoryCreator;
 		this.resourceItemsCraftable = itemDao.getResourceItems().stream().<String>map(bid -> bid.getCode())
-				.filter(code -> itemDao.useInCraft(code).isUseInCraft()).toList();
+				.filter(code -> itemDao.useInCraft(code).useInCraft()).toList();
 		this.eventMonstersCode = new ArrayList<>();
 		this.eventResourceBoxCode = new ArrayList<>();
 		this.eventResources = new ArrayList<>();

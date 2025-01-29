@@ -4,7 +4,7 @@ import hydra.dao.CharacterDAO;
 import hydra.model.BotCharacter;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 
-public class GoalAverageOptimizerImpl implements GoalAverageOptimizer {
+public final class GoalAverageOptimizerImpl implements GoalAverageOptimizer {
 	
 	private final CharacterDAO characterDAO;
 

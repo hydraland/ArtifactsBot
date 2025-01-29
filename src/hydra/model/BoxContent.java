@@ -2,7 +2,7 @@ package hydra.model;
 
 import java.io.Serializable;
 
-public class BoxContent implements Serializable {
+public final class BoxContent implements Serializable {
 	private static final long serialVersionUID = 1L;
 	//TODO mettre en enum
 	private String code;

@@ -1,6 +1,6 @@
 package hydra.model;
 
-public class BotDropDescription extends BotDrop {
+public final class BotDropDescription extends BotDrop {
 	private static final long serialVersionUID = 1L;
 	private int maxQuantity;
 	private int minQuantity;

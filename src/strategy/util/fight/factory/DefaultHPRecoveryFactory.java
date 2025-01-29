@@ -5,7 +5,7 @@ import hydra.dao.ItemDAO;
 import strategy.util.CharacterService;
 import strategy.util.fight.HPRecovery;
 
-public class DefaultHPRecoveryFactory implements HPRecoveryFactory {
+public final class DefaultHPRecoveryFactory implements HPRecoveryFactory {
 
 	private final CharacterDAO characterDao;
 	private final ItemDAO itemDAO;

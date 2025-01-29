@@ -1,5 +1,5 @@
 package hydra.dao.response;
 
-public record UseResponse(boolean ok) {
+public final record UseResponse(boolean ok) {
 
 }

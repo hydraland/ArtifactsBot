@@ -43,7 +43,7 @@ import hydra.model.BotItemReader;
 import hydra.model.BotRecycleDetails;
 import strategy.achiever.Interruptor;
 
-public class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
+public final class CharacterDAOImpl extends AbstractDAO implements CharacterDAO {
 	private String persoName;
 	private CooldownManager cooldownManager;
 	private CharacterCache characterCache;

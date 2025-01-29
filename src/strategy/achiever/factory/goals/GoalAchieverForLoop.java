@@ -8,7 +8,7 @@ import hydra.model.BotCharacter;
 import strategy.achiever.CheckRealisableGoalAchiever;
 import strategy.achiever.GoalAchiever;
 
-public class GoalAchieverForLoop implements GoalAchiever {
+public final class GoalAchieverForLoop implements GoalAchiever {
 	private int quantity;
 	private final GoalAchiever subGoal;
 	private boolean finish;

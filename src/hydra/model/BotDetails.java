@@ -3,7 +3,7 @@ package hydra.model;
 import java.io.Serializable;
 import java.util.List;
 
-public class BotDetails implements Serializable {
+public final class BotDetails implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int xp;
 	private List<BotItem> items;

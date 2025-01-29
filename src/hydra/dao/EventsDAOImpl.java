@@ -16,7 +16,7 @@ import hydra.model.BotEvent;
 import util.CacheManager;
 import util.PermanentCacheManager;
 
-public class EventsDAOImpl extends AbstractDAO implements EventsDAO {
+public final class EventsDAOImpl extends AbstractDAO implements EventsDAO {
 	private final CacheManager<String, List<BotEvent>> cacheManager;
 	private final EventsApi eventsApi;
 

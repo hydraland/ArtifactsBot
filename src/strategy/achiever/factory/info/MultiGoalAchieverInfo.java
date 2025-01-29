@@ -10,7 +10,7 @@ import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 import strategy.util.Bornes;
 
-public class MultiGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
+public final class MultiGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
 
 	private static final String EXCEPTION_MESSAGE = "Value  %s not authorize";
 	private boolean needTaskMasterResource;

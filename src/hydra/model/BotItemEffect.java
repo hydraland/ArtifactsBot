@@ -2,7 +2,7 @@ package hydra.model;
 
 import java.io.Serializable;
 
-public class BotItemEffect implements Serializable {
+public final class BotItemEffect implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private BotEffect name;
 	private int value;

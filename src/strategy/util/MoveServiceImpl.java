@@ -14,7 +14,7 @@ import hydra.model.BotInventoryItem;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.achiever.factory.util.ItemService;
 
-public class MoveServiceImpl implements MoveService {
+public final class MoveServiceImpl implements MoveService {
 
 	private final CharacterDAO characterDAO;
 	private List<Coordinate> bankLocation;

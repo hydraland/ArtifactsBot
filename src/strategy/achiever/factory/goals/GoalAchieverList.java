@@ -11,7 +11,7 @@ import hydra.model.BotCharacter;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.util.Cumulator;
 
-public class GoalAchieverList implements ArtifactGoalAchiever {
+public final class GoalAchieverList implements ArtifactGoalAchiever {
 
 	private List<ArtifactGoalAchiever> goalAchievers;
 	private boolean finish;

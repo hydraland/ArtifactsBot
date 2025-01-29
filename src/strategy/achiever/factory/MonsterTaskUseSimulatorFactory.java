@@ -21,7 +21,7 @@ import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.CharacterService;
 
-public class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implements MonsterTaskFactory {
+public final class MonsterTaskUseSimulatorFactory extends UseSimulatorFactory implements MonsterTaskFactory {
 
 	private static final int MAX_SIMULATION_TIME_IN_SECOND = 86400;
 	private final Map<String, MonsterGoalAchiever> monsterGoals;

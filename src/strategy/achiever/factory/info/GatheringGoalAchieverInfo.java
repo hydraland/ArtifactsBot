@@ -6,7 +6,7 @@ import hydra.model.BotItemType;
 import hydra.model.BotResourceSkill;
 import strategy.util.Bornes;
 
-public class GatheringGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
+public final class GatheringGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
 
 	private final BotResourceSkill resourceSkill;
 	private final int level;

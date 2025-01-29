@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.goals.MonsterGoalAchiever;
 
-public class DefaultMonsterTaskFactory implements MonsterTaskFactory {
+public final class DefaultMonsterTaskFactory implements MonsterTaskFactory {
 
 	private final Map<String, MonsterGoalAchiever> monsterGoals;
 	private final GoalFactoryCreator factoryCreator;

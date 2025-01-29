@@ -45,18 +45,17 @@ import strategy.achiever.factory.util.GoalAverageOptimizer;
 import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.Bornes;
 import strategy.util.BotItemInfo;
+import strategy.util.OptimizeResult;
 import strategy.util.StrategySkillUtils;
 import strategy.util.fight.factory.DefaultHPRecoveryFactory;
 import strategy.util.fight.factory.HPRecoveryUseSimulatorFactory;
 import util.JsonToStringStyle;
 
-public class TestSimulation {
+public final class TestSimulation {
 	public static void main(String[] args) throws FileNotFoundException {
 		LogManager.getLogManager().getLogger("").setLevel(Level.SEVERE);
 		ToStringBuilder.setDefaultStyle(new JsonToStringStyle());
 		SimulatorManagerImpl simulatorManager = new SimulatorManagerImpl(botEvents -> new ArrayList<>());
-		simulatorManager.getSimulatorListener()
-				.setInnerListener((className, methodName, cooldown, error) -> System.out.println(methodName));
 		simulatorManager.load(true);
 
 		BotCharacter character = simulatorManager.getCharacterDAOSimulator().getCharacter();
@@ -85,25 +84,66 @@ public class TestSimulation {
 		long inter4 = System.currentTimeMillis();
 		System.out.println("Duree fight:" + (inter4 - inter3));
 		List<BotItemDetails> items = simulatorManager.getItemDAOSimulator().getItems();
-		viewItems = new LinkedList<>();
-		viewItems.addAll(items.stream().filter(bid -> !bid.getType().equals(BotItemType.UTILITY) && !bid.getType().equals(BotItemType.CONSUMABLE)).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
+		//viewItems.addAll(items.stream().filter(bid -> (bid.getLevel() <= i || bid.getCode().equals("snowman_hat") || bid.getCode().equals("bandit_armor") || bid.getCode().equals("death_knight_sword") /*|| bid.getCode().equals("life_crystal")|| bid.getCode().equals("lich_crown")*/) /*&& !bid.getType().equals(BotItemType.UTILITY)*/ && !bid.getType().equals(BotItemType.CONSUMABLE)).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
+		//viewItems.addAll(items.stream().filter(bid -> !bid.getType().equals(BotItemType.UTILITY) && !bid.getType().equals(BotItemType.CONSUMABLE)).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
 		character.setLevel(40);
-		simulatorManager.setValue(character, viewItems);
-		for(BotMonster monster : simulatorManager.getMonsterDAOSimulator().getMonsters()) {
-		//BotMonster monster = simulatorManager.getMonsterDAOSimulator().getMonster("mushmush");
-			System.out.println(monster.getCode());
-			System.out.println(simulatorManager.getFightService().optimizeEquipementsPossesed(monster, Collections.emptyMap(), false));
+		resetCharacter(character);
+		for(int i : new int[] {1,5,10,15,20,25,30,35,40}) {
+			System.out.println("*********************************"+i+"*********************************");
+			viewItems = new LinkedList<>();
+			viewItems.addAll(items.stream().filter(bid -> (bid.getLevel() <= i && !bid.getType().equals(BotItemType.CONSUMABLE))).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
+			//viewItems.addAll(items.stream().filter(bid -> ((bid.getLevel() <= i && !bid.getType().equals(BotItemType.CONSUMABLE) && !bid.getType().equals(BotItemType.WEAPON)) || (bid.getLevel() <= i+5 && bid.getType().equals(BotItemType.WEAPON)))).map(bid -> {BotItem item = new BotItem(); item.setCode(bid.getCode());item.setQuantity(100);return item;}).toList());
+			simulatorManager.setValue(character, viewItems);
+			for(BotMonster monster : simulatorManager.getMonsterDAOSimulator().getMonsters()) {
+			//BotMonster monster = simulatorManager.getMonsterDAOSimulator().getMonster("mushmush");
+				System.out.println(monster.getCode());
+				OptimizeResult optimizeEquipementsPossesed = simulatorManager.getFightService().optimizeEquipementsPossesed(monster, Collections.emptyMap(), false);
+				if(optimizeEquipementsPossesed.fightDetails().win())
+					System.out.println(optimizeEquipementsPossesed);
+			}
 		}
 		long end = System.currentTimeMillis();
 		System.out.println("Duree:" + (end - begin));
+	}
+
+	private static void resetCharacter(BotCharacter character) {
+		character.setUtility1Slot("");
+		character.setUtility2Slot("");
+		character.setWeaponSlot("");
+		character.setBodyArmorSlot("");
+		character.setBootsSlot("");
+		character.setHelmetSlot("");
+		character.setShieldSlot("");
+		character.setLegArmorSlot("");
+		character.setAmuletSlot("");
+		character.setRing1Slot("");
+		character.setRing2Slot("");
+		character.setArtifact1Slot("");
+		character.setArtifact2Slot("");
+		character.setArtifact3Slot("");
+		character.setAttackAir(0); 
+		character.setAttackEarth(0); 
+		character.setAttackFire(0); 
+		character.setAttackWater(0); 
+		character.setResAir(0); 
+		character.setResEarth(0); 
+		character.setResFire(0); 
+		character.setResWater(0); 
+		character.setHp(320); 
+		character.setDmgAir(0); 
+		character.setDmgEarth(0); 
+		character.setDmgFire(0); 
+		character.setDmgWater(0); 
+		character.setUtility1SlotQuantity(0); 
+		character.setUtility2SlotQuantity(0); 
+		character.setMaxHp(320); 
+		character.setHaste(0); 
 	}
 
 	private static void simulateDropItem(SimulatorManagerImpl simulatorManager, BotCharacter character,
 			GoalFactory simulatedGoalFactory, GoalParameter goalParameter, List<BotItemReader> viewItems) {
 
 		SimulatorManager secondSimulatorManager = new SimulatorManagerImpl(botEvents -> new ArrayList<>());
-		secondSimulatorManager.getSimulatorListener()
-				.setInnerListener((className, methodName, cooldown, error) -> System.out.println(methodName));
 		secondSimulatorManager.load(true);
 
 		goalParameter.setHPRecoveryFactory(new HPRecoveryUseSimulatorFactory(
@@ -161,8 +201,6 @@ public class TestSimulation {
 			GoalFactory simulatedGoalFactory, GoalParameter goalParameter, List<BotItemReader> viewItems) {
 
 		SimulatorManager secondSimulatorManager = new SimulatorManagerImpl(botEvents -> new ArrayList<>());
-		secondSimulatorManager.getSimulatorListener()
-				.setInnerListener((className, methodName, cooldown, error) -> System.out.println(methodName));
 		secondSimulatorManager.load(true);
 		secondSimulatorManager.setValue(character, viewItems);
 		simulatorManager.setValue(character, viewItems);

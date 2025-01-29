@@ -9,7 +9,7 @@ import strategy.achiever.GoalParameter;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
-public class DepositTaskCoinGoalAchiever extends AbstractCustomGoalAchiever {
+public final class DepositTaskCoinGoalAchiever extends AbstractCustomGoalAchiever {
 
 	private final BankDAO bankDAO;
 	private final MoveService moveService;

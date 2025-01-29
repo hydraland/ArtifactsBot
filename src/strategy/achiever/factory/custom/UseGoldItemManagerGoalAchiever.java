@@ -9,7 +9,7 @@ import hydra.model.BotCharacter;
 import hydra.model.BotInventoryItem;
 import strategy.util.CharacterService;
 
-public class UseGoldItemManagerGoalAchiever extends AbstractCustomGoalAchiever {
+public final class UseGoldItemManagerGoalAchiever extends AbstractCustomGoalAchiever {
 
 	private final CharacterDAO characterDAO;
 	private final List<String> goldResourceItems;

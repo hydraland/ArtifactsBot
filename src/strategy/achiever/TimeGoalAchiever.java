@@ -7,7 +7,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import hydra.model.BotCharacter;
 import strategy.util.AverageTimeXpCalculator;
 
-public class TimeGoalAchiever implements GoalAchiever {
+public final class TimeGoalAchiever implements GoalAchiever {
 
 	private GoalAchiever subGoal;
 	private boolean finish;

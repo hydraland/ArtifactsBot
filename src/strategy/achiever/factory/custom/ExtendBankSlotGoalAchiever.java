@@ -9,7 +9,7 @@ import hydra.model.BotCharacter;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
-public class ExtendBankSlotGoalAchiever extends AbstractCustomGoalAchiever {
+public final class ExtendBankSlotGoalAchiever extends AbstractCustomGoalAchiever {
 
 	private final CharacterDAO characterDao;
 	private final BankDAO bankDAO;

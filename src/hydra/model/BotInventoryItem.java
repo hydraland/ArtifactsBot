@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class BotInventoryItem implements Serializable, BotItemReader {
+public final class BotInventoryItem implements Serializable, BotItemReader {
 	private static final long serialVersionUID = 1L;
 	private int slot;
 	private String code;

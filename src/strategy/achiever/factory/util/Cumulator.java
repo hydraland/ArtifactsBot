@@ -1,6 +1,6 @@
 package strategy.achiever.factory.util;
 
-public class Cumulator {
+public final class Cumulator {
 
 	private int value;
 	private final int initValue;

@@ -22,7 +22,7 @@ import hydra.model.BotItemReader;
 import util.CacheManager;
 import util.LimitedTimeCacheManager;
 
-public class GrandExchangeDAOImpl extends AbstractDAO implements GrandExchangeDAO {
+public final class GrandExchangeDAOImpl extends AbstractDAO implements GrandExchangeDAO {
 	private static final String SELL_CACHE_KEY = "sell";
 	private static final int DEFAULT_PRICE = 100;
 	private CooldownManager cooldownManager;

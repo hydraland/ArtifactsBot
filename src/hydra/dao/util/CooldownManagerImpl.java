@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class CooldownManagerImpl implements CooldownManager {
+public final class CooldownManagerImpl implements CooldownManager {
 	private static final Logger LOGGER = Logger.getLogger(MethodHandles.lookup().lookupClass().getName());
 	private int cooldownValue;
 	private long timestamp;

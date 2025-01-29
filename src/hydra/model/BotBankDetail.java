@@ -2,7 +2,7 @@ package hydra.model;
 
 import java.io.Serializable;
 
-public class BotBankDetail implements Serializable {
+public final class BotBankDetail implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int slots;
 	private int nextExpansionCost;

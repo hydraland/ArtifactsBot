@@ -6,7 +6,7 @@ import hydra.model.BotCraftSkill;
 import hydra.model.BotItemType;
 import strategy.util.Bornes;
 
-public class CraftGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
+public final class CraftGoalAchieverInfo<T> extends SimpleGoalAchieverInfo<T> {
 
 	private final boolean needTaskMasterResource;
 	private final BotCraftSkill craftSkill;

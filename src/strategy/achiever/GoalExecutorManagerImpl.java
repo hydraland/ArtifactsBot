@@ -13,7 +13,7 @@ import hydra.dao.util.CharacterCache;
 import hydra.model.BotCharacter;
 import strategy.Strategy;
 
-public class GoalExecutorManagerImpl implements EventNotification, GoalExecutoManager {
+public final class GoalExecutorManagerImpl implements EventNotification, GoalExecutoManager {
 	private static final Logger LOGGER = Logger.getLogger(MethodHandles.lookup().lookupClass().getName());
 	private final CharacterDAO characterDao;
 	private final CharacterCache characterCache;

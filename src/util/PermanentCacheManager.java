@@ -3,7 +3,7 @@ package util;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PermanentCacheManager<K, V> implements CacheManager<K, V> {
+public final class PermanentCacheManager<K, V> implements CacheManager<K, V> {
 
 	private final Map<K, V> cache;
 

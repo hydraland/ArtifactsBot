@@ -2,7 +2,7 @@ package hydra.model;
 
 import java.io.Serializable;
 
-public class BotCoordinate implements Serializable {
+public final class BotCoordinate implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int x;
 	private int y;

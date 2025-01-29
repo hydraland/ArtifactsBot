@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import strategy.util.fight.FightDetails;
 
-public record OptimizeResult(FightDetails fightDetails, BotItemInfo[] bestEqt) {
+public final record OptimizeResult(FightDetails fightDetails, BotItemInfo[] bestEqt) {
 	public static final int UTILITY1_INDEX = 0;
 	public static final int UTILITY2_INDEX = 1;
 	public static final int WEAPON_INDEX = 2;

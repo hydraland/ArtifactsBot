@@ -1,4 +1,4 @@
 package hydra.dao.response;
 
-public record CraftResponse(boolean ok) {
+public final record CraftResponse(boolean ok) {
 }

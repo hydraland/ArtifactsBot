@@ -10,7 +10,7 @@ import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.util.Cumulator;
 import util.BinomialProbability;
 
-public class GoalAchieverLoop implements ArtifactGoalAchiever {
+public final class GoalAchieverLoop implements ArtifactGoalAchiever {
 	private int quantity;
 	private final GoalAchiever subGoal;
 	private boolean finish;

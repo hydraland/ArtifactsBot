@@ -3,7 +3,7 @@ package util;
 import java.util.HashMap;
 import java.util.Map;
 
-public class LimitedTimeCacheManager<K, V> implements CacheManager<K, V> {
+public final class LimitedTimeCacheManager<K, V> implements CacheManager<K, V> {
 
 	private final Map<K, CacheValue<V>> cache;
 	private final long maxCacheTimeDuration;
@@ -39,6 +39,6 @@ public class LimitedTimeCacheManager<K, V> implements CacheManager<K, V> {
 		cache.clear();
 	}
 
-	private record CacheValue<V>(V value, long addTime) {
+	private final record CacheValue<V>(V value, long addTime) {
 	}
 }

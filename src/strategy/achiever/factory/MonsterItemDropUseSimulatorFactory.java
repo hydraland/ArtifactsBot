@@ -20,7 +20,7 @@ import strategy.achiever.factory.util.GoalAverageOptimizerImpl;
 import strategy.util.CharacterService;
 import util.BinomialProbability;
 
-public class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory implements MonsterItemDropFactory {
+public final class MonsterItemDropUseSimulatorFactory extends UseSimulatorFactory implements MonsterItemDropFactory {
 	private static final int MAX_SIMULATION_TIME_IN_SECOND = 172800;
 	private final BankDAO bankDAO;
 	private final CharacterService characterService;

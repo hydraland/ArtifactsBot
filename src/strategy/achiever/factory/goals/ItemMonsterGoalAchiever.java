@@ -102,51 +102,51 @@ public class ItemMonsterGoalAchiever implements ResourceGoalAchiever {
 	}
 
 	@Override
-	public boolean isFinish() {
+	public final boolean isFinish() {
 		return this.finish;
 	}
 
 	@Override
-	public String getCode() {
+	public final String getCode() {
 		return this.resourceCode;
 	}
 
 	@Override
-	public void clear() {
+	public final void clear() {
 		this.finish = false;
 	}
 
 	@Override
-	public void setRoot() {
+	public final void setRoot() {
 		this.root = true;
 	}
 
 	@Override
-	public void unsetRoot() {
+	public final void unsetRoot() {
 		this.root = false;
 	}
 
 	@Override
-	public double getRate() {
+	public final double getRate() {
 		return (1d / this.rate);
 	}
 
-	public int getMonsterLevel() {
+	public final int getMonsterLevel() {
 		return monster.getLevel();
 	}
 
-	public String getMonsterCode() {
+	public final String getMonsterCode() {
 		return monster.getCode();
 	}
 
 	@Override
-	public boolean acceptAndSetMultiplierCoefficient(int coefficient, Cumulator cumulator, int maxItem) {
+	public final boolean acceptAndSetMultiplierCoefficient(int coefficient, Cumulator cumulator, int maxItem) {
 		cumulator.addValue(1);
 		return coefficient == 1 && cumulator.getValue() <= maxItem;
 	}
 
 	@Override
-	public String toString() {
+	public final String toString() {
 		ToStringBuilder builder = new ToStringBuilder(this);
 		builder.append("resourceCode", resourceCode);
 		builder.append("rate", rate);

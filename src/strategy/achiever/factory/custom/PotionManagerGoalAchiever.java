@@ -10,7 +10,7 @@ import strategy.achiever.GoalParameter;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
-public class PotionManagerGoalAchiever extends AbstractCustomGoalAchiever {
+public final class PotionManagerGoalAchiever extends AbstractCustomGoalAchiever {
 
 	private final GoalParameter parameter;
 	private final CustomCondition condition;

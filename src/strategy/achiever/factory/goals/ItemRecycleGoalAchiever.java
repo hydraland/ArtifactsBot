@@ -14,7 +14,7 @@ import strategy.achiever.GoalAchiever;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
-public class ItemRecycleGoalAchiever implements GoalAchiever {
+public final class ItemRecycleGoalAchiever implements GoalAchiever {
 
 	private final String code;
 	private final CharacterDAO characterDAO;

@@ -4,7 +4,7 @@ import strategy.achiever.GoalAchiever;
 import strategy.achiever.factory.goals.ArtifactGoalAchiever;
 import strategy.achiever.factory.info.GoalAchieverInfo;
 
-public class DefaultMonsterItemDropFactory implements MonsterItemDropFactory {
+public final class DefaultMonsterItemDropFactory implements MonsterItemDropFactory {
 
 	private final GoalFactoryCreator factoryCreator;
 	public DefaultMonsterItemDropFactory(GoalFactoryCreator factoryCreator) {

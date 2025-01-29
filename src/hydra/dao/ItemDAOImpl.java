@@ -23,7 +23,7 @@ import hydra.model.BotItemType;
 import util.CacheManager;
 import util.PermanentCacheManager;
 
-public class ItemDAOImpl extends AbstractDAO implements ItemDAO {
+public final class ItemDAOImpl extends AbstractDAO implements ItemDAO {
 	private static final String ITEMS_CACHE_KEY = "items";
 	private CacheManager<String, UseInCraftResponse> craftCacheManager;
 	private CacheManager<String, List<BotItemDetails>> itemCacheManager;

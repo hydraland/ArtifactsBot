@@ -24,7 +24,7 @@ import strategy.util.GraphProcessor;
 import strategy.util.MoveService;
 import strategy.util.ResourceGraph;
 
-public class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiever {
+public final class UselessResourceManagerGoalAchiever extends AbstractCustomGoalAchiever {
 	private long oldCall;
 	private static final long ONE_DAY = 1000 * 60 * 60 * 24l;
 	private final ResourceGraph resourceGraph;

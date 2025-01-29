@@ -5,7 +5,7 @@ import java.util.Map;
 import hydra.model.BotCharacter;
 import strategy.achiever.factory.util.Cumulator;
 
-public class ClearGoalAchiever implements ArtifactGoalAchiever {
+public final class ClearGoalAchiever implements ArtifactGoalAchiever {
 
 	private final ArtifactGoalAchiever itemsGoal;
 	private boolean finish;

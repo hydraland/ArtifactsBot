@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class BotMonster implements Serializable {
+public final class BotMonster implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int attackAir;
 	private int attackEarth;

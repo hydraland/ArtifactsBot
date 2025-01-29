@@ -8,7 +8,7 @@ import hydra.model.BotCharacter;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
-public class DepositGoldInBankGoalAchiever extends AbstractCustomGoalAchiever {
+public final class DepositGoldInBankGoalAchiever extends AbstractCustomGoalAchiever {
 
 	private static final int MIN_GOLD_TO_DEPOSIT = 2000;
 	private static final int MIN_CHARACTER_GOLD = 1000;

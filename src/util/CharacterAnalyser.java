@@ -9,7 +9,7 @@ import java.util.Arrays;
 import org.openapitools.client.model.CharacterResponseSchema;
 import org.openapitools.client.model.CharacterSchema;
 
-public class CharacterAnalyser {
+public final class CharacterAnalyser {
 
 	private final String prefix;
 	private final String path;

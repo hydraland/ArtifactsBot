@@ -12,7 +12,7 @@ import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
 
-public class GatheringEventGoalAchiever extends GatheringGoalAchiever {
+public final class GatheringEventGoalAchiever extends GatheringGoalAchiever {
 
 	public GatheringEventGoalAchiever(GoalAchiever equipToolGoal, CharacterDAO characterDAO, CharacterService characterService, MapDAO mapDao,
 			String resourceCode, int rate, List<Coordinate> coordinates, int level, BotResourceSkill skill,

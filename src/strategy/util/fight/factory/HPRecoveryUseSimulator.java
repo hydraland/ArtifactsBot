@@ -16,7 +16,7 @@ import strategy.util.CharacterService;
 import strategy.util.MoveService;
 import strategy.util.fight.RestoreStruct;
 
-public class HPRecoveryUseSimulator extends AbstractHPRecovery {
+public final class HPRecoveryUseSimulator extends AbstractHPRecovery {
 	private final CharacterService characterService;
 	private final ItemDAO itemDAO;
 	private final SimulatorManager simulatorManager;

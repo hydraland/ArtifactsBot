@@ -63,7 +63,7 @@ import strategy.util.MonsterEquipementService;
 import strategy.util.MoveService;
 import strategy.util.fight.FightService;
 
-public class GoalFactoryCreatorImpl implements GoalFactoryCreator {
+public final class GoalFactoryCreatorImpl implements GoalFactoryCreator {
 
 	private final CharacterDAO characterDAO;
 	private final BankDAO bankDAO;

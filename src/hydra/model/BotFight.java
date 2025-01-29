@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class BotFight implements Serializable {
+public final class BotFight implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private int xp;

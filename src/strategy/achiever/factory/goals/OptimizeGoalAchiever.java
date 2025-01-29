@@ -8,7 +8,7 @@ import hydra.model.BotCharacter;
 import strategy.achiever.factory.util.Cumulator;
 import strategy.achiever.factory.util.GoalAverageOptimizer;
 
-public class OptimizeGoalAchiever implements ArtifactGoalAchiever {
+public final class OptimizeGoalAchiever implements ArtifactGoalAchiever {
 
 	private final ArtifactGoalAchiever itemsGoal;
 	private final GoalAverageOptimizer goalAverageOptimizer;

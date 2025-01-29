@@ -7,7 +7,7 @@ import hydra.dao.ItemDAO;
 import hydra.model.BotCharacter;
 import strategy.util.CharacterService;
 
-public class HPRecoveryImpl extends AbstractHPRecovery {
+public final class HPRecoveryImpl extends AbstractHPRecovery {
 	public final CharacterService characterService;
 	public final ItemDAO itemDAO;
 

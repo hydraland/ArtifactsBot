@@ -2,7 +2,7 @@ package hydra.dao.util;
 
 import hydra.model.BotCharacter;
 
-public class CharacterCacheImpl implements CharacterCache {
+public final class CharacterCacheImpl implements CharacterCache {
 	private BotCharacter character;
 
 	@Override

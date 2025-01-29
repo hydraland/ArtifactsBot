@@ -16,7 +16,7 @@ import hydra.model.BotBox;
 import util.CacheManager;
 import util.PermanentCacheManager;
 
-public class MapDAOImpl extends AbstractDAO implements MapDAO {
+public final class MapDAOImpl extends AbstractDAO implements MapDAO {
 	private final CacheManager<String, List<BotBox>> cacheManager;
 	private final MapsApi mapsApi;
 

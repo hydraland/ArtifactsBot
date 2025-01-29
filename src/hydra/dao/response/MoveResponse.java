@@ -1,5 +1,5 @@
 package hydra.dao.response;
 
-public record MoveResponse(boolean ok) {
+public final record MoveResponse(boolean ok) {
 
 }

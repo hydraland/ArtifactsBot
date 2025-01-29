@@ -8,7 +8,7 @@ import strategy.util.CharacterService;
 import strategy.util.MoveService;
 import strategy.util.fight.HPRecovery;
 
-public class HPRecoveryUseSimulatorFactory implements HPRecoveryFactory {
+public final class HPRecoveryUseSimulatorFactory implements HPRecoveryFactory {
 
 	private final CharacterDAO characterDao;
 	private final ItemDAO itemDAO;

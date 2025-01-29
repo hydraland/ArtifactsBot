@@ -6,7 +6,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotCharacter;
 
-public class GoalAchieverConditional implements GoalAchiever {
+public final class GoalAchieverConditional implements GoalAchiever {
 
 	private GoalAchiever subGoal;
 	private boolean finish;

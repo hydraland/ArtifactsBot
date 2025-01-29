@@ -15,7 +15,7 @@ import hydra.model.BotResource;
 import util.CacheManager;
 import util.PermanentCacheManager;
 
-public class ResourceDAOImpl extends AbstractDAO implements ResourceDAO {
+public final class ResourceDAOImpl extends AbstractDAO implements ResourceDAO {
 	private static final String RESOURCE_CACHE_NAME = "resource";
 	private CacheManager<String, List<BotResource>> cacheManager;
 	private final ResourcesApi resourcesApi;

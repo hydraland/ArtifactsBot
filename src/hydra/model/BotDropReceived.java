@@ -2,7 +2,7 @@ package hydra.model;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class BotDropReceived extends BotDrop {
+public final class BotDropReceived extends BotDrop {
 	private static final long serialVersionUID = 1L;
 	private int quantity;
 

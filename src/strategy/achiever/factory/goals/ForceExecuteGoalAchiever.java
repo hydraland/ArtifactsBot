@@ -7,7 +7,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import hydra.model.BotCharacter;
 import strategy.achiever.GoalAchiever;
 
-public class ForceExecuteGoalAchiever implements GoalAchiever {
+public final class ForceExecuteGoalAchiever implements GoalAchiever {
 
 	private final GoalAchiever subGoal;
 
