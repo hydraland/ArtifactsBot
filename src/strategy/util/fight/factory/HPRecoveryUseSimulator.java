@@ -14,7 +14,6 @@ import strategy.SumAccumulator;
 import strategy.achiever.factory.util.Coordinate;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
-import strategy.util.fight.RestoreStruct;
 
 public final class HPRecoveryUseSimulator extends AbstractHPRecovery {
 	private final CharacterService characterService;

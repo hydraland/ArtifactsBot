@@ -6,7 +6,6 @@ import hydra.dao.ItemDAO;
 import hydra.dao.simulate.SimulatorManager;
 import strategy.util.CharacterService;
 import strategy.util.MoveService;
-import strategy.util.fight.HPRecovery;
 
 public final class HPRecoveryUseSimulatorFactory implements HPRecoveryFactory {
 

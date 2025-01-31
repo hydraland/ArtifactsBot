@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -22,6 +23,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import hydra.model.BotCharacter;
 import hydra.model.BotCraftSkill;
+import hydra.model.BotInventoryItem;
 import hydra.model.BotItem;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemReader;
@@ -96,6 +98,7 @@ public final class TestSimulation {
 			simulatorManager.setValue(character, viewItems);
 			for(BotMonster monster : simulatorManager.getMonsterDAOSimulator().getMonsters()) {
 			//BotMonster monster = simulatorManager.getMonsterDAOSimulator().getMonster("mushmush");
+				//if(!"green_slime".equals(monster.getCode())) continue;
 				System.out.println(monster.getCode());
 				OptimizeResult optimizeEquipementsPossesed = simulatorManager.getFightService().optimizeEquipementsPossesed(monster, Collections.emptyMap(), false);
 				if(optimizeEquipementsPossesed.fightDetails().win())
@@ -137,7 +140,8 @@ public final class TestSimulation {
 		character.setUtility1SlotQuantity(0); 
 		character.setUtility2SlotQuantity(0); 
 		character.setMaxHp(320); 
-		character.setHaste(0); 
+		character.setHaste(0);
+		character.getInventory().forEach(bii -> {bii.setCode("");bii.setQuantity(0);});
 	}
 
 	private static void simulateDropItem(SimulatorManagerImpl simulatorManager, BotCharacter character,

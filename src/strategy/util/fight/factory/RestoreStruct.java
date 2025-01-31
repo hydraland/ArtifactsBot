@@ -1,4 +1,4 @@
-package strategy.util.fight;
+package strategy.util.fight.factory;
 
 import hydra.model.BotItemDetails;
 

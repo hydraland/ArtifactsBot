@@ -1,24 +1,17 @@
 package strategy.util.fight;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import hydra.GameConstants;
 import hydra.dao.BankDAO;
 import hydra.dao.CharacterDAO;
 import hydra.dao.ItemDAO;
-import hydra.model.BotCharacter;
-import hydra.model.BotEffect;
 import hydra.model.BotItemDetails;
 import hydra.model.BotItemType;
 import hydra.model.BotMonster;
@@ -29,35 +22,33 @@ import strategy.util.OptimizeResult;
 import util.CacheManager;
 import util.Combinator;
 import util.LimitedTimeCacheManager;
-import util.PermanentCacheManager;
 
 public final class FightServiceImpl implements FightService {
-	private static final int MAX_COMBINATORICS_BEFORE_ACTIVATE_REDUCTION = 10000;
-	private static final FightDetails DEFAULT_FIGHT_DETAILS = new FightDetails(false, GameConstants.MAX_FIGHT_TURN,
-			GameConstants.MAX_FIGHT_TURN, Integer.MAX_VALUE, 0, 0, 0);
+	private static final long MAX_COMBINATORICS_BEFORE_ACTIVATE_REDUCTION = 10000;
 	private static final long MAX_COMBINATORICS_TO_ACTIVATE_REDUCTION = 1000000;
 	private final CharacterDAO characterDao;
 	private final CharacterService characterService;
 	private final BankDAO bankDao;
-	private final ItemDAO itemDAO;
 	private final CacheManager<String, OptimizeResult> optimizeCacheManager;
 	private final ItemService itemService;
 	private final Set<String> oddItems;
-	private final EffectCumulator effectsCumulator;
-	private final CacheManager<String, ItemEffects> effectCacheManager;
+	private final EffectServiceImpl effectService;
+	private final CombinatoricsReducerImpl combinatoricsReducer;
+	private final FightEvaluatorImpl fightEvaluator;
 
 	public FightServiceImpl(CharacterDAO characterDao, BankDAO bankDao, ItemDAO itemDAO,
 			CharacterService characterService, ItemService itemService) {
 		this.characterDao = characterDao;
 		this.bankDao = bankDao;
-		this.itemDAO = itemDAO;
 		this.characterService = characterService;
 		this.itemService = itemService;
 		// 1 semaine 3600*168
 		this.optimizeCacheManager = new LimitedTimeCacheManager<>(3600 * 168);
 		this.oddItems = new HashSet<>();
-		this.effectsCumulator = new EffectCumulatorImpl();
-		this.effectCacheManager = new PermanentCacheManager<>();
+		this.effectService = new EffectServiceImpl();
+		this.combinatoricsReducer = new CombinatoricsReducerImpl(effectService,
+				MAX_COMBINATORICS_BEFORE_ACTIVATE_REDUCTION, MAX_COMBINATORICS_TO_ACTIVATE_REDUCTION);
+		this.fightEvaluator = new FightEvaluatorImpl(effectService, itemDAO);
 	}
 
 	@Override
@@ -169,50 +160,39 @@ public final class FightServiceImpl implements FightService {
 			return optimizeCacheManager.get(key);
 		}
 
-		Set<BotItemInfo> weapons = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.WEAPON)));
+		Set<BotItemInfo> weapons = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.WEAPON)));
 		Set<BotItemInfo> bodyArmors = new HashSet<>(
 				filterOdd(equipableCharacterEquipement.get(BotItemType.BODY_ARMOR)));
-		Set<BotItemInfo> boots = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.BOOTS)));
-		Set<BotItemInfo> helmets = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.HELMET)));
-		Set<BotItemInfo> shields = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.SHIELD)));
-		Set<BotItemInfo> legArmors = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.LEG_ARMOR)));
-		Set<BotItemInfo> amulets = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.AMULET)));
-		Set<BotItemInfo> rings1 = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.RING)));
-		Set<BotItemInfo> utilities1 = new HashSet<>(
-				equipableCharacterEquipement.get(BotItemType.UTILITY));
-		Set<BotItemInfo> artifacts1 = new HashSet<>(
-				filterOdd(equipableCharacterEquipement.get(BotItemType.ARTIFACT)));
+		Set<BotItemInfo> boots = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.BOOTS)));
+		Set<BotItemInfo> helmets = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.HELMET)));
+		Set<BotItemInfo> shields = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.SHIELD)));
+		Set<BotItemInfo> legArmors = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.LEG_ARMOR)));
+		Set<BotItemInfo> amulets = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.AMULET)));
+		Set<BotItemInfo> rings1 = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.RING)));
+		Set<BotItemInfo> utilities1 = new HashSet<>(equipableCharacterEquipement.get(BotItemType.UTILITY));
+		Set<BotItemInfo> artifacts1 = new HashSet<>(filterOdd(equipableCharacterEquipement.get(BotItemType.ARTIFACT)));
 
-		BotItemInfo[] bestEquipements = initBestEquipments(characterDao.getCharacter(), !utilities1.isEmpty());
-		FightDetails maxFightDetails = initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster,
-				characterHpWithoutEqt, !utilities1.isEmpty());
-		if (!(maxFightDetails.characterTurn() == 1 && bestEquipements[OptimizeResult.UTILITY1_INDEX] == null
-				&& bestEquipements[OptimizeResult.UTILITY2_INDEX] == null)) {
+		fightEvaluator.init(characterDao.getCharacter(), monster, characterHpWithoutEqt, !utilities1.isEmpty());
+		OptimizeResult result = fightEvaluator.evaluate();
+		if (!(result.fightDetails().characterTurn() == 1 && result.bestEqt()[OptimizeResult.UTILITY1_INDEX] == null
+				&& result.bestEqt()[OptimizeResult.UTILITY2_INDEX] == null)) {
 			// Les items equipés ne sont pas 1 solution idéale, on lance la recherche
-
-			if (isCombinatoricsTooHigh(MAX_COMBINATORICS_TO_ACTIVATE_REDUCTION, weapons.size(), bodyArmors.size(),
-					boots.size(), helmets.size(), shields.size(), legArmors.size(), amulets.size(), rings1.size(),
-					rings1.size(), artifacts1.size(), artifacts1.size(), artifacts1.size(), utilities1.size(),
-					utilities1.size())) {
-				reduceCombinatorics(weapons, bodyArmors, boots, helmets, shields, legArmors, amulets, rings1,
-						artifacts1, utilities1, monster, characterHpWithoutEqt);
+			if (FightService.isCombinatoricsTooHigh(MAX_COMBINATORICS_TO_ACTIVATE_REDUCTION, weapons.size(),
+					bodyArmors.size(), boots.size(), helmets.size(), shields.size(), legArmors.size(), amulets.size(),
+					rings1.size(), rings1.size(), artifacts1.size(), artifacts1.size(), artifacts1.size(),
+					utilities1.size(), utilities1.size())) {
+				combinatoricsReducer.reduceCombinatorics(weapons, bodyArmors, boots, helmets, shields, legArmors,
+						amulets, rings1, artifacts1, utilities1, monster, characterHpWithoutEqt);
 			}
 
 			// On ajoute null pour les items multiples, à faire sur les autres si la notion
 			// d'item mauvais apparait
 			if (rings1.size() == 1 && rings1.stream().findFirst().get().quantity() == 1) {
-				addNullValueIfAbsent(rings1);
+				FightService.addNullValueIfAbsent(rings1);
 			}
-			addNullValueIfAbsent(utilities1);
+			FightService.addNullValueIfAbsent(utilities1);
 			if (artifacts1.size() < 3) {
-				addNullValueIfAbsent(artifacts1);
+				FightService.addNullValueIfAbsent(artifacts1);
 			}
 
 			List<BotItemInfo> rings2 = new LinkedList<>(rings1);
@@ -236,51 +216,10 @@ public final class FightServiceImpl implements FightService {
 			combinator.set(OptimizeResult.ARTIFACT2_INDEX, artifacts2);
 			combinator.set(OptimizeResult.ARTIFACT3_INDEX, artifacts3);
 
-			effectsCumulator.reset();
-			for (BotItemInfo[] botItemInfos : combinator) {
-				if (validCombinaison(botItemInfos, OptimizeResult.RING1_INDEX, OptimizeResult.RING2_INDEX,
-						OptimizeResult.UTILITY1_INDEX, OptimizeResult.UTILITY2_INDEX, OptimizeResult.ARTIFACT1_INDEX,
-						OptimizeResult.ARTIFACT2_INDEX, OptimizeResult.ARTIFACT3_INDEX)) {
-					for (BotItemInfo botItemInfo : botItemInfos) {
-						if (botItemInfo != null) {
-							updateEffectsCumulator(botItemInfo.botItemDetails(), botItemInfo.quantity());
-						}
-					}
-
-					// Evaluation
-					FightDetails currentFightDetails = optimizeVictory(monster, characterHpWithoutEqt,
-							maxFightDetails.characterTurn());
-
-					// TODO sortir dans une fonction d'évaluation
-					if ((!maxFightDetails.win() && !currentFightDetails.win()
-							&& currentFightDetails.characterTurn() < maxFightDetails.characterTurn())
-							|| ((!maxFightDetails.win() && currentFightDetails.win())
-									|| ((!maxFightDetails.win() || currentFightDetails.win())
-											&& currentFightDetails.characterTurn() < maxFightDetails.characterTurn())
-									|| (currentFightDetails.win() && maxFightDetails.win()
-											&& currentFightDetails.characterTurn() == maxFightDetails.characterTurn()
-											&& ((currentFightDetails.restoreTurn() < maxFightDetails.restoreTurn())
-													|| (currentFightDetails.restoreTurn() == maxFightDetails
-															.restoreTurn()
-															&& currentFightDetails.characterLossHP() < maxFightDetails
-																	.characterLossHP()))))) {
-						maxFightDetails = currentFightDetails;
-						bestEquipements = botItemInfos.clone();
-						if (maxFightDetails.characterTurn() == 1
-								&& bestEquipements[OptimizeResult.UTILITY1_INDEX] == null
-								&& bestEquipements[OptimizeResult.UTILITY2_INDEX] == null) {
-							// On a trouvé 1 solution idéale, on arrête la recherche
-							break;
-						}
-					}
-					effectsCumulator.reset();
-				}
-			}
+			result = fightEvaluator.evaluate(combinator);
 		}
 
-		addUsefullArtifacts(bestEquipements);
-
-		OptimizeResult result = new OptimizeResult(maxFightDetails, bestEquipements);
+		addUsefullArtifacts(result.bestEqt());
 		optimizeCacheManager.add(key, result);
 		return result;
 	}
@@ -317,177 +256,13 @@ public final class FightServiceImpl implements FightService {
 		}
 	}
 
-	// TODO mettre dans une classe et mettre index en constante
-	private void reduceCombinatorics(Set<BotItemInfo> weapons, Set<BotItemInfo> bodyArmors, Set<BotItemInfo> boots,
-			Set<BotItemInfo> helmets, Set<BotItemInfo> shields, Set<BotItemInfo> legArmors,
-			Set<BotItemInfo> amulets, Set<BotItemInfo> rings, Set<BotItemInfo> artifacts,
-			Set<BotItemInfo> utilities, BotMonster monster, int characterHpWithoutEqt) {
-
-		List<Set<BotItemInfo>> sources = Arrays.asList(weapons, bodyArmors, amulets, helmets, legArmors, rings, boots,
-				shields, artifacts, utilities);
-		if (rings.size() == 1 && rings.stream().findFirst().get().quantity() == 1) {
-			addNullValueIfAbsent(rings);
-		}
-		if (artifacts.size() < 3) {
-			addNullValueIfAbsent(artifacts);
-		}
-
-		// Séparation des utilities en restore et autre
-		List<BotItemInfo> restoreUtilities = new LinkedList<>();
-		for (Iterator<BotItemInfo> iterator = utilities.iterator(); iterator.hasNext();) {
-			BotItemInfo botItemInfo = iterator.next();
-			if (botItemInfo.botItemDetails().getEffects().stream()
-					.anyMatch(bie -> BotEffect.RESTORE.equals(bie.getName()))) {
-				restoreUtilities.add(botItemInfo);
-				iterator.remove();
-			}
-		}
-		addNullValueIfAbsent(utilities);
-
-		List<Set<BotItemInfo>> tempList = new ArrayList<>();
-		List<Set<BotItemInfo>> resultList = new ArrayList<>();
-		for (int i = 0; i < sources.size(); i++) {
-			if (i == 5 || i == 9) {
-				tempList.add(new HashSet<>());
-				resultList.add(new HashSet<>(sources.get(i)));
-			} else if (i == 8) {
-				tempList.add(new HashSet<>());
-				tempList.add(new HashSet<>());
-				resultList.add(new HashSet<>(sources.get(i)));
-				resultList.add(new HashSet<>(sources.get(i)));
-			}
-			tempList.add(new HashSet<>());
-			resultList.add(new HashSet<>(sources.get(i)));
-		}
-		int maxEvaluate = 0;
-		for (int i = 0; i < resultList.size(); i++) {
-			Combinator<BotItemInfo> combinator = new Combinator<>(BotItemInfo.class, 14);
-			combinator.set(0, i == 0 ? sources.get(0) : resultList.get(0));
-			combinator.set(1, i == 1 ? sources.get(1) : (i < 1 ? Collections.emptyList() : resultList.get(1)));
-			combinator.set(2, i == 2 ? sources.get(2) : (i < 2 ? Collections.emptyList() : resultList.get(2)));
-			combinator.set(3, i == 3 ? sources.get(3) : (i < 3 ? Collections.emptyList() : resultList.get(3)));
-			combinator.set(4, i == 4 ? sources.get(4) : (i < 4 ? Collections.emptyList() : resultList.get(4)));
-			combinator.set(5, i == 5 ? sources.get(5) : (i < 5 ? Collections.emptyList() : resultList.get(5)));
-			combinator.set(6, i == 6 ? sources.get(5) : (i < 6 ? Collections.emptyList() : resultList.get(6)));
-			combinator.set(7, i == 7 ? sources.get(6) : (i < 7 ? Collections.emptyList() : resultList.get(7)));
-			combinator.set(8, i == 8 ? sources.get(7) : (i < 8 ? Collections.emptyList() : resultList.get(8)));
-			combinator.set(9, i == 9 ? sources.get(8) : (i < 9 ? Collections.emptyList() : resultList.get(9)));
-			combinator.set(10, i == 10 ? sources.get(8) : (i < 10 ? Collections.emptyList() : resultList.get(10)));
-			combinator.set(11, i == 11 ? sources.get(8) : (i < 11 ? Collections.emptyList() : resultList.get(11)));
-			combinator.set(12, i == 12 ? sources.get(9) : (i < 12 ? Collections.emptyList() : resultList.get(12)));
-			combinator.set(13, i == 13 ? sources.get(9) : (i < 13 ? Collections.emptyList() : resultList.get(13)));
-
-			if (!isCombinatoricsTooHigh(MAX_COMBINATORICS_BEFORE_ACTIVATE_REDUCTION, combinator.size(0),
-					combinator.size(1), combinator.size(2), combinator.size(3), combinator.size(4), combinator.size(5),
-					combinator.size(6), combinator.size(7), combinator.size(8), combinator.size(9), combinator.size(10),
-					combinator.size(11), combinator.size(12), combinator.size(13))) {
-				continue;
-			}
-			boolean combinatoricsTooHigh = isCombinatoricsTooHigh(MAX_COMBINATORICS_TO_ACTIVATE_REDUCTION,
-					combinator.size(0), combinator.size(1), combinator.size(2), combinator.size(3), combinator.size(4),
-					combinator.size(5), combinator.size(6), combinator.size(7), combinator.size(8), combinator.size(9),
-					combinator.size(10), combinator.size(11), combinator.size(12), combinator.size(13));
-			maxEvaluate = i;
-			FightDetails maxFightDetails = DEFAULT_FIGHT_DETAILS;
-			effectsCumulator.reset();
-			Set<BotItemInfo> itemsSetTemp;
-			for (BotItemInfo[] botItemInfos : combinator) {
-				if (validCombinaison(botItemInfos, 5, 6, 9, 10, 11, 12, 13)) {
-					for (BotItemInfo botItemInfo : botItemInfos) {
-						if (botItemInfo != null) {
-							updateEffectsCumulator(botItemInfo.botItemDetails(), botItemInfo.quantity());
-						}
-					}
-
-					// Evaluation
-					FightDetails currentFightDetails = optimizeVictory(monster, characterHpWithoutEqt,
-							maxFightDetails.characterTurn());
-					// Hypothèse aucun équipement ne fait de récupération de PV
-					if (currentFightDetails.characterTurn() < maxFightDetails.characterTurn() || (combinatoricsTooHigh
-							&& currentFightDetails.characterTurn() == maxFightDetails.characterTurn()
-							&& (currentFightDetails.diffPower() > maxFightDetails.diffPower()))) {
-						maxFightDetails = currentFightDetails;
-						for (int j = 0; j <= i; j++) {
-							itemsSetTemp = tempList.get(j);
-							itemsSetTemp.clear();
-							if (botItemInfos[j] != null) {
-								itemsSetTemp.add(botItemInfos[j]);
-							}
-						}
-						if (maxFightDetails.characterTurn() == 1 && botItemInfos[12] == null
-								&& botItemInfos[13] == null) {
-							// On a trouvé 1 solution idéale, on arrête la recherche
-							break;
-						}
-					} else if ((currentFightDetails.characterTurn() == maxFightDetails.characterTurn())
-							&& (!combinatoricsTooHigh
-									|| (currentFightDetails.diffPower() == maxFightDetails.diffPower()))) {
-						for (int j = 0; j <= i; j++) {
-							if (botItemInfos[j] != null) {
-								itemsSetTemp = tempList.get(j);
-								itemsSetTemp.add(botItemInfos[j]);
-							}
-						}
-					}
-					effectsCumulator.reset();
-				}
-			}
-
-			for (int j = 0; j <= i; j++) {
-				itemsSetTemp = resultList.get(j);
-				itemsSetTemp.clear();
-				itemsSetTemp.addAll(tempList.get(j));
-			}
-		}
-		for (int j = 0; j <= maxEvaluate && j < sources.size(); j++) {
-			Set<BotItemInfo> itemsSetTemp = sources.get(j);
-			itemsSetTemp.clear();
-			switch (j) {
-			case 5 -> {
-				itemsSetTemp.addAll(resultList.get(5));
-				itemsSetTemp.addAll(resultList.get(6));
-			}
-			case 6 -> itemsSetTemp.addAll(resultList.get(7));
-			case 7 -> itemsSetTemp.addAll(resultList.get(8));
-			case 8 -> {
-				itemsSetTemp.addAll(resultList.get(9));
-				itemsSetTemp.addAll(resultList.get(10));
-				itemsSetTemp.addAll(resultList.get(11));
-			}
-			case 9 -> {
-				itemsSetTemp.addAll(resultList.get(12));
-				itemsSetTemp.addAll(resultList.get(13));
-				itemsSetTemp.addAll(restoreUtilities);
-			}
-			default -> itemsSetTemp.addAll(resultList.get(j));
-			}
-		}
-	}
-
-	private boolean isCombinatoricsTooHigh(long maxCombinatoricsValue, int... values) {
-		long currentVal = 1l;
-		for (int value : values) {
-			currentVal *= value == 0 ? 1 : value;
-			if (currentVal > maxCombinatoricsValue) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/*private List<BotItemInfo> sortItemsByLevel(List<BotItemInfo> filterOdd) {
-		return filterOdd.stream()
-				.sorted((a, b) -> Integer.compare(b.botItemDetails().getLevel(), a.botItemDetails().getLevel()))
-				.toList();
-	}*/
-
 	private List<BotItemInfo> filterOdd(List<BotItemInfo> items) {
 		List<BotItemInfo> filteredItem = items.stream()
 				.filter(bii -> !oddItems.contains(bii.botItemDetails().getCode())).toList();
 		Map<String, ItemEffects> itemsMap = new HashMap<>();
 		for (BotItemInfo item : filteredItem) {
 			if (!item.botItemDetails().getType().equals(BotItemType.RING) || item.quantity() > 1) {
-				ItemEffects itemEffects = getEffects(item.botItemDetails());
+				ItemEffects itemEffects = effectService.getEffects(item.botItemDetails());
 				itemsMap.put(item.botItemDetails().getCode(), itemEffects);
 			}
 		}
@@ -510,206 +285,10 @@ public final class FightServiceImpl implements FightService {
 				: filteredItem;
 	}
 
-	private void addNullValueIfAbsent(Set<BotItemInfo> botItemList) {
-		if (!botItemList.isEmpty() && !botItemList.contains(null)) {
-			botItemList.add(null);
-		}
-	}
-
 	@Override
 	public FightDetails calculateFightResult(BotMonster monster) {
 		int characterHp = characterService.getCharacterHPWithoutEquipment();
-		return initOptimizeResultWithEquipedItems(characterDao.getCharacter(), monster, characterHp, true);
-	}
-
-	private BotItemInfo[] initBestEquipments(BotCharacter character, boolean useUtilities) {
-		return new BotItemInfo[] {
-				useUtilities ? initBestEquipement(character.getUtility1Slot(), character.getUtility1SlotQuantity())
-						: null,
-				useUtilities ? initBestEquipement(character.getUtility2Slot(), character.getUtility2SlotQuantity())
-						: null,
-				initBestEquipement(character.getWeaponSlot(), 1), initBestEquipement(character.getBodyArmorSlot(), 1),
-				initBestEquipement(character.getBootsSlot(), 1), initBestEquipement(character.getHelmetSlot(), 1),
-				initBestEquipement(character.getShieldSlot(), 1), initBestEquipement(character.getLegArmorSlot(), 1),
-				initBestEquipement(character.getAmuletSlot(), 1), initBestEquipement(character.getRing1Slot(), 1),
-				initBestEquipement(character.getRing2Slot(), 1),
-
-				initBestEquipement(character.getArtifact1Slot(), 1),
-				initBestEquipement(character.getArtifact2Slot(), 1),
-				initBestEquipement(character.getArtifact3Slot(), 1) };
-	}
-
-	private BotItemInfo initBestEquipement(String slot, int quantity) {
-		return "".equals(slot) ? null : new BotItemInfo(itemDAO.getItem(slot), quantity);
-	}
-
-	private FightDetails initOptimizeResultWithEquipedItems(BotCharacter character, BotMonster monster, int characterHp,
-			boolean useUtilities) {
-		effectsCumulator.reset();
-
-		updateEffectInMapForEquipedEqt(character.getWeaponSlot(), 1);
-		updateEffectInMapForEquipedEqt(character.getBodyArmorSlot(), 1);
-		updateEffectInMapForEquipedEqt(character.getBootsSlot(), 1);
-		updateEffectInMapForEquipedEqt(character.getHelmetSlot(), 1);
-		updateEffectInMapForEquipedEqt(character.getShieldSlot(), 1);
-		updateEffectInMapForEquipedEqt(character.getLegArmorSlot(), 1);
-		updateEffectInMapForEquipedEqt(character.getAmuletSlot(), 1);
-		updateEffectInMapForEquipedEqt(character.getRing1Slot(), 1);
-		updateEffectInMapForEquipedEqt(character.getRing2Slot(), 1);
-		if (useUtilities) {
-			updateEffectInMapForEquipedEqt(character.getUtility1Slot(), character.getUtility1SlotQuantity());
-			updateEffectInMapForEquipedEqt(character.getUtility2Slot(), character.getUtility2SlotQuantity());
-		}
-		updateEffectInMapForEquipedEqt(character.getArtifact1Slot(), 1);
-		updateEffectInMapForEquipedEqt(character.getArtifact2Slot(), 1);
-		updateEffectInMapForEquipedEqt(character.getArtifact3Slot(), 1);
-
-		return optimizeVictory(monster, characterHp, GameConstants.MAX_FIGHT_TURN);
-	}
-
-	private void updateEffectInMapForEquipedEqt(String slot, int quantity) {
-		if (!"".equals(slot)) {
-			updateEffectsCumulator(itemDAO.getItem(slot), quantity);
-		}
-	}
-
-	private boolean validCombinaison(BotItemInfo[] botItemInfos, int ringIndex1, int ringIndex2,
-			int... uniqueItemIndex) {
-		Set<String> uniqueEquipItem = new HashSet<>();
-		for (int i : uniqueItemIndex) {
-			if (botItemInfos[i] != null) {
-				if (uniqueEquipItem.contains(botItemInfos[i].botItemDetails().getCode())) {
-					return false;
-				} else {
-					uniqueEquipItem.add(botItemInfos[i].botItemDetails().getCode());
-				}
-			}
-		}
-
-		// cas ou les rings sont dans l'inventaire, à la bank ou les 2
-		if (botItemInfos[ringIndex1] != null && botItemInfos[ringIndex2] != null && botItemInfos[ringIndex1]
-				.botItemDetails().getCode().equals(botItemInfos[ringIndex2].botItemDetails().getCode())) {
-			return botItemInfos[ringIndex1].quantity() > 1;
-		}
-		return true;
-	}
-
-	private ItemEffects getEffects(BotItemDetails botItemDetail) {
-		ItemEffects cacheEffectCumulator;
-		if (effectCacheManager.contains(botItemDetail.getCode())) {
-			cacheEffectCumulator = effectCacheManager.get(botItemDetail.getCode());
-		} else {
-			cacheEffectCumulator = new ItemEffectsImpl();
-			botItemDetail.getEffects().stream().forEach(effect -> {
-				cacheEffectCumulator.setEffectValue(effect.getName(), effect.getValue());
-			});
-			effectCacheManager.add(botItemDetail.getCode(), cacheEffectCumulator);
-		}
-		return cacheEffectCumulator;
-	}
-
-	private void updateEffectsCumulator(BotItemDetails botItemDetail, int quantity) {
-		effectsCumulator.accumulate(getEffects(botItemDetail), quantity);
-	}
-
-	// On ignore les blocks
-	private FightDetails optimizeVictory(BotMonster monster, int characterHp, int maxCharacterTurn) {
-		int characterDmg = calculCharacterDamage(monster);
-		int characterTurn = calculTurns(monster.getHp(), characterDmg);
-		if (characterTurn >= GameConstants.MAX_FIGHT_TURN) {
-			// l'hypothèse c'est que l'on ne doit pas se retrouver dans ce cas, d'ou hp
-			// character à -1
-			return DEFAULT_FIGHT_DETAILS;
-		}
-		if (characterTurn > maxCharacterTurn) {
-			// IL y a mieux donc on envoi un résultat par défaut
-			return new FightDetails(false, characterTurn, characterTurn, Integer.MAX_VALUE, 0, 0, 0);
-		}
-
-		MonsterCalculStruct monsterResult = calculMonsterTurns(characterHp, monster, characterTurn, characterDmg);
-		// Le calcul fait que l'on privilégie la non utilisation de potion quand cela
-		// est possible
-		int nbTurn = Math.min(characterTurn, monsterResult.monsterTurn());
-		return new FightDetails(monsterResult.monsterTurn() >= characterTurn, nbTurn, characterTurn,
-				monsterResult.characterLossHP(), monsterResult.restoreTurn(), characterDmg, monsterResult.monsterDmg());
-	}
-
-	private int calculTurns(int hp, int dmg) {
-		return dmg == 0 ? GameConstants.MAX_FIGHT_TURN : hp / dmg + (hp % dmg == 0 ? 0 : 1);
-	}
-
-	private MonsterCalculStruct calculMonsterTurns(int characterHp, BotMonster monster, int maxCharacterTurn,
-			int characterDmg) {
-		int monsterDmg = calculMonsterDamage(monster);
-		int characterMaxHp = characterHp + effectsCumulator.getHp();
-		int characterMaxHpWithBoost = characterMaxHp + effectsCumulator.getBoostHp();
-		int halfCharacterMaxHpWithBoost = characterMaxHpWithBoost / 2;
-		if (!effectsCumulator.isRestore()) {
-			int monsterTurn = calculTurns(characterMaxHpWithBoost, calculMonsterDamage(monster));
-
-			int monsterTotalDmg = monsterDmg * (monsterTurn > maxCharacterTurn ? (maxCharacterTurn - 1) : monsterTurn);
-			return new MonsterCalculStruct(monsterTurn, 0,
-					Math.max(0, monsterTotalDmg - (characterMaxHpWithBoost - characterMaxHp)), monsterDmg);
-		}
-		int halfMonsterTurn = calculTurns(halfCharacterMaxHpWithBoost, calculMonsterDamage(monster));
-		if (halfMonsterTurn >= maxCharacterTurn) {
-			return new MonsterCalculStruct(halfMonsterTurn * 2, 0,
-					Math.max(0, (maxCharacterTurn - 1) * monsterDmg - (characterMaxHpWithBoost - characterMaxHp)),
-					monsterDmg);
-		}
-		int monsterTurn = halfMonsterTurn;
-		int characterHP = characterMaxHpWithBoost - halfMonsterTurn * monsterDmg;
-		int monsterHP = monster.getHp() - halfMonsterTurn * characterDmg;
-		int restoreTurn = 1;
-		while (characterHP >= 0 && monsterHP >= 0) {
-			if (characterHP < halfCharacterMaxHpWithBoost) {
-				int restoreValue = effectsCumulator.getRestoreEffectValue(restoreTurn);
-				if (restoreValue > 0) {
-					restoreTurn++;
-				}
-				characterHP += restoreValue;
-			}
-			monsterTurn++;
-			monsterHP -= characterDmg;
-			if (monsterHP > 0) {
-				characterHP -= monsterDmg;
-			}
-		}
-		return new MonsterCalculStruct(monsterTurn, restoreTurn - 1, Math.max(0, (characterMaxHp - characterHP)),
-				monsterDmg);
-	}
-
-	private int calculMonsterDamage(BotMonster monster) {
-		int monsterEartDmg = (int) Math.rint(monster.getAttackEarth()
-				* (1 - (effectsCumulator.getResEarth() + effectsCumulator.getBoostResEarth()) / 100d));
-		int monsterAirDmg = (int) Math.rint(monster.getAttackAir()
-				* (1 - (effectsCumulator.getResAir() + effectsCumulator.getBoostResAir()) / 100d));
-		int monsterWaterDmg = (int) Math.rint(monster.getAttackWater()
-				* (1 - (effectsCumulator.getResWater() + effectsCumulator.getBoostResWater()) / 100d));
-		int monsterFireDmg = (int) Math.rint(monster.getAttackFire()
-				* (1 - (effectsCumulator.getResFire() + effectsCumulator.getBoostResFire()) / 100d));
-		return monsterEartDmg + monsterAirDmg + monsterWaterDmg + monsterFireDmg;
-	}
-
-	private int calculCharacterDamage(BotMonster monster) {
-		int characterEartDmg = calculEffectDamage(effectsCumulator.getAttackEarth(), effectsCumulator.getDmgEarth(),
-				effectsCumulator.getBoostDmgEarth(), monster.getResEarth());
-		int characterAirDmg = calculEffectDamage(effectsCumulator.getAttackAir(), effectsCumulator.getDmgAir(),
-				effectsCumulator.getBoostDmgAir(), monster.getResAir());
-		int characterWaterDmg = calculEffectDamage(effectsCumulator.getAttackWater(), effectsCumulator.getDmgWater(),
-				effectsCumulator.getBoostDmgWater(), monster.getResWater());
-		int characterFireDmg = calculEffectDamage(effectsCumulator.getAttackFire(), effectsCumulator.getDmgFire(),
-				effectsCumulator.getBoostDmgFire(), monster.getResFire());
-		return characterEartDmg + characterAirDmg + characterWaterDmg + characterFireDmg;
-	}
-
-	private int calculEffectDamage(float attackDmg, float dmgPercent, float dmgBoost, float monsterRes) {
-		// On convertie le block en % de res
-		return (int) Math.rint(Math.rint((attackDmg * (1d + (dmgPercent + dmgBoost) / 100d)))
-				* (1d - (monsterRes + (monsterRes > 0 ? monsterRes * 0.1d : 0)) / 100d));
-	}
-
-	private static final record MonsterCalculStruct(int monsterTurn, int restoreTurn, int characterLossHP,
-			int monsterDmg) {
+		fightEvaluator.init(characterDao.getCharacter(), monster, characterHp, true);
+		return fightEvaluator.evaluate().fightDetails();
 	}
 }

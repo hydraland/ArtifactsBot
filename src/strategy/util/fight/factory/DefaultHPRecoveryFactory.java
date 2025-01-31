@@ -3,7 +3,6 @@ package strategy.util.fight.factory;
 import hydra.dao.CharacterDAO;
 import hydra.dao.ItemDAO;
 import strategy.util.CharacterService;
-import strategy.util.fight.HPRecovery;
 
 public final class DefaultHPRecoveryFactory implements HPRecoveryFactory {
 

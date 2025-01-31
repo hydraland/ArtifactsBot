@@ -9,8 +9,6 @@ import hydra.model.BotCharacter;
 import hydra.model.BotEffect;
 import hydra.model.BotItemReader;
 import strategy.util.CharacterService;
-import strategy.util.fight.HPRecovery;
-import strategy.util.fight.RestoreStruct;
 
 public abstract class AbstractHPRecovery implements HPRecovery {
 
