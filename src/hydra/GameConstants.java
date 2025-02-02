@@ -11,7 +11,7 @@ public interface GameConstants {
 	public static final String SUBTYPE_RESOURCE_TASK = "task";
 	public static final int MAX_TENTATIVE_FOR_RATE_CALCUL = 100;
 	public static final int MAX_LEVEL_DIFFERENCE_FOR_XP = 10;
-	public static final int HP_LEVEL_1 = 120;
+	public static final int START_HP = 115;
 	public static final int HP_PER_LEVEL = 5;
 	public static final int FIRST_LEVEL_INVENTORY_SPACE = 100;
 	public static final int MAX_SELL_ORDER = 100;
